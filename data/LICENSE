@@ -1,0 +1,4 @@
+The files in this directory (raw/alicante.osm.json and city.json) contain data from
+OpenStreetMap, © OpenStreetMap contributors, available under the Open Database License (ODbL) 1.0.
+https://www.openstreetmap.org/copyright
+city.json is a derived database produced by tools/build-city.mjs and is also licensed under ODbL 1.0.
