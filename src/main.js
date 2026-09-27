@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { VERSION } from './version.js';
 import { buildCity } from './city/buildCity.js';
+import { buildTiles, showTilesPage } from './city/tiles.js';
 import { CollisionWorld } from './vehicle/collision.js';
 import { TukTukPhysics, TUNING } from './vehicle/physics.js';
 import { createTukTuk } from './vehicle/tuktuk.js';
@@ -20,6 +21,8 @@ const SKY = 0xbfe3f5;
 const params = new URLSearchParams(location.search);
 const STRESS_LEVELS = [1, 2, 3, 4, 6, 8];  // ?stress=N: the scene is rendered N times per frame
 let stress = Math.max(1, Math.round(+params.get('stress') || 1));
+// ?tex=0 plain vertex colours (0.5.0 look), ?tex=low facades only, default: everything textured
+const texMode = ['0', 'off', 'no'].includes(params.get('tex')) ? 'off' : params.get('tex') === 'low' ? 'low' : 'full';
 
 const $ = (id) => document.getElementById(id);
 const status = (t) => { $('status').textContent = t; };
@@ -53,13 +56,20 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
+// ---------- textures (drawn by code) ----------
+const ANISOTROPY = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+status('Малюю текстури…');
+const tiles = texMode === 'off' ? null : buildTiles(ANISOTROPY);
+if (params.has('tiles')) { showTilesPage(tiles || buildTiles(ANISOTROPY)); $('overlay').style.display = 'none'; }
+if (tiles) console.log(`Tiles drawn in ${tiles.ms.toFixed(0)} ms, ${(tiles.bytes / 1048576).toFixed(1)} MB (+mips), anisotropy ${ANISOTROPY}`);
+
 // ---------- load city ----------
 status('Завантаження міста…');
 const city = await (await fetch(`data/city.json?v=${VERSION}`)).json();
 status(`Будую ${city.buildings.length} будинків…`);
 await new Promise((r) => setTimeout(r, 0));
 const t0 = performance.now();
-const { group: cityGroup, stats: cityStats } = buildCity(city);
+const { group: cityGroup, stats: cityStats } = buildCity(city, { texMode, tiles, sky: SKY });
 scene.add(cityGroup);
 
 // ---------- collision world ----------
@@ -94,11 +104,20 @@ scene.add(comfort.mesh);
 const horn = new Horn();
 const bars = new HandlebarControl(tuk.handlebar);
 let steeringMode = loadSetting('steering', 'stick') === 'hands' ? 'hands' : 'stick';
-bars.engineVibration = loadSetting('engineVibration', true) !== false;
+// Engine vibration is off by default since 0.6.0 (it got in the way in the headset). A value saved by
+// an earlier version is reset to "off" once; after that the checkbox on the start screen decides.
+if (loadSetting('engineVibrationReset', 0) < 1) { saveSetting('engineVibration', false); saveSetting('engineVibrationReset', 1); }
+bars.engineVibration = loadSetting('engineVibration', false) === true;
 let pedal = 0;
 
 const buildMs = performance.now() - t0;
 console.log(`City built in ${buildMs.toFixed(0)} ms`, cityStats, `collision edges: ${world.edgeCount}`);
+// compile the shaders now (loading screen), not in the first frame
+status('Компілюю шейдери…');
+await new Promise((r) => setTimeout(r, 0));
+const tc0 = performance.now();
+renderer.compile(scene, camera);
+console.log(`Shaders compiled in ${(performance.now() - tc0).toFixed(0)} ms`);
 
 // ---------- input & camera modes ----------
 const keys = new KeyboardInput();
@@ -318,7 +337,7 @@ function frame(now, xrFrame) {
     // head pose comes from the headset, under xrRig
   } else if (camMode === 'cockpit') {
     cameraHolder.rotation.set(lookPitch, lookYaw, 0, 'YXZ');
-  } else {
+  } else if (camMode === 'chase') {
     const h = tuk.group.rotation.y;
     tmpV.set(Math.sin(h) * 7 + x, 3.2, Math.cos(h) * 7 + z);
     if (!chaseInit) { chasePos.copy(tmpV); chaseInit = true; }
@@ -371,7 +390,7 @@ renderer.setAnimationLoop(frame);
 const startBtn = $('start');
 startBtn.disabled = false;
 startBtn.textContent = 'Грати (клавіатура)';
-status(`${city.buildings.length} будинків · ${city.roads.length} вулиць · зібрано за ${buildMs.toFixed(0)} мс`);
+status(`${city.buildings.length} будинків · ${city.roads.length} вулиць · зібрано за ${buildMs.toFixed(0)} мс${tiles ? ` · ${tiles.preview.facade.length + tiles.preview.ground.length + 1} плиток за ${tiles.ms.toFixed(0)} мс` : ' · без текстур'}`);
 const start = () => { horn.unlock(); $('overlay').style.display = 'none'; renderer.domElement.focus(); };
 startBtn.addEventListener('click', start);
 if (params.has('autostart')) start();
@@ -390,4 +409,4 @@ $('vibration').checked = bars.engineVibration;
 $('vibration').addEventListener('change', () => { bars.engineVibration = $('vibration').checked; saveSetting('engineVibration', bars.engineVibration); });
 
 // test / debugging hook
-window.__game = { THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };

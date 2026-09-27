@@ -5,9 +5,21 @@ Mercado Central, the port) in the browser — on Meta Quest 3 via WebXR, or on a
 
 **Play:** https://archigreen55-prog.github.io/tuktuk-alicante-vr/
 
-Status: prototype (stages 0–4 and 5a of [docs/plan.md](docs/plan.md)): city from OpenStreetMap,
-keyboard driving, collisions, WebXR on Quest 3 with controllers, hands-on-handlebar steering and a comfort vignette.
+Status: prototype (stages 0–4, 5a and 5b of [docs/plan.md](docs/plan.md)): city from OpenStreetMap,
+keyboard driving, collisions, WebXR on Quest 3 with controllers, hands-on-handlebar steering, a comfort vignette
+and code-drawn textures (facades, roads, sidewalks, the Explanada mosaic).
 The build version is shown small on the dashboard and on the start screen.
+
+## Textures (stage 5b)
+
+No image files: every tile (window bays per facade style, shop fronts, cornices, asphalt, paving, road markings,
+zebras, the Explanada wave mosaic) is drawn on a canvas at load time (`src/city/tiles.js`) into WebGL2 texture
+arrays with mip levels and 8x anisotropic filtering. Facade tiles are material masks (plaster / shutter / glass /
+metal weights + shade), so one tile serves every building colour. The shaders (`src/city/facades.js`) extend
+`MeshLambertMaterial` via `onBeforeCompile`; the meshes and draw calls stay the same. Facade layout (floors, bays,
+shop fronts by street, blank shared walls) comes from `tools/build-city.mjs` + `data/facades.json` (manual style
+overrides per OSM id; photo facades are reserved for later). Balconies along the main streets are one
+`InstancedMesh`.
 
 ## Controls (Quest 3, play seated)
 
@@ -47,7 +59,9 @@ Two steering modes, switched with the right stick press or on the start screen (
 URL parameters for testing: `?fps` (counter on from the start), `?stress=N` (render the scene N times
 per frame to find the GPU headroom), `?hz=72` (force the headset refresh rate; otherwise it drops to
 72 Hz by itself if 90 cannot be held), `?fbs=0.85` (XR framebuffer scale),
-`?fov=0.5` (XR foveation 0..1, default 1), `?vignette` (show the VR vignette on desktop too).
+`?fov=0.5` (XR foveation 0..1, default 1), `?vignette` (show the VR vignette on desktop too),
+`?tex=0` (no textures, the 0.5.0 look, for A/B comparison), `?tex=low` (facades only, plain roads),
+`?tiles` (shows every generated tile on the page).
 
 ## Run locally
 
@@ -71,6 +85,7 @@ Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright
 Downloaded once and stored in `data/`; the game makes no API calls at runtime.
 
     node tools/fetch-osm.mjs    # one-time Overpass download -> data/raw/alicante.osm.json
-    node tools/build-city.mjs   # -> data/city.json
+    node tools/build-city.mjs   # -> data/city.json (levels, facade styles, shared walls, street classes,
+                                #    lanes / oneway / junctions, plaza kinds; merges data/facades.json)
 
 Code: MIT. Data: ODbL (see data/LICENSE).

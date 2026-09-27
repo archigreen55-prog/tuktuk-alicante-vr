@@ -7,6 +7,7 @@ const C = {
   body: 0xf2c230, bodyDark: 0xd9a51f, roof: 0x1f6b45, frame: 0x2a2a2a, seat: 0x5a3422,
   chrome: 0xc8c8c8, tire: 0x161616, grip: 0x111111, light: 0xfff4c0, floor: 0x3b3b3b,
   rubber: 0x1b1b1b, glove: 0x3a2a20, gloveCuff: 0x2a1e17,
+  trousers: 0x3a4250, shoe: 0x2a1f18, sole: 0x111111,
 };
 
 function colorize(g, color) {
@@ -38,6 +39,19 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 // Brake pedal: part of the body mesh, pressed in the vertex shader (no extra draw call).
 const PEDAL_HINGE = V(0.14, 0.42, -0.56);
 const PEDAL_MAX = 0.42; // rad at full brake (pad ends up flat)
+// Driver's legs (stage 5b): low-poly, part of the body mesh. The right foot rests with the heel on
+// the floor and the toe on the pedal pad; each vertex carries a weight aPedal (heel 0 .. pad 1) and
+// turns about the pedal hinge by weight x pedal angle, so the toe follows the pad and the heel stays.
+const HEEL_Z = -0.28, PAD_Z = -0.47;      // right foot: heel on the floor, sole meets the pad here
+const FLOOR_Y = 0.41;                     // top of the cab floor
+const SHOE_TILT = Math.atan2(0.47 - FLOOR_Y, HEEL_Z - PAD_Z); // sole rises from the heel to the pad
+// tube between two points (for limbs)
+function limb(a, b, r0, r1, color, sides = 8) {
+  const d = b.clone().sub(a);
+  const q = new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), d.clone().normalize());
+  const m = new THREE.Matrix4().compose(a.clone().addScaledVector(d, 0.5), q, V(1, 1, 1));
+  return placed(new THREE.CylinderGeometry(r1, r0, d.length(), sides), color, m);
+}
 
 export function createTukTuk({ version = '' } = {}) {
   const P = [];
@@ -81,10 +95,34 @@ export function createTukTuk({ version = '' } = {}) {
     part(box(0.016, 0.016, 0.1), C.chrome, PEDAL_HINGE.x, 0.44, -0.515, -0.45),
     part(box(0.085, 0.016, 0.075), C.rubber, PEDAL_HINGE.x, 0.462, -0.47, -0.45),
   ];
-  for (const g of P) g.setAttribute('aPedal', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count), 1));
+  // driver's legs: thighs from the seat, shins down to the ankles; left foot flat on the floor
+  const legs = [];
+  for (const s of [1, -1]) {
+    const hip = V(s * 0.15, 0.78, -0.04), knee = V(s * 0.15, 0.8, -0.4), ankle = V(s * 0.145, 0.5, HEEL_Z - 0.02);
+    legs.push(limb(hip, knee, 0.075, 0.068, C.trousers));
+    legs.push(placed(new THREE.SphereGeometry(0.07, 8, 6), C.trousers, new THREE.Matrix4().makeTranslation(knee.x, knee.y, knee.z)));
+    legs.push(limb(knee, ankle, 0.062, 0.05, C.trousers));
+    if (s < 0) { // left shoe flat on the floor
+      legs.push(part(box(0.1, 0.075, 0.27), C.shoe, -0.145, FLOOR_Y + 0.0375 + 0.012, HEEL_Z - 0.135));
+      legs.push(part(box(0.1, 0.024, 0.27), C.sole, -0.145, FLOOR_Y + 0.012, HEEL_Z - 0.135));
+    }
+  }
+  // right shoe: sole from the heel on the floor up to the pad; weights heel 0 -> pad 1 (toe rides with the pad)
+  const shoeMid = V(0.145, FLOOR_Y + Math.tan(SHOE_TILT) * 0.135, HEEL_Z - 0.135);
+  const up = V(0, Math.cos(SHOE_TILT), Math.sin(SHOE_TILT));
+  const shoe = [
+    part(box(0.1, 0.075, 0.27), C.shoe, 0, 0, 0, SHOE_TILT).translate(shoeMid.x + up.x * 0.0495, shoeMid.y + up.y * 0.0495, shoeMid.z + up.z * 0.0495),
+    part(box(0.1, 0.024, 0.27), C.sole, 0, 0, 0, SHOE_TILT).translate(shoeMid.x + up.x * 0.012, shoeMid.y + up.y * 0.012, shoeMid.z + up.z * 0.012),
+  ];
+  for (const g of shoe) {
+    const pos = g.attributes.position, w = new Float32Array(pos.count);
+    for (let i = 0; i < pos.count; i++) w[i] = THREE.MathUtils.clamp((HEEL_Z - pos.getZ(i)) / (HEEL_Z - PAD_Z), 0, 1);
+    g.setAttribute('aPedal', new THREE.BufferAttribute(w, 1));
+  }
+  for (const g of P.concat(legs)) g.setAttribute('aPedal', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count), 1));
   for (const g of pedal) g.setAttribute('aPedal', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(1), 1));
 
-  const geo = mergeGeometries(P.concat(pedal));
+  const geo = mergeGeometries(P.concat(pedal, legs, shoe));
   const bodyMat = new THREE.MeshLambertMaterial({ vertexColors: true });
   const pedalAngle = { value: 0 };
   bodyMat.onBeforeCompile = (sh) => {
@@ -94,11 +132,12 @@ export function createTukTuk({ version = '' } = {}) {
       .replace('#include <common>', `#include <common>
 attribute float aPedal;
 uniform float uPedal;
-vec3 pedalRot(vec3 v) { float c = cos(uPedal), s = sin(uPedal); return vec3(v.x, v.y * c - v.z * s, v.y * s + v.z * c); }`)
+// rotation about the pedal hinge axis (X) by the vertex weight x pedal angle
+vec3 pedalRot(vec3 v) { float a = aPedal * uPedal; float c = cos(a), s = sin(a); return vec3(v.x, v.y * c - v.z * s, v.y * s + v.z * c); }`)
       .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
-if (aPedal > 0.5) objectNormal = pedalRot(objectNormal);`)
+if (aPedal > 0.001) objectNormal = pedalRot(objectNormal);`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
-if (aPedal > 0.5) transformed = vec3(${h.x}, ${h.y}, ${h.z}) + pedalRot(transformed - vec3(${h.x}, ${h.y}, ${h.z}));`);
+if (aPedal > 0.001) transformed = vec3(${h.x}, ${h.y}, ${h.z}) + pedalRot(transformed - vec3(${h.x}, ${h.y}, ${h.z}));`);
   };
   const body = new THREE.Mesh(geo, bodyMat);
   body.name = 'tuktuk body';

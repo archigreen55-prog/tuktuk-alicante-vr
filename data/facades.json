@@ -1,0 +1,12 @@
+{
+  "_comment": "Manual facade data per OSM id (tools/build-city.mjs merges it into city.json). style: ensanche | classic | old | tower | office | civic. photos: reserved for stage 5c (photo facades), ignored for now.",
+  "way/21410214": { "style": "civic", "photos": [ { "facade": 2, "src": "assets/facades/mercado-front.jpg", "fit": "stretch" } ] },
+  "relation/21053576": { "style": "classic" },
+  "way/265207919": { "style": "civic" },
+  "way/22560738": { "style": "civic" },
+  "way/83998999": { "style": "civic" },
+  "way/20929398": { "style": "office" },
+  "way/20929405": { "style": "office" },
+  "way/53271502": { "style": "tower" },
+  "way/46166208": { "style": "tower" }
+}

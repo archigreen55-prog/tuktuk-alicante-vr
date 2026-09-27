@@ -122,29 +122,64 @@ const inMount = (p) => pip(p, MOUNT_FOOT);
 
 // ---------- buildings ----------
 const PALETTE = [0xf3e6cf, 0xe9d3b0, 0xdcb78f, 0xf5efe6, 0xe8c3a8, 0xd9a47e, 0xefdcc0, 0xc98f6b, 0xf1d9d0, 0xe3cfa3];
+// Facade vertical layout (metres), shared with src/city/facades.js: ground floor (Spanish "bajo
+// comercial"), upper floors, parapet/cornice band on top. h = GROUND + (levels - 1) * FLOOR + PARAPET.
+const GROUND_H = 4.0, FLOOR_H = 3.0, PARAPET_H = 0.9;
+const num = (s) => { const v = parseFloat(String(s).replace(',', '.')); return Number.isFinite(v) ? v : null; };
 function heightOf(t, id) {
-  const num = (s) => { const v = parseFloat(String(s).replace(',', '.')); return Number.isFinite(v) ? v : null; };
-  if (t.height && num(t.height)) return { h: num(t.height), src: 'height' };
-  if (t['building:levels'] && num(t['building:levels']) != null) return { h: num(t['building:levels']) * 3.2 + 1, src: 'levels' };
+  const lvTag = t['building:levels'] != null ? num(t['building:levels']) : null;
+  const lv = lvTag != null && lvTag >= 1 ? Math.round(lvTag) : null;
+  if (t.height && num(t.height)) return { h: num(t.height), lv, src: 'height' };
+  if (lv != null) return { h: GROUND_H + (lv - 1) * FLOOR_H + PARAPET_H, lv, src: 'levels' };
   const r = hash(id);
   const byType = { church: 18, cathedral: 24, retail: 7, kiosk: 3, garage: 4, shed: 3, hut: 3, service: 4, commercial: 16, office: 20, hotel: 22, public: 14, civic: 14 };
-  if (byType[t.building]) return { h: byType[t.building] * (0.9 + 0.2 * r), src: 'type' };
-  return { h: 10 + r * 9, src: 'default' };
+  if (byType[t.building]) return { h: byType[t.building] * (0.9 + 0.2 * r), lv: null, src: 'type' };
+  return { h: 10 + r * 9, lv: null, src: 'default' };
 }
+// Facade styles (index = code in city.json): see docs/plan-stage-5.md 2.3
+const STYLES = ['ensanche', 'classic', 'old', 'tower', 'office', 'civic'];
+const STYLE_ALIASES = { residential: 'ensanche', apartments: 'ensanche', modern: 'ensanche', historic: 'classic', hotel: 'tower', commercial: 'office', retail: 'office', church: 'civic', public: 'civic' };
+const CIVIC = /^(church|cathedral|chapel|public|civic|government|school|university|college|hospital|train_station|townhall|museum|library|fire_station|police)$/;
+const OFFICE = /^(commercial|retail|office|supermarket|department_store|kiosk|parking|industrial|warehouse)$/;
+// Rambla line (south -> north): east of it lies the old town under the Benacantil
+const RAMBLA_S = [279.1, 240], RAMBLA_N = [98.1, -270];
+const eastOfRambla = ([x, z]) => ((RAMBLA_N[0] - RAMBLA_S[0]) * (z - RAMBLA_S[1]) - (RAMBLA_N[1] - RAMBLA_S[1]) * (x - RAMBLA_S[0])) < 0;
+const near = (p, q, d) => Math.hypot(p[0] - q[0], p[1] - q[1]) < d;
+function styleOf(t, lv, h, c) {
+  if (CIVIC.test(t.building) || t.amenity === 'place_of_worship' || /^(townhall|courthouse|library|police|fire_station|university|school|museum|marketplace|post_office)$/.test(t.amenity || '') || t.tourism === 'museum' || t.office === 'government') return 'civic';
+  if (OFFICE.test(t.building) || t.shop === 'department_store' || t.shop === 'supermarket' || t.amenity === 'bank') return 'office';
+  if ((lv != null && lv >= 12) || h > 38 || t.tourism === 'hotel' || t.building === 'hotel') return 'tower';
+  const levels = lv != null ? lv : Math.max(1, Math.round((h - 1.9) / 3));
+  if (levels <= 3 && eastOfRambla(c) && c[1] < 300) return 'old';
+  if (levels <= 6 && (near(c, [233.7, 291.2], 260) || near(c, [190, 0], 220))) return 'classic'; // Explanada / Rambla centre
+  if (levels <= 2 && hash(Math.round(c[0] * 7 + c[1] * 13) + 11) < 0.5) return 'old';
+  return 'ensanche';
+}
+// manual overrides: data/facades.json { "way/123": { "style": "civic", "photos": [...] } } (photos: later)
+let facadeOverrides = {};
+try { facadeOverrides = JSON.parse(await readFile('data/facades.json', 'utf8')); } catch { /* optional */ }
+const overridesUsed = [];
 const buildings = [];
-const stats = { heightSrc: {}, skipped: { mount: 0, fort: 0, roof: 0, underground: 0, tiny: 0 }, excludedNames: [] };
-function addBuilding(outer, holes, t, id) {
+const stats = { heightSrc: {}, styles: {}, skipped: { mount: 0, fort: 0, roof: 0, underground: 0, tiny: 0 }, excludedNames: [] };
+function addBuilding(outer, holes, t, id, osmId) {
   if (t.building === 'roof' || t.building === 'canopy') { stats.skipped.roof++; return; }
   if (t.location === 'underground' || (t.layer && parseInt(t.layer) < 0)) { stats.skipped.underground++; return; }
   if (t.historic === 'fort') { stats.skipped.fort++; stats.excludedNames.push(t.name); return; }
   outer = cleanRing(outer);
   if (outer.length < 3 || area(outer) < 6) { stats.skipped.tiny++; return; }
-  if (inMount(centroid(outer))) { stats.skipped.mount++; if (t.name) stats.excludedNames.push(t.name); return; }
+  const c = centroid(outer);
+  if (inMount(c)) { stats.skipped.mount++; if (t.name) stats.excludedNames.push(t.name); return; }
   if (signedArea(outer) < 0) outer.reverse(); // consistent orientation
   holes = holes.map(cleanRing).filter((h) => h.length >= 3 && area(h) > 4).map((h) => (signedArea(h) > 0 ? h.reverse() : h));
-  const { h, src } = heightOf(t, id);
+  const { h: h0, lv, src } = heightOf(t, id);
+  const h = r1(Math.min(Math.max(h0, 3), 120));
   stats.heightSrc[src] = (stats.heightSrc[src] || 0) + 1;
-  const b = { p: flat(outer), h: r1(Math.min(Math.max(h, 3), 120)), c: Math.floor(hash(id * 7 + 3) * PALETTE.length) };
+  let style = styleOf(t, lv, h, c);
+  const ov = facadeOverrides[osmId];
+  if (ov && ov.style) { const s = STYLE_ALIASES[ov.style] || ov.style; if (STYLES.includes(s)) { style = s; overridesUsed.push(osmId); } else console.warn(`facades.json ${osmId}: unknown style "${ov.style}"`); }
+  stats.styles[style] = (stats.styles[style] || 0) + 1;
+  const b = { id: osmId, p: flat(outer), h, c: Math.floor(hash(id * 7 + 3) * PALETTE.length), s: STYLES.indexOf(style) };
+  if (lv != null) b.lv = lv;
   if (holes.length) b.holes = holes.map(flat);
   if (t.name) b.n = t.name;
   buildings.push(b);
@@ -152,7 +187,7 @@ function addBuilding(outer, holes, t, id) {
 for (const e of E) {
   const t = e.tags || {};
   if (!t.building) continue;
-  if (e.type === 'way') addBuilding(geomToPts(e.geometry), [], t, e.id);
+  if (e.type === 'way') addBuilding(geomToPts(e.geometry), [], t, e.id, 'way/' + e.id);
   else if (e.type === 'relation') {
     const seg = (role) => e.members.filter((m) => m.type === 'way' && m.role === role && m.geometry)
       .map((m) => m.geometry.map((g, i) => ({ ...g, id: (i === 0 || i === m.geometry.length - 1) ? `${g.lat.toFixed(7)},${g.lon.toFixed(7)}` : `${m.ref}:${i}` })));
@@ -160,7 +195,7 @@ for (const e of E) {
     for (const o of outers) {
       const op = geomToPts(o);
       const hs = inners.map(geomToPts).filter((h) => pip(centroid(h), op));
-      addBuilding(op, hs, t, e.id);
+      addBuilding(op, hs, t, e.id, 'relation/' + e.id);
     }
   }
 }
@@ -169,20 +204,162 @@ for (const e of E) {
 const ROAD_W = { primary: 12, primary_link: 7, secondary: 10, secondary_link: 7, tertiary: 8, tertiary_link: 6, residential: 6.5, unclassified: 6, living_street: 5, service: 4, pedestrian: 5, busway: 7 };
 const roads = [], plazas = [];
 const roadCount = {};
+// junction nodes: shared by >= 3 road ways, or by 2 where one passes through (not an end-to-end chain)
+const nodeUse = new Map();
+for (const e of E) {
+  const t = e.tags || {};
+  if (e.type !== 'way' || !t.highway || !ROAD_W[t.highway] || t.area === 'yes' || !e.nodes) continue;
+  e.nodes.forEach((n, i) => {
+    const u = nodeUse.get(n) || { count: 0, interior: false, widths: [] };
+    u.count++; if (i > 0 && i < e.nodes.length - 1) u.interior = true;
+    u.widths.push(ROAD_W[t.highway]);
+    nodeUse.set(n, u);
+  });
+}
+const isJunction = (n) => { const u = nodeUse.get(n); return !!u && (u.count >= 3 || (u.count >= 2 && u.interior)); };
+// widest OTHER road at the node (for the marking fade / zebra distance); own width if alone
+const otherWidth = (n, own) => { const w = nodeUse.get(n).widths.slice(); const i = w.indexOf(own); if (i >= 0 && w.length > 1) w.splice(i, 1); return Math.max(...w); };
+let junctionCount = 0;
+const EXPLANADA_WAY = 20490190;
 for (const e of E) {
   const t = e.tags || {};
   if (e.type !== 'way' || !t.highway || !ROAD_W[t.highway]) continue;
   const pts = geomToPts(e.geometry);
   if (t.area === 'yes') {
     const ring = cleanRing(pts);
-    if (ring.length >= 3 && !inMount(centroid(ring))) plazas.push(flat(ring));
+    if (ring.length < 3 || inMount(centroid(ring))) continue;
+    const pl = { p: flat(ring), k: e.id === EXPLANADA_WAY ? 'explanada' : t.surface === 'wood' ? 'wood' : 'paving' };
+    if (e.id === EXPLANADA_WAY) {
+      // principal axis of the polygon = direction along the promenade (for the wave mosaic)
+      const c = centroid(ring);
+      let sxx = 0, szz = 0, sxz = 0;
+      for (const [x, z] of ring) { sxx += (x - c[0]) ** 2; szz += (z - c[1]) ** 2; sxz += (x - c[0]) * (z - c[1]); }
+      pl.axis = +(0.5 * Math.atan2(2 * sxz, sxx - szz)).toFixed(4);
+      pl.centre = [r1(c[0]), r1(c[1])];
+    }
+    if (t.name) pl.n = t.name;
+    plazas.push(pl);
     continue;
   }
+  const lanes = t.lanes ? parseInt(t.lanes) : null;
+  const oneway = t.oneway === 'yes' || t.oneway === '-1' || t.oneway === '1';
   // split polyline where it enters the mount
-  let run = [];
-  const flush = () => { if (run.length >= 2) { roads.push({ p: flat(run), w: ROAD_W[t.highway], k: t.highway, ...(t.name ? { n: t.name } : {}) }); roadCount[t.highway] = (roadCount[t.highway] || 0) + 1; } run = []; };
-  for (const p of pts) { if (inMount(p)) flush(); else run.push(p); }
+  let run = [], runJ = [];
+  const flush = () => {
+    if (run.length >= 2) {
+      const r = { p: flat(run), w: ROAD_W[t.highway], k: t.highway };
+      if (t.name) r.n = t.name;
+      if (lanes) r.l = lanes;
+      if (oneway) r.o = 1;
+      if (runJ.length) { r.j = runJ; junctionCount += runJ.length; }
+      roads.push(r);
+      roadCount[t.highway] = (roadCount[t.highway] || 0) + 1;
+    }
+    run = []; runJ = [];
+  };
+  pts.forEach((p, i) => {
+    if (inMount(p)) flush();
+    else { if (e.nodes && isJunction(e.nodes[i])) runJ.push([run.length, otherWidth(e.nodes[i], ROAD_W[t.highway])]); run.push(p); }
+  });
   flush();
+}
+
+// ---------- facade edge codes ----------
+// One digit per outer edge of every building: bit0 = wall shared with a neighbour (blank
+// "medianera"), bits 1-2 = street class of the nearest road (0 none/back, 1 residential, 2 main).
+const MAIN = /^(primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|pedestrian|living_street|busway)$/;
+{
+  const CELL = 20;
+  const gridKey = (x, z) => Math.floor(x / CELL) + ',' + Math.floor(z / CELL);
+  const edgeGrid = new Map();
+  const allEdges = [];
+  buildings.forEach((b, bi) => {
+    const n = b.p.length / 2;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const e = { b: bi, ax: b.p[i * 2], az: b.p[i * 2 + 1], bx: b.p[j * 2], bz: b.p[j * 2 + 1] };
+      const id = allEdges.push(e) - 1;
+      const x0 = Math.floor(Math.min(e.ax, e.bx) / CELL), x1 = Math.floor(Math.max(e.ax, e.bx) / CELL);
+      const z0 = Math.floor(Math.min(e.az, e.bz) / CELL), z1 = Math.floor(Math.max(e.az, e.bz) / CELL);
+      for (let gx = x0; gx <= x1; gx++) for (let gz = z0; gz <= z1; gz++) { const k = gx + ',' + gz; (edgeGrid.get(k) || edgeGrid.set(k, []).get(k)).push(id); }
+    }
+  });
+  const segDist = (px, pz, ax, az, bx, bz) => {
+    const ex = bx - ax, ez = bz - az, l2 = ex * ex + ez * ez || 1;
+    const t = Math.max(0, Math.min(1, ((px - ax) * ex + (pz - az) * ez) / l2));
+    return Math.hypot(px - ax - ex * t, pz - az - ez * t);
+  };
+  // shared: the other edge runs along this one within 0.5 m over at least 2 m (or half of it)
+  function isShared(e) {
+    const len = Math.hypot(e.bx - e.ax, e.bz - e.az);
+    if (len < 0.5) return false;
+    const ux = (e.bx - e.ax) / len, uz = (e.bz - e.az) / len;
+    const seen = new Set();
+    const x0 = Math.floor(Math.min(e.ax, e.bx) / CELL), x1 = Math.floor(Math.max(e.ax, e.bx) / CELL);
+    const z0 = Math.floor(Math.min(e.az, e.bz) / CELL), z1 = Math.floor(Math.max(e.az, e.bz) / CELL);
+    for (let gx = x0; gx <= x1; gx++) for (let gz = z0; gz <= z1; gz++) {
+      for (const id of edgeGrid.get(gx + ',' + gz) || []) {
+        const o = allEdges[id];
+        if (o.b === e.b || seen.has(id)) continue;
+        seen.add(id);
+        // project the other edge on this one
+        const tc = ((o.ax - e.ax) * ux + (o.az - e.az) * uz), td = ((o.bx - e.ax) * ux + (o.bz - e.az) * uz);
+        const t0 = Math.max(0, Math.min(tc, td)), t1 = Math.min(len, Math.max(tc, td));
+        const overlap = t1 - t0;
+        if (overlap < Math.min(2, len * 0.5)) continue;
+        // perpendicular distance of the other edge at both ends of the overlap
+        const dc = (o.ax - e.ax) * -uz + (o.az - e.az) * ux, dd = (o.bx - e.ax) * -uz + (o.bz - e.az) * ux;
+        const at = (t) => (tc === td ? dc : dc + (dd - dc) * (t - tc) / (td - tc));
+        if (Math.abs(at(t0)) < 0.5 && Math.abs(at(t1)) < 0.5) return true;
+      }
+    }
+    return false;
+  }
+  // nearest road to an edge midpoint (grid over road segments)
+  const roadGrid = new Map();
+  const RCELL = 40;
+  roads.forEach((r, ri) => {
+    for (let i = 0; i + 1 < r.p.length / 2; i++) {
+      const ax = r.p[i * 2], az = r.p[i * 2 + 1], bx = r.p[i * 2 + 2], bz = r.p[i * 2 + 3];
+      const x0 = Math.floor((Math.min(ax, bx) - 20) / RCELL), x1 = Math.floor((Math.max(ax, bx) + 20) / RCELL);
+      const z0 = Math.floor((Math.min(az, bz) - 20) / RCELL), z1 = Math.floor((Math.max(az, bz) + 20) / RCELL);
+      for (let gx = x0; gx <= x1; gx++) for (let gz = z0; gz <= z1; gz++) { const k = gx + ',' + gz; (roadGrid.get(k) || roadGrid.set(k, []).get(k)).push([ri, i]); }
+    }
+  });
+  const explanada = plazas.find((p) => p.k === 'explanada');
+  const explRing = explanada ? [] : null;
+  if (explanada) for (let i = 0; i < explanada.p.length; i += 2) explRing.push([explanada.p[i], explanada.p[i + 1]]);
+  function streetClass(mx, mz, nx, nz) {
+    // look a little in front of the wall, so a road behind the building does not count
+    const px = mx + nx * 3, pz = mz + nz * 3;
+    let best = Infinity, cls = 0;
+    for (const [ri, i] of roadGrid.get(Math.floor(px / RCELL) + ',' + Math.floor(pz / RCELL)) || []) {
+      const r = roads[ri];
+      const d = segDist(px, pz, r.p[i * 2], r.p[i * 2 + 1], r.p[i * 2 + 2], r.p[i * 2 + 3]) - r.w / 2;
+      if (d < best) { best = d; cls = MAIN.test(r.k) ? 2 : 1; }
+    }
+    if (explRing && (pip([px, pz], explRing) || segDist(px, pz, ...explRing[0], ...explRing[1]) < 8)) return 2;
+    return best < 8 ? cls : 0;
+  }
+  let shared = 0, byClass = [0, 0, 0];
+  for (const b of buildings) {
+    const n = b.p.length / 2;
+    let code = '';
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const ax = b.p[i * 2], az = b.p[i * 2 + 1], bx = b.p[j * 2], bz = b.p[j * 2 + 1];
+      const e = { b: buildings.indexOf(b), ax, az, bx, bz };
+      const len = Math.hypot(bx - ax, bz - az) || 1;
+      // outward normal of a counter-clockwise ring in (x, z) with z pointing south: (dz, -dx)
+      const nx = (bz - az) / len, nz = -(bx - ax) / len;
+      const sh = isShared(e) ? 1 : 0;
+      const cls = sh ? 0 : streetClass((ax + bx) / 2, (az + bz) / 2, nx, nz);
+      shared += sh; byClass[cls]++;
+      code += String(sh | (cls << 1));
+    }
+    b.e = code;
+  }
+  stats.edges = { shared, byClass };
 }
 
 // ---------- parks ----------
@@ -300,6 +477,8 @@ const out = {
     seaSource, seaNote,
   },
   palette: PALETTE,
+  styles: STYLES,
+  facade: { groundH: GROUND_H, floorH: FLOOR_H, parapetH: PARAPET_H },
   start,
   landmarks,
   buildings,
@@ -313,9 +492,10 @@ const out = {
 const json = JSON.stringify(out);
 await writeFile('data/city.json', json);
 
-console.log(`buildings: ${buildings.length}  (height sources ${JSON.stringify(stats.heightSrc)})`);
+console.log(`buildings: ${buildings.length}  (height sources ${JSON.stringify(stats.heightSrc)}; styles ${JSON.stringify(stats.styles)}; facades.json overrides: ${overridesUsed.join(', ') || 'none'})`);
+console.log(`facade edges: ${JSON.stringify(stats.edges)} (shared walls, [none, residential, main] street class)`);
 console.log(`skipped: ${JSON.stringify(stats.skipped)}  excluded names: ${stats.excludedNames.filter(Boolean).join('; ')}`);
-console.log(`roads: ${roads.length} polylines ${JSON.stringify(roadCount)}; plazas: ${plazas.length}; parks: ${parks.length}; palms: ${palms.length}`);
+console.log(`roads: ${roads.length} polylines ${JSON.stringify(roadCount)}; junction vertices: ${junctionCount}; lanes tagged: ${roads.filter((r) => r.l).length}; oneway: ${roads.filter((r) => r.o).length}; plazas: ${plazas.length} (${plazas.map((p) => p.k).filter((k, i, a) => a.indexOf(k) === i).join(', ')}); parks: ${parks.length}; palms: ${palms.length}`);
 console.log(`sea: ${seaSource} (${sea.length} vertices) — ${seaNote}`);
 for (const [k, v] of Object.entries(landmarks)) console.log(`landmark ${k}: ${v.lat}, ${v.lon}  local (${v.x}, ${v.z})  ${v.osm.slice(0, 3).join(' ')}`);
 console.log(`start: ${JSON.stringify(start)}`);
