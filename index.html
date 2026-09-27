@@ -9,30 +9,74 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: #bfe3f5; font-family: system-ui, sans-serif; }
   canvas { display: block; }
   #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(20, 40, 60, .55); color: #fff; z-index: 10; }
-  #overlay .card { max-width: 560px; margin: 16px; padding: 24px 28px; background: rgba(15, 30, 45, .92); border-radius: 14px; line-height: 1.45; }
+  #overlay .card { max-width: 900px; max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; margin: 16px; padding: 24px 28px; background: rgba(15, 30, 45, .92); border-radius: 14px; line-height: 1.45; }
   #overlay h1 { margin: 0 0 6px; font-size: 26px; }
   #overlay p { margin: 6px 0; }
-  #overlay table { border-collapse: collapse; margin: 10px 0 16px; font-size: 14px; }
+  #overlay .controls { display: flex; flex-wrap: wrap; gap: 0 28px; }
+  #overlay h2 { margin: 10px 0 0; font-size: 15px; color: #cfe3f5; }
+  #overlay table { border-collapse: collapse; margin: 6px 0 8px; font-size: 13px; }
   #overlay td { padding: 2px 10px 2px 0; }
   #overlay td:first-child { color: #ffd166; white-space: nowrap; font-weight: 600; }
   #start { font-size: 18px; padding: 10px 22px; border: 0; border-radius: 10px; background: #ffd166; color: #222; cursor: pointer; font-weight: 700; }
   #start:disabled { opacity: .5; cursor: wait; }
+  #buttons { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  /* VRButton sets inline absolute positioning; place it in the button row instead */
+  #vrbutton { position: static !important; width: auto !important; left: auto !important; bottom: auto !important;
+    font: 700 18px system-ui, sans-serif !important; padding: 10px 22px !important; border-radius: 10px !important;
+    border: 2px solid #ffd166 !important; color: #ffd166 !important; background: transparent !important; opacity: 1 !important; }
+  #settings { margin: 12px 0 4px; font-size: 14px; }
+  #settings select { font-size: 14px; margin-left: 6px; }
+  #version { font-size: 12px; opacity: .55; margin-top: 4px; }
   #status { font-size: 13px; opacity: .8; margin-top: 10px; }
   #attr { position: fixed; right: 6px; bottom: 4px; font-size: 12px; background: rgba(255, 255, 255, .75); padding: 2px 6px; border-radius: 4px; z-index: 5; }
   #attr a { color: #245; }
   #debug { position: fixed; left: 8px; top: 8px; font: 12px/1.35 ui-monospace, monospace; color: #fff; background: rgba(0, 0, 0, .55); padding: 4px 8px; border-radius: 4px; white-space: pre; display: none; z-index: 5; }
 </style>
 <script type="importmap">
-{ "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
-} }
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
+    "./src/city/buildCity.js": "./src/city/buildCity.js?v=0.4.0",
+    "./src/city/geo.js": "./src/city/geo.js?v=0.4.0",
+    "./src/comfort/vignette.js": "./src/comfort/vignette.js?v=0.4.0",
+    "./src/input/keyboard.js": "./src/input/keyboard.js?v=0.4.0",
+    "./src/input/xrInput.js": "./src/input/xrInput.js?v=0.4.0",
+    "./src/main.js": "./src/main.js?v=0.4.0",
+    "./src/vehicle/collision.js": "./src/vehicle/collision.js?v=0.4.0",
+    "./src/vehicle/horn.js": "./src/vehicle/horn.js?v=0.4.0",
+    "./src/vehicle/physics.js": "./src/vehicle/physics.js?v=0.4.0",
+    "./src/vehicle/tuktuk.js": "./src/vehicle/tuktuk.js?v=0.4.0",
+    "./src/version.js": "./src/version.js?v=0.4.0",
+    "./src/xr/xrRig.js": "./src/xr/xrRig.js?v=0.4.0"
+  }
+}
+</script>
+<script>
+  // Stale-cache guard for the Quest browser: if a newer build is deployed than this (possibly
+  // cached) page, reload once with ?v=<new>, a URL no cache has seen. Every module and data URL
+  // carries ?v=<version> too (import map above). Versions are set by tools/bump-version.mjs.
+  {
+    const PAGE_VERSION = '0.4.0';
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then(({ version }) => {
+      const url = new URL(location.href);
+      if (version && version !== PAGE_VERSION && url.searchParams.get('v') !== version) {
+        url.searchParams.set('v', version);
+        location.replace(url.href);
+      }
+    }).catch(() => {});
+  }
 </script>
 </head>
 <body>
 <div id="overlay"><div class="card">
   <h1>🛺 Tuk-Tuk Alicante</h1>
-  <p>Їзда на тук-туку справжнім центром Аліканте. Прототип: місто з OpenStreetMap, керування з клавіатури.</p>
+  <p>Їзда на тук-туку справжнім центром Аліканте. Прототип: місто з OpenStreetMap, керування з клавіатури або контролерів Meta Quest 3.</p>
+  <div id="buttons"><button id="start" disabled>Завантаження…</button></div>
+  <div id="status"></div>
+  <div id="settings"><label>Віньєтка у VR (затемнення країв у поворотах і на гальмуванні):<select id="vignette"></select></label></div>
+  <div class="controls"><div>
+  <h2>Клавіатура</h2>
   <table>
     <tr><td>W / ↑</td><td>газ</td></tr>
     <tr><td>S / ↓</td><td>гальмо; утримуй на місці — задній хід</td></tr>
@@ -41,13 +85,27 @@
     <tr><td>R</td><td>повернутися на найближчу дорогу</td></tr>
     <tr><td>C</td><td>камера: кабіна / ззаду</td></tr>
     <tr><td>F</td><td>лічильник FPS на панелі</td></tr>
+    <tr><td>H</td><td>гудок</td></tr>
     <tr><td>Права кнопка миші</td><td>озирнутися</td></tr>
   </table>
-  <button id="start" disabled>Завантаження…</button>
-  <div id="status"></div>
+  </div><div>
+  <h2>Quest 3 (грати сидячи)</h2>
+  <table>
+    <tr><td>Правий тригер</td><td>газ</td></tr>
+    <tr><td>Лівий тригер</td><td>гальмо; утримуй на місці — задній хід</td></tr>
+    <tr><td>Лівий стік ← →</td><td>поворот</td></tr>
+    <tr><td>A / натиск правого стіка</td><td>ручник (занос)</td></tr>
+    <tr><td>B</td><td>гудок</td></tr>
+    <tr><td>X</td><td>лічильник FPS на панелі</td></tr>
+    <tr><td>Натиск лівого стіка</td><td>сила віньєтки</td></tr>
+    <tr><td>Y (утримати 1 с)</td><td>перецентрувати сидіння</td></tr>
+    <tr><td>Обидва grip (1 с)</td><td>повернутися на дорогу</td></tr>
+  </table>
+  </div></div>
+  <div id="version"></div>
 </div></div>
 <div id="debug"></div>
 <div id="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</div>
-<script type="module" src="src/main.js"></script>
+<script type="module" src="src/main.js?v=0.4.0"></script>
 </body>
 </html>

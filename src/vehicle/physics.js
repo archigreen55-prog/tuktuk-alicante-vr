@@ -22,11 +22,17 @@ export const TUNING = {
   circleOffset: 0.62,
   impactSlow: 4.0,        // m/s into a wall -> heavy slowdown
   wallSlideKeep: 0.995,   // lateral speed kept per 1/60 s while touching a wall
+  edgeZone: 20,           // soft play-area edge: speed towards the boundary is capped within this distance
+  edgeStop: 3,            // ... down to 0 this far from the boundary wall (the body never touches it)
+  edgeDecel: 3.7,         // m/s², braking profile of the cap (≥ 40 km/h at the zone entry, so no jolt)
 };
 
 export class TukTukPhysics {
-  constructor(world, start) {
+  // bounds: optional play-area rect {minX, maxX, minZ, maxZ} for the soft edge
+  constructor(world, start, bounds = null) {
     this.world = world;
+    this.bounds = bounds;
+    this.edgeDist = Infinity; // distance to the nearest play-area boundary
     this.x = start.x; this.z = start.z; this.heading = start.heading;
     this.vx = 0; this.vz = 0;
     this.wheel = 0;       // current wheel angle (rad), + = right
@@ -53,7 +59,7 @@ export class TukTukPhysics {
     const throttle = input.throttle, brake = input.brake;
     if (brake > 0 && vf < 0.3 && !this.reversing) {
       this.brakeHold += dt;
-      if (this.brakeHold > T.reverseDelay) this.reversing = true;
+      if (this.brakeHold > (input.reverseDelay ?? T.reverseDelay)) this.reversing = true;
     } else if (brake === 0) this.brakeHold = 0;
     if (throttle > 0 && this.reversing && vf > -0.3) this.reversing = false;
     if (brake === 0 && this.reversing && vf > -0.05) this.reversing = false;
@@ -62,16 +68,18 @@ export class TukTukPhysics {
       if (brake > 0 && vf > -T.maxReverse) vf -= T.reverseAccel * brake * dt;
       if (throttle > 0) vf = Math.min(0, vf + T.brakeDecel * throttle * dt);
     } else {
-      if (throttle > 0 && vf < T.maxForward) {
-        const k = Math.max(0, 1 - (vf / T.maxForward) ** 2);
-        vf += T.engineAccel * throttle * (0.3 + 0.7 * Math.sqrt(k)) * dt;
+      // analog throttle (controller trigger) sets a lower top speed; the keyboard's 1 gives the full curve
+      const top = T.maxForward * throttle;
+      if (throttle > 0 && vf < top) {
+        const k = Math.max(0, 1 - (vf / top) ** 2);
+        vf += T.engineAccel * Math.sqrt(throttle) * (0.3 + 0.7 * Math.sqrt(k)) * dt;
       }
       if (brake > 0) vf = vf > 0 ? Math.max(0, vf - T.brakeDecel * brake * dt) : Math.min(0, vf + T.brakeDecel * brake * dt);
     }
     if (input.handbrake) vf = vf > 0 ? Math.max(0, vf - T.handbrakeDecel * dt) : Math.min(0, vf + T.handbrakeDecel * dt);
     // resistance
     const drag = (T.rolling + T.air * vf * vf) * dt;
-    if (throttle === 0 || this.reversing) vf = Math.abs(vf) <= drag ? 0 : vf - Math.sign(vf) * drag;
+    if (throttle === 0 || this.reversing || vf > T.maxForward * throttle) vf = Math.abs(vf) <= drag ? 0 : vf - Math.sign(vf) * drag;
     else vf -= Math.sign(vf) * T.air * vf * vf * dt;
     vf = Math.min(T.maxForward, Math.max(-T.maxReverse, vf));
 
@@ -96,6 +104,18 @@ export class TukTukPhysics {
     // velocity stays on the old axes, heading turns: next step's projection yields the slip.
     this.vx = fx * vf + rx * vr;
     this.vz = fz * vf + rz * vr;
+
+    // --- soft play-area edge ---
+    this.edgeDist = Infinity;
+    const B = this.bounds;
+    if (B) {
+      this.softEdge(this.x - B.minX, -1, 0);
+      this.softEdge(B.maxX - this.x, 1, 0);
+      this.softEdge(this.z - B.minZ, 0, -1);
+      this.softEdge(B.maxZ - this.z, 0, 1);
+      vf = this.vx * fx + this.vz * fz;
+    }
+
     this.heading -= yaw * dt; // positive yaw = right turn = clockwise seen from above
     this.x += this.vx * dt;
     this.z += this.vz * dt;
@@ -103,6 +123,18 @@ export class TukTukPhysics {
     this.accel = (vf - vf0) / dt;
 
     this.collide();
+  }
+
+  // Caps the velocity component towards one boundary edge (outward normal nx, nz; d = distance to it).
+  // The cap follows a constant-deceleration curve, so the tuk-tuk brakes smoothly and stops before
+  // the wall; motion along the edge or back to the centre is not limited.
+  softEdge(d, nx, nz) {
+    const T = TUNING;
+    if (d < this.edgeDist) this.edgeDist = d;
+    if (d >= T.edgeZone) return;
+    const cap = Math.sqrt(2 * T.edgeDecel * Math.max(0, d - T.edgeStop));
+    const vo = this.vx * nx + this.vz * nz;
+    if (vo > cap) { this.vx -= nx * (vo - cap); this.vz -= nz * (vo - cap); }
   }
 
   collide() {

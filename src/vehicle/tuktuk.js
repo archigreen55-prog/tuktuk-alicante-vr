@@ -23,7 +23,7 @@ function part(geo, color, x, y, z, rx = 0, ry = 0, rz = 0) {
 const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
 const cyl = (r, l, s = 10) => new THREE.CylinderGeometry(r, r, l, s);
 
-export function createTukTuk() {
+export function createTukTuk({ version = '' } = {}) {
   const P = [];
   // chassis & floor
   P.push(part(box(1.3, 0.1, 2.2), C.floor, 0, 0.36, 0.35));
@@ -73,8 +73,8 @@ export function createTukTuk() {
   group.name = 'tuktuk';
   group.add(body);
 
-  const dashboard = new Dashboard();
-  dashboard.mesh.position.set(0, 1.11, -0.86);
+  const dashboard = new Dashboard(version);
+  dashboard.mesh.position.set(0, 1.134, -0.87);
   dashboard.mesh.rotation.x = -0.45;
   group.add(dashboard.mesh);
 
@@ -88,22 +88,24 @@ export function createTukTuk() {
   return { group, dashboard, seat, triangles: geo.attributes.position.count / 3 };
 }
 
-// Dashboard panel: speed, optional FPS counter, OSM attribution.
+// Dashboard panel: speed, optional FPS counter, message line, OSM attribution, build version.
 export class Dashboard {
-  constructor() {
+  constructor(version = '') {
+    this.version = version;
     this.canvas = document.createElement('canvas');
-    this.canvas.width = 512; this.canvas.height = 192;
+    this.canvas.width = 512; this.canvas.height = 256;
     this.ctx = this.canvas.getContext('2d');
     this.texture = new THREE.CanvasTexture(this.canvas);
     this.texture.colorSpace = THREE.SRGBColorSpace;
     this.texture.anisotropy = 4;
-    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.1575), new THREE.MeshBasicMaterial({ map: this.texture }));
+    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.21), new THREE.MeshBasicMaterial({ map: this.texture }));
     this.mesh.name = 'dashboard';
     this.showFps = false;
     this.draw({ speed: 0, fps: 0, calls: 0, tris: 0 });
   }
-  draw({ speed, fps, calls, tris }) {
-    const g = this.ctx, W = 512, H = 192;
+  // msg: optional text for the message line (msgColor defaults to orange)
+  draw({ speed, fps, calls, tris, msg = '', msgColor = '#ff9f43' }) {
+    const g = this.ctx, W = 512, H = 256;
     g.fillStyle = '#10161c'; g.fillRect(0, 0, W, H);
     g.strokeStyle = '#f2c230'; g.lineWidth = 6; g.strokeRect(3, 3, W - 6, H - 6);
     g.fillStyle = '#ffffff'; g.font = 'bold 96px system-ui, sans-serif'; g.textBaseline = 'alphabetic';
@@ -117,8 +119,18 @@ export class Dashboard {
       g.font = '20px system-ui, sans-serif'; g.fillStyle = '#9fb3c8';
       g.fillText(`${calls} calls · ${(tris / 1000).toFixed(0)}k tris`, W - 20, 96);
     }
+    if (msg) {
+      g.textAlign = 'center'; g.fillStyle = msgColor;
+      let size = 34;
+      do { g.font = `bold ${size}px system-ui, sans-serif`; size -= 2; } while (g.measureText(msg).width > W - 40 && size > 16);
+      g.fillText(msg, W / 2, 178);
+    }
     g.textAlign = 'left'; g.font = '22px system-ui, sans-serif'; g.fillStyle = '#9fb3c8';
     g.fillText('© OpenStreetMap contributors', 20, H - 22);
+    if (this.version) {
+      g.textAlign = 'right'; g.font = '18px system-ui, sans-serif'; g.fillStyle = '#6f8396';
+      g.fillText('v' + this.version, W - 18, H - 22);
+    }
     this.texture.needsUpdate = true;
   }
 }

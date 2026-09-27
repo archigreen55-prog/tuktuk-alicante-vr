@@ -1,4 +1,4 @@
-// Keyboard input -> the common input state { throttle, brake, steer, handbrake } + one-shot actions.
+// Keyboard input -> the common input state { throttle, brake, steer, handbrake, horn } + one-shot actions.
 export class KeyboardInput {
   constructor(target = window) {
     this.down = new Set();
@@ -20,6 +20,7 @@ export class KeyboardInput {
     out.throttle = this.any('KeyW', 'ArrowUp') ? 1 : 0;
     out.brake = this.any('KeyS', 'ArrowDown') ? 1 : 0;
     out.handbrake = this.any('Space');
+    out.horn = this.any('KeyH');
     // keys are digital: ramp the steering so the wheel does not snap
     const target = (this.any('KeyD', 'ArrowRight') ? 1 : 0) - (this.any('KeyA', 'ArrowLeft') ? 1 : 0);
     const rate = target === 0 ? 5 : 3.2;
