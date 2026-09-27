@@ -5,23 +5,29 @@ Mercado Central, the port) in the browser — on Meta Quest 3 via WebXR, or on a
 
 **Play:** https://archigreen55-prog.github.io/tuktuk-alicante-vr/
 
-Status: prototype (stages 0–4 of [docs/plan.md](docs/plan.md)): city from OpenStreetMap,
-keyboard driving, collisions, WebXR on Quest 3 with controllers and a comfort vignette.
+Status: prototype (stages 0–4 and 5a of [docs/plan.md](docs/plan.md)): city from OpenStreetMap,
+keyboard driving, collisions, WebXR on Quest 3 with controllers, hands-on-handlebar steering and a comfort vignette.
 The build version is shown small on the dashboard and on the start screen.
 
 ## Controls (Quest 3, play seated)
 
+Two steering modes, switched with the right stick press or on the start screen (remembered):
+**stick** and **hands on the handlebar**.
+
 | Button | Action |
 |---|---|
-| Right trigger | Throttle (analog) |
+| Both grips (hands mode) | Hold the V-shaped handlebar; steer by turning the hands like a moped bar |
+| Twist the right hand towards you (hands mode) | Throttle, like a real tuk-tuk grip |
+| Right trigger | Throttle (analog, both modes) |
 | Left trigger | Brake, hold at standstill 0.4 s to reverse |
-| Left stick ← → | Steer |
-| A / right stick press | Handbrake (drift) |
+| Left stick ← → | Steer (hands mode: when the bar is released) |
+| A | Handbrake (drift) |
 | B | Horn |
-| X | FPS counter on the dashboard |
+| Right stick press | Steering mode: stick / hands |
+| X / hold X 1 s | FPS counter / stress test level (×1…×8) |
 | Left stick press | Vignette strength (off / weak / standard / strong) |
 | Y (hold 1 s) | Recentre the seat |
-| Both grips (hold 1 s) | Reset onto the nearest road |
+| A + B (hold 1 s) | Reset onto the nearest road (stick mode: both grips 1 s too) |
 
 ## Controls (keyboard)
 
@@ -35,9 +41,12 @@ The build version is shown small on the dashboard and on the start screen.
 | C | Cockpit / chase camera |
 | F | FPS counter on the dashboard |
 | H | Horn |
+| G | Stress test level (×1…×8) |
 | Right mouse drag | Look around |
 
-URL parameters for testing: `?fps` (counter on from the start), `?fbs=0.85` (XR framebuffer scale),
+URL parameters for testing: `?fps` (counter on from the start), `?stress=N` (render the scene N times
+per frame to find the GPU headroom), `?hz=72` (force the headset refresh rate; otherwise it drops to
+72 Hz by itself if 90 cannot be held), `?fbs=0.85` (XR framebuffer scale),
 `?fov=0.5` (XR foveation 0..1, default 1), `?vignette` (show the VR vignette on desktop too).
 
 ## Run locally

@@ -20,11 +20,20 @@ export class XRRig {
     const geo = new THREE.BoxGeometry(0.035, 0.03, 0.11);
     geo.translate(0, -0.01, 0.02);
     const mat = new THREE.MeshLambertMaterial({ color: 0x2b3038 });
+    this.markers = {};
     for (let i = 0; i < 2; i++) {
       const grip = renderer.xr.getControllerGrip(i);
-      grip.add(new THREE.Mesh(geo, mat));
+      const marker = new THREE.Mesh(geo, mat);
+      grip.add(marker);
+      grip.addEventListener('connected', (e) => { this.markers[e.data.handedness] = marker; });
       this.group.add(grip);
     }
+  }
+
+  // hide a hand's controller body (e.g. while it holds the handlebar and a glove is shown)
+  showController(hand, visible) {
+    const m = this.markers[hand];
+    if (m) m.visible = visible;
   }
 
   recenter() { this.pending = true; }

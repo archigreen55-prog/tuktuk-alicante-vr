@@ -8,6 +8,9 @@ import { createTukTuk } from './vehicle/tuktuk.js';
 import { Horn } from './vehicle/horn.js';
 import { KeyboardInput } from './input/keyboard.js';
 import { XRInput } from './input/xrInput.js';
+import { HandlebarControl } from './input/handlebarInput.js';
+import { GpuTimer } from './perf/gpuTimer.js';
+import { loadSetting, saveSetting } from './settings.js';
 import { XRRig } from './xr/xrRig.js';
 import { ComfortOverlay, VIGNETTE_LEVELS } from './comfort/vignette.js';
 
@@ -15,6 +18,8 @@ const DT = 1 / 72;                 // fixed physics step
 const EYE_HEIGHT = 1.42;           // eye height above the cab floor (desktop camera, VR recentre target)
 const SKY = 0xbfe3f5;
 const params = new URLSearchParams(location.search);
+const STRESS_LEVELS = [1, 2, 3, 4, 6, 8];  // ?stress=N: the scene is rendered N times per frame
+let stress = Math.max(1, Math.round(+params.get('stress') || 1));
 
 const $ = (id) => document.getElementById(id);
 const status = (t) => { $('status').textContent = t; };
@@ -87,6 +92,10 @@ const xrRig = new XRRig(renderer, tuk.seat, EYE_HEIGHT);
 const comfort = new ComfortOverlay();
 scene.add(comfort.mesh);
 const horn = new Horn();
+const bars = new HandlebarControl(tuk.handlebar);
+let steeringMode = loadSetting('steering', 'stick') === 'hands' ? 'hands' : 'stick';
+bars.engineVibration = loadSetting('engineVibration', true) !== false;
+let pedal = 0;
 
 const buildMs = performance.now() - t0;
 console.log(`City built in ${buildMs.toFixed(0)} ms`, cityStats, `collision edges: ${world.edgeCount}`);
@@ -147,7 +156,8 @@ let flashText = '', flashT = 0, flashColor = '#ffd166';
 function flash(text, seconds = 2, color = '#ffd166') { flashText = text; flashT = seconds; flashColor = color; dashTimer = 0; }
 
 // ---------- VR session ----------
-let inVR = false, firstRecenter = false;
+let inVR = false, firstRecenter = false, vrStart = 0, autoHzDone = false;
+const fpsWindow = { frames: 0, since: 0 }; // 3 s window for the automatic 72 Hz fallback
 renderer.xr.addEventListener('sessionstart', () => {
   inVR = true;
   firstRecenter = true;
@@ -162,7 +172,11 @@ renderer.xr.addEventListener('sessionstart', () => {
   // the system recentre (holding the Meta button) resets the reference space: recentre the seat too
   const space = renderer.xr.getReferenceSpace();
   if (space && space.addEventListener) space.addEventListener('reset', () => xrRig.recenter());
-  renderer.xr.getSession().addEventListener('inputsourceschange', (e) => {
+  const session = renderer.xr.getSession();
+  vrStart = performance.now();
+  fpsWindow.frames = 0; fpsWindow.since = vrStart;
+  if (params.has('hz') && session.updateTargetFrameRate) session.updateTargetFrameRate(+params.get('hz')).catch(() => {});
+  session.addEventListener('inputsourceschange', (e) => {
     for (const i of e.added) console.log(`XR input ${i.handedness}: ${i.profiles[0]}, ${i.gamepad ? i.gamepad.buttons.length + ' buttons, ' + i.gamepad.axes.length + ' axes' : 'no gamepad'}`);
   });
 });
@@ -187,6 +201,9 @@ let showStats = params.has('fps');
 tuk.dashboard.showFps = showStats;
 let dashTimer = 0;
 const vignetteOnDesktop = params.has('vignette'); // debugging: the vignette is a VR comfort feature
+const gpu = new GpuTimer(renderer.getContext());
+const cpu = { sum: 0, n: 0, ms: null };
+if (stress > 1) showStats = tuk.dashboard.showFps = true;
 
 // ---------- loop ----------
 let acc = 0, last = performance.now();
@@ -195,6 +212,34 @@ const chasePos = new THREE.Vector3(), chaseLook = new THREE.Vector3(), tmpV = ne
 let chaseInit = false;
 
 function toggleStats() { showStats = !showStats; tuk.dashboard.showFps = showStats; dashTimer = 0; }
+function nextStress() {
+  stress = STRESS_LEVELS[(STRESS_LEVELS.indexOf(stress) + 1) % STRESS_LEVELS.length] || 1;
+  showStats = tuk.dashboard.showFps = true;
+  flash(stress > 1 ? `Навантаження ×${stress}` : 'Навантаження вимкнено');
+}
+function setSteeringMode(mode) {
+  steeringMode = mode;
+  saveSetting('steering', mode);
+  $('steering').value = mode;
+}
+const modeHint = () => (steeringMode === 'hands'
+  ? 'Затисни обидва grip — кермо, крути праву ручку — газ'
+  : 'Газ — правий тригер, гальмо — лівий');
+// Drop to 72 Hz once if the headset cannot hold its current rate (plan: steady 72 beats jittery 80-90).
+function autoFrameRate(now) {
+  fpsWindow.frames++;
+  if (autoHzDone || stress > 1 || params.has('hz') || now - vrStart < 6000) { if (now - fpsWindow.since > 3000) { fpsWindow.frames = 0; fpsWindow.since = now; } return; }
+  if (now - fpsWindow.since < 3000) return;
+  const fps = fpsWindow.frames * 1000 / (now - fpsWindow.since);
+  fpsWindow.frames = 0; fpsWindow.since = now;
+  const s = renderer.xr.getSession();
+  const rates = s && s.supportedFrameRates;
+  if (!s || !s.updateTargetFrameRate || !rates || !Array.from(rates).includes(72) || !(s.frameRate > 73)) return;
+  if (fps < 86) {
+    autoHzDone = true;
+    s.updateTargetFrameRate(72).then(() => flash(`Частота 72 Гц (було ${fps.toFixed(0)} FPS)`, 4)).catch(() => {});
+  }
+}
 function cycleVignette() {
   const level = comfort.cycleLevel();
   $('vignette').value = level.id;
@@ -202,6 +247,7 @@ function cycleVignette() {
 }
 
 function frame(now, xrFrame) {
+  const cpuStart = performance.now();
   const frameDt = Math.min(0.1, Math.max(0, (now - last) / 1000));
   last = now;
   clock.t += frameDt;
@@ -210,6 +256,7 @@ function frame(now, xrFrame) {
   if (keys.take('KeyR')) resetToRoad();
   if (keys.take('KeyC') && !inVR) { setCamMode(camMode === 'cockpit' ? 'chase' : 'cockpit'); chaseInit = false; }
   if (keys.take('KeyF')) toggleStats();
+  if (keys.take('KeyG')) nextStress();
   input.reverseDelay = undefined;
   keys.read(frameDt, input);
 
@@ -217,15 +264,31 @@ function frame(now, xrFrame) {
     if (xrRig.update(xrFrame)) {
       comfort.fadeIn(firstRecenter ? 0.5 : 0.25);
       if (!firstRecenter) flash('Сидіння відцентровано');
-      else flash('Газ — правий тригер, гальмо — лівий', 5);
+      else flash(modeHint(), 5);
       firstRecenter = false;
     }
-    const act = xrIn.read(renderer.xr.getSession(), frameDt, input);
+    const act = xrIn.read(renderer.xr.getSession(), frameDt, input, steeringMode);
     if (act.fps) toggleStats();
+    if (act.stress) nextStress();
     if (act.vignette) cycleVignette();
     if (act.recenter) xrRig.recenter();
     if (act.reset) { resetToRoad(); comfort.fadeIn(0.3); }
+    if (act.mode) {
+      setSteeringMode(steeringMode === 'hands' ? 'stick' : 'hands');
+      flash(steeringMode === 'hands' ? 'Кермо: руки (затисни обидва grip)' : 'Кермо: стік');
+    }
+    autoFrameRate(now);
   }
+  bars.update(frameDt, {
+    vr: inVR, mode: steeringMode, xrFrame, refSpace: inVR ? renderer.xr.getReferenceSpace() : null,
+    rig: xrRig.group, xrIn, speed: phys.forwardSpeed, now,
+  }, input);
+  if (inVR) {
+    xrRig.showController('left', !bars.leftHeld);
+    xrRig.showController('right', !bars.rightHeld);
+  }
+  pedal += (input.brake - pedal) * (1 - Math.exp(-frameDt / 0.06));
+  tuk.setPedal(pedal);
   horn.set(input.horn);
   if (window.__autopilot) window.__autopilot(input, phys, clock.t);
 
@@ -237,7 +300,10 @@ function frame(now, xrFrame) {
     acc -= DT; steps++;
   }
   if (steps === 8) acc = 0;
-  if (inVR && impact > 1.5) xrIn.pulse(Math.min(1, impact / 6), 40 + Math.min(80, impact * 15));
+  if (inVR && impact > 1.5) {
+    xrIn.pulse('both', Math.min(1, impact / 6), 40 + Math.min(80, impact * 15));
+    bars.quietUntil = now + 150;
+  }
 
   // interpolate between the last two physics states for smooth motion at any refresh rate
   const a = acc / DT;
@@ -263,7 +329,10 @@ function frame(now, xrFrame) {
   }
   comfort.update(frameDt, phys, impact, (inVR || vignetteOnDesktop) && camMode === 'cockpit');
 
-  renderer.render(scene, camera);
+  gpu.poll();
+  gpu.begin();
+  for (let i = 0; i < stress; i++) renderer.render(scene, camera);
+  gpu.end();
   perf.calls = renderer.info.render.calls;
   perf.tris = renderer.info.render.triangles;
 
@@ -279,7 +348,14 @@ function frame(now, xrFrame) {
     let msg = '', msgColor;
     if (flashT > 0) { msg = flashText; msgColor = flashColor; }
     else if (phys.edgeDist < TUNING.edgeZone) msg = 'Повертайся до центру';
-    tuk.dashboard.draw({ speed: phys.forwardSpeed, fps: perf.fps, calls: perf.calls, tris: perf.tris, msg, msgColor });
+    else if (bars.invalid) msg = 'Тримай руки по боках';
+    else if (steeringMode === 'hands' && inVR && bars.releasedFor > 1.5 && Math.abs(phys.forwardSpeed) > 1 && !xrIn.stickActive) msg = 'Візьмись за кермо (grip)';
+    const session = inVR && renderer.xr.getSession();
+    tuk.dashboard.draw({
+      speed: phys.forwardSpeed, fps: perf.fps, calls: perf.calls, tris: perf.tris, msg, msgColor,
+      hz: session && session.frameRate ? Math.round(session.frameRate) : 0,
+      gpuMs: gpu.take(), cpuMs: cpu.n ? (cpu.ms = cpu.sum / cpu.n, cpu.sum = cpu.n = 0, cpu.ms) : cpu.ms, stress,
+    });
     debugEl.style.display = showStats && !inVR ? 'block' : 'none';
     if (showStats) {
       debugEl.textContent = `${perf.fps.toFixed(0)} FPS\ncalls ${perf.calls}  tris ${perf.tris}\n` +
@@ -287,6 +363,7 @@ function frame(now, xrFrame) {
     }
   }
   keys.endFrame();
+  cpu.sum += performance.now() - cpuStart; cpu.n++;
 }
 renderer.setAnimationLoop(frame);
 
@@ -307,6 +384,10 @@ const select = $('vignette');
 for (const l of VIGNETTE_LEVELS) select.add(new Option(l.label, l.id));
 select.value = comfort.level.id;
 select.addEventListener('change', () => comfort.setLevel(VIGNETTE_LEVELS.find((l) => l.id === select.value)));
+$('steering').value = steeringMode;
+$('steering').addEventListener('change', () => setSteeringMode($('steering').value));
+$('vibration').checked = bars.engineVibration;
+$('vibration').addEventListener('change', () => { bars.engineVibration = $('vibration').checked; saveSetting('engineVibration', bars.engineVibration); });
 
 // test / debugging hook
-window.__game = { THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, VERSION };
+window.__game = { THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, get stress() { return stress; }, get steeringMode() { return steeringMode; } };

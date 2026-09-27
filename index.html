@@ -24,8 +24,9 @@
   #vrbutton { position: static !important; width: auto !important; left: auto !important; bottom: auto !important;
     font: 700 18px system-ui, sans-serif !important; padding: 10px 22px !important; border-radius: 10px !important;
     border: 2px solid #ffd166 !important; color: #ffd166 !important; background: transparent !important; opacity: 1 !important; }
-  #settings { margin: 12px 0 4px; font-size: 14px; }
+  #settings { margin: 12px 0 4px; font-size: 14px; display: flex; flex-direction: column; gap: 6px; }
   #settings select { font-size: 14px; margin-left: 6px; }
+  #settings input { margin-right: 6px; }
   #version { font-size: 12px; opacity: .55; margin-top: 4px; }
   #status { font-size: 13px; opacity: .8; margin-top: 10px; }
   #attr { position: fixed; right: 6px; bottom: 4px; font-size: 12px; background: rgba(255, 255, 255, .75); padding: 2px 6px; border-radius: 4px; z-index: 5; }
@@ -37,18 +38,21 @@
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
-    "./src/city/buildCity.js": "./src/city/buildCity.js?v=0.4.0",
-    "./src/city/geo.js": "./src/city/geo.js?v=0.4.0",
-    "./src/comfort/vignette.js": "./src/comfort/vignette.js?v=0.4.0",
-    "./src/input/keyboard.js": "./src/input/keyboard.js?v=0.4.0",
-    "./src/input/xrInput.js": "./src/input/xrInput.js?v=0.4.0",
-    "./src/main.js": "./src/main.js?v=0.4.0",
-    "./src/vehicle/collision.js": "./src/vehicle/collision.js?v=0.4.0",
-    "./src/vehicle/horn.js": "./src/vehicle/horn.js?v=0.4.0",
-    "./src/vehicle/physics.js": "./src/vehicle/physics.js?v=0.4.0",
-    "./src/vehicle/tuktuk.js": "./src/vehicle/tuktuk.js?v=0.4.0",
-    "./src/version.js": "./src/version.js?v=0.4.0",
-    "./src/xr/xrRig.js": "./src/xr/xrRig.js?v=0.4.0"
+    "./src/city/buildCity.js": "./src/city/buildCity.js?v=0.5.0",
+    "./src/city/geo.js": "./src/city/geo.js?v=0.5.0",
+    "./src/comfort/vignette.js": "./src/comfort/vignette.js?v=0.5.0",
+    "./src/input/handlebarInput.js": "./src/input/handlebarInput.js?v=0.5.0",
+    "./src/input/keyboard.js": "./src/input/keyboard.js?v=0.5.0",
+    "./src/input/xrInput.js": "./src/input/xrInput.js?v=0.5.0",
+    "./src/main.js": "./src/main.js?v=0.5.0",
+    "./src/perf/gpuTimer.js": "./src/perf/gpuTimer.js?v=0.5.0",
+    "./src/settings.js": "./src/settings.js?v=0.5.0",
+    "./src/vehicle/collision.js": "./src/vehicle/collision.js?v=0.5.0",
+    "./src/vehicle/horn.js": "./src/vehicle/horn.js?v=0.5.0",
+    "./src/vehicle/physics.js": "./src/vehicle/physics.js?v=0.5.0",
+    "./src/vehicle/tuktuk.js": "./src/vehicle/tuktuk.js?v=0.5.0",
+    "./src/version.js": "./src/version.js?v=0.5.0",
+    "./src/xr/xrRig.js": "./src/xr/xrRig.js?v=0.5.0"
   }
 }
 </script>
@@ -57,7 +61,7 @@
   // cached) page, reload once with ?v=<new>, a URL no cache has seen. Every module and data URL
   // carries ?v=<version> too (import map above). Versions are set by tools/bump-version.mjs.
   {
-    const PAGE_VERSION = '0.4.0';
+    const PAGE_VERSION = '0.5.0';
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then(({ version }) => {
       const url = new URL(location.href);
       if (version && version !== PAGE_VERSION && url.searchParams.get('v') !== version) {
@@ -74,7 +78,11 @@
   <p>Їзда на тук-туку справжнім центром Аліканте. Прототип: місто з OpenStreetMap, керування з клавіатури або контролерів Meta Quest 3.</p>
   <div id="buttons"><button id="start" disabled>Завантаження…</button></div>
   <div id="status"></div>
-  <div id="settings"><label>Віньєтка у VR (затемнення країв у поворотах і на гальмуванні):<select id="vignette"></select></label></div>
+  <div id="settings">
+    <label>Керування у VR:<select id="steering"><option value="stick">стік</option><option value="hands">руки на кермі</option></select></label>
+    <label>Віньєтка у VR (затемнення країв у поворотах і на гальмуванні):<select id="vignette"></select></label>
+    <label><input type="checkbox" id="vibration">Вібрація двигуна в правій ручці (режим «руки на кермі»)</label>
+  </div>
   <div class="controls"><div>
   <h2>Клавіатура</h2>
   <table>
@@ -86,26 +94,30 @@
     <tr><td>C</td><td>камера: кабіна / ззаду</td></tr>
     <tr><td>F</td><td>лічильник FPS на панелі</td></tr>
     <tr><td>H</td><td>гудок</td></tr>
+    <tr><td>G</td><td>тест навантаження (×1…×8)</td></tr>
     <tr><td>Права кнопка миші</td><td>озирнутися</td></tr>
   </table>
   </div><div>
   <h2>Quest 3 (грати сидячи)</h2>
   <table>
-    <tr><td>Правий тригер</td><td>газ</td></tr>
+    <tr><td>Обидва grip</td><td>«руки на кермі»: тримати ручки, кермо — поворотом рук</td></tr>
+    <tr><td>Крутити праву ручку на себе</td><td>газ («руки на кермі»)</td></tr>
+    <tr><td>Правий тригер</td><td>газ (завжди)</td></tr>
     <tr><td>Лівий тригер</td><td>гальмо; утримуй на місці — задній хід</td></tr>
-    <tr><td>Лівий стік ← →</td><td>поворот</td></tr>
-    <tr><td>A / натиск правого стіка</td><td>ручник (занос)</td></tr>
+    <tr><td>Лівий стік ← →</td><td>поворот (у режимі рук — коли кермо відпущене)</td></tr>
+    <tr><td>A</td><td>ручник (занос)</td></tr>
     <tr><td>B</td><td>гудок</td></tr>
-    <tr><td>X</td><td>лічильник FPS на панелі</td></tr>
+    <tr><td>Натиск правого стіка</td><td>режим керування: стік / руки</td></tr>
+    <tr><td>X / утримати X 1 с</td><td>лічильник FPS / тест навантаження</td></tr>
     <tr><td>Натиск лівого стіка</td><td>сила віньєтки</td></tr>
     <tr><td>Y (утримати 1 с)</td><td>перецентрувати сидіння</td></tr>
-    <tr><td>Обидва grip (1 с)</td><td>повернутися на дорогу</td></tr>
+    <tr><td>A + B (1 с)</td><td>повернутися на дорогу (у режимі стіка — ще й обидва grip 1 с)</td></tr>
   </table>
   </div></div>
   <div id="version"></div>
 </div></div>
 <div id="debug"></div>
 <div id="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</div>
-<script type="module" src="src/main.js?v=0.4.0"></script>
+<script type="module" src="src/main.js?v=0.5.0"></script>
 </body>
 </html>
