@@ -25,9 +25,9 @@ export async function loadPhotoFacades(city, spec, { version = '', anisotropy = 
   const t0 = performance.now();
   const q = version ? `?v=${version}` : '';
   await Promise.all(items.map(async (it) => {
+    const mask = it.entry.outline && !it.entry.wall ? loadImage(it.entry.src.replace(/\.[^.]+$/, '') + '.mask.png' + q).catch(() => null) : null;
     try {
-      it.img = await loadImage(it.entry.src + q);
-      if (it.entry.outline && !it.entry.wall) it.mask = await loadImage(it.entry.src.replace(/\.[^.]+$/, '') + '.mask.png' + q).catch(() => null);
+      [it.img, it.mask] = await Promise.all([loadImage(it.entry.src + q), mask]); // photo and mask in parallel
     } catch (e) { console.warn(`photo facade ${it.entry.id}: ${e.message}`); }
   }));
   const ok = items.filter((it) => it.img);

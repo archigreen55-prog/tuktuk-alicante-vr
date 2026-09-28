@@ -5,3 +5,7 @@ node_modules/
 # photo facade tool: downloaded source photos and check images (tools/prepare-facade.mjs)
 assets/facades/.cache/
 assets/facades/.check/
+
+# 3D model tool: KTX-Software downloaded by tools/prepare-model.mjs, source scans
+tools/.bin/
+assets/models/src/

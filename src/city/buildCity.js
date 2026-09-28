@@ -38,9 +38,10 @@ function flatMesh(geo, order, name, material) {
   return mesh;
 }
 
-// options: { texMode: 'full' | 'low' | 'off', tiles (from buildTiles), sky, photos (from loadPhotoFacades) }
+// options: { texMode: 'full' | 'low' | 'off', tiles (from buildTiles), sky, photos (from loadPhotoFacades),
+//   cuts (Map osmId -> niches behind 3D models, from loadModels) }
 export function buildCity(city, options = {}) {
-  const { texMode = 'off', tiles = null, sky = 0xbfe3f5, photos = null } = options;
+  const { texMode = 'off', tiles = null, sky = 0xbfe3f5, photos = null, cuts = null } = options;
   const texFacades = texMode !== 'off' && tiles;
   const texGround = texMode === 'full' && tiles;
   const group = new THREE.Group();
@@ -147,8 +148,9 @@ export function buildCity(city, options = {}) {
       // photo facade: its walls go to the photo mesh, the procedural builder skips them
       const photoItems = photos && photos.byBuilding.get(b.id);
       if (photoItems) { info.skip = addPhotoBuilding(pb, b, photoItems); photoBuildings++; }
+      if (cuts && cuts.has(b.id)) info.cuts = cuts.get(b.id);
       // 3D balcony candidates: ensanche / classic along main streets
-      if (!photoItems && texFacades && (styleName === 'ensanche' || styleName === 'classic') && L.floors >= 2) {
+      if (!photoItems && !info.cuts && texFacades && (styleName === 'ensanche' || styleName === 'classic') && L.floors >= 2) {
         for (const run of runs) {
           if (run.L < 4 || run.bw < 2.2) continue;
           if (!run.edges.some((ei) => kindOf(codes, ei) === 3)) continue;
@@ -279,12 +281,43 @@ function addWalls(gb, ring, h, isHole, top, bottom, info) {
       const a0 = [a[0], 0, a[1]], b0 = [b[0], 0, b[1]], b1 = [b[0], h, b[1]], a1 = [a[0], h, a[1]];
       const wa = [u0, run.bw, kind, h], wb = [u1, run.bw, kind, h];
       const aux = { aBld: [info.idx] };
+      const cut = !isHole && info.cuts && info.cuts.find((c) => c.edge === i);
+      if (cut) { addNicheWall(gb, a, [dx / len, dz / len], len, nn, h, u0, run.bw, kind, botT, topT, info.idx, cut); return; }
       gb.tri(a0, b0, b1, nn, botT, botT, topT, { ...aux, aWall: [wa, wb, wb] });
       gb.tri(a0, b1, a1, nn, botT, topT, topT, { ...aux, aWall: [wa, wb, wa] });
       // remember where this run's wall vertices went (for the balcony flag patch)
       if (!isHole) { run.chunk = gb; (run.vertexStart ||= []).push(gb.pos.length / 3 - 6); }
     });
   });
+}
+// A wall with a 3D model in front of it (models.js): the wall around the cut [t0, t1] x [0, top] as usual,
+// the cut itself a plain niche `depth` deep (back, two sides, ceiling), so the model's doors and recesses
+// show instead of the wall. aWall keeps the wall's u so windows around the niche stay in place.
+function addNicheWall(gb, a, d, len, nn, h, u0, bw, kind, bot, top, idx, cut) {
+  const col = (y) => bot.clone().lerp(top, Math.min(1, y / h));
+  const P = (t, y, depth = 0) => [a[0] + d[0] * t - nn[0] * depth, y, a[1] + d[1] * t - nn[2] * depth];
+  const W = (t, k) => [u0 + t, bw, k, h];
+  const aux = (w) => ({ aBld: [idx], aWall: w });
+  const face = (t0, t1, y0, y1, k, depth = 0) => { // a piece of wall parallel to the facade
+    if (t1 - t0 < 0.01 || y1 - y0 < 0.01) return;
+    const p00 = P(t0, y0, depth), p10 = P(t1, y0, depth), p11 = P(t1, y1, depth), p01 = P(t0, y1, depth);
+    gb.tri(p00, p10, p11, nn, col(y0), col(y0), col(y1), aux([W(t0, k), W(t1, k), W(t1, k)]));
+    gb.tri(p00, p11, p01, nn, col(y0), col(y1), col(y1), aux([W(t0, k), W(t1, k), W(t0, k)]));
+  };
+  const { t0, t1, top: yt, depth: D } = cut;
+  face(0, t0, 0, h, kind);
+  face(t1, len, 0, h, kind);
+  face(t0, t1, yt, h, kind);
+  face(t0, t1, 0, yt, 0, D);                                       // back of the niche
+  for (const [t, sgn] of [[t0, 1], [t1, -1]]) {                    // sides, facing into the niche
+    const n = [d[0] * sgn, 0, d[1] * sgn];
+    const q0 = P(t, 0), q1 = P(t, 0, D), q2 = P(t, yt, D), q3 = P(t, yt);
+    gb.tri(q0, q1, q2, n, col(0), col(0), col(yt), aux([W(t, 0), W(t + D, 0), W(t + D, 0)]));
+    gb.tri(q0, q2, q3, n, col(0), col(yt), col(yt), aux([W(t, 0), W(t + D, 0), W(t, 0)]));
+  }
+  const c0 = P(t0, yt), c1 = P(t1, yt), c2 = P(t1, yt, D), c3 = P(t0, yt, D); // ceiling
+  gb.tri(c0, c1, c2, [0, -1, 0], col(yt), col(yt), col(yt), aux([W(t0, 0), W(t1, 0), W(t1, 0)]));
+  gb.tri(c0, c2, c3, [0, -1, 0], col(yt), col(yt), col(yt), aux([W(t0, 0), W(t1, 0), W(t0, 0)]));
 }
 // The chosen balcony runs were built before the selection: add 8 to aWall.z of their main-street edges.
 function markBalconyRun(cand) {

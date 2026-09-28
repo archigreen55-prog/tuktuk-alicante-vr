@@ -4,6 +4,7 @@ import { VERSION } from './version.js';
 import { buildCity } from './city/buildCity.js';
 import { buildTiles, showTilesPage } from './city/tiles.js';
 import { loadPhotoFacades, creditLine } from './city/landmarks.js';
+import { loadModels, modelCreditLine } from './city/models.js';
 import { CollisionWorld } from './vehicle/collision.js';
 import { TukTukPhysics, TUNING } from './vehicle/physics.js';
 import { createTukTuk, SEATS } from './vehicle/tuktuk.js';
@@ -33,6 +34,8 @@ let stress = Math.max(1, Math.round(+params.get('stress') || 1));
 const texMode = ['0', 'off', 'no'].includes(params.get('tex')) ? 'off' : params.get('tex') === 'low' ? 'low' : 'full';
 // ?photo=0: landmarks without photo facades (procedural walls, as in 0.7.0), for A/B FPS checks
 const photoMode = !['0', 'off', 'no'].includes(params.get('photo'));
+// ?model=0: without the 3D models (scans) of landmarks, for A/B FPS checks
+const modelMode = !['0', 'off', 'no'].includes(params.get('model'));
 
 const $ = (id) => document.getElementById(id);
 const status = (t) => { $('status').textContent = t; };
@@ -86,23 +89,33 @@ try {
 } catch (e) { tourError = `data/tour.json не завантажився: ${e.message}`; }
 if (!city.tour) tourError = tourError || 'city.json без даних туру (node tools/build-city.mjs)';
 if (tourError) console.warn(tourError);
-// photo facades of landmarks (data/facades.json is edited by hand: always fresh, never fatal)
-let photos = null;
-if (photoMode) {
+// photo facades and 3D models of landmarks (data/facades.json is edited by hand: always fresh, never fatal)
+let photos = null, models = null, facadeSpec = null;
+if (photoMode || modelMode) {
+  try { facadeSpec = await (await fetch(`data/facades.json?t=${Date.now()}`, { cache: 'no-store' })).json(); } catch (e) { console.warn(`data/facades.json: ${e.message}`); }
+}
+if (photoMode && facadeSpec) {
   status('Фото фасадів…');
   try {
-    const spec = await (await fetch(`data/facades.json?t=${Date.now()}`, { cache: 'no-store' })).json();
-    photos = await loadPhotoFacades(city, spec, { version: VERSION, anisotropy: ANISOTROPY });
+    photos = await loadPhotoFacades(city, facadeSpec, { version: VERSION, anisotropy: ANISOTROPY });
     if (photos) console.log(`Photo facades: ${photos.stats.photos} photos, atlas ${photos.stats.atlas} (${photos.stats.mb} MB with mips), ${photos.stats.ms} ms`);
   } catch (e) { console.warn(`photo facades: ${e.message}`); }
 }
-// the tour card of a place shows who took the photos of its building
-if (city.tour) for (const pl of Object.values(city.tour.places)) pl.credit = creditLine(photos, pl.osm);
+if (modelMode && facadeSpec) {
+  status('3D-моделі пам\'яток…');
+  try {
+    models = await loadModels(city, facadeSpec, { renderer, version: VERSION });
+    if (models) console.log(`Landmark models: ${models.stats.models} models, ${models.stats.tris} triangles, ${models.stats.ms} ms`);
+  } catch (e) { console.warn(`landmark models: ${e.message}`); }
+}
+// the tour card of a place shows who took the photos / made the scans of its building
+if (city.tour) for (const pl of Object.values(city.tour.places)) pl.credit = [creditLine(photos, pl.osm), modelCreditLine(models, pl.osm)].filter(Boolean).join(' · ');
 status(`Будую ${city.buildings.length} будинків…`);
 await new Promise((r) => setTimeout(r, 0));
 const t0 = performance.now();
-const { group: cityGroup, stats: cityStats } = buildCity(city, { texMode, tiles, sky: SKY, photos });
+const { group: cityGroup, stats: cityStats } = buildCity(city, { texMode, tiles, sky: SKY, photos, cuts: models && models.cuts });
 scene.add(cityGroup);
+if (models) { scene.add(models.group); Object.assign(cityStats, { models: models.stats.models, modelTris: models.stats.tris }); }
 
 // ---------- collision world ----------
 const R = city.meta.rect;
@@ -111,6 +124,7 @@ for (const b of city.buildings) {
   world.addPolygon(b.p);
   for (const h of b.holes || []) world.addPolygon(h);
 }
+for (const f of models ? models.footprints : []) world.addPolygon(f); // parts of 3D models standing out of a wall
 world.addPolygon(city.mount.foot);
 world.addPolygon(city.sea);
 const M = 5; // play-area bounds, a few metres inside the data bbox
@@ -558,7 +572,7 @@ renderer.setAnimationLoop(frame);
 const startBtn = $('start');
 startBtn.disabled = false;
 startBtn.textContent = 'Грати (клавіатура)';
-status(`${city.buildings.length} будинків · ${city.roads.length} вулиць · зібрано за ${buildMs.toFixed(0)} мс${tiles ? ` · ${tiles.preview.facade.length + tiles.preview.ground.length + 1} плиток за ${tiles.ms.toFixed(0)} мс` : ' · без текстур'}${photos ? ` · ${photos.stats.photos} фото фасадів за ${photos.stats.ms} мс` : ''}`);
+status(`${city.buildings.length} будинків · ${city.roads.length} вулиць · зібрано за ${buildMs.toFixed(0)} мс${tiles ? ` · ${tiles.preview.facade.length + tiles.preview.ground.length + 1} плиток за ${tiles.ms.toFixed(0)} мс` : ' · без текстур'}${photos ? ` · ${photos.stats.photos} фото фасадів за ${photos.stats.ms} мс` : ''}${models ? ` · ${models.stats.models} 3D-модел${models.stats.models === 1 ? 'ь' : 'і'} за ${models.stats.ms} мс` : ''}`);
 const start = () => { horn.unlock(); $('overlay').style.display = 'none'; renderer.domElement.focus(); };
 startBtn.addEventListener('click', start);
 if (params.has('autostart')) start();
@@ -588,4 +602,4 @@ $('vibration').checked = bars.engineVibration;
 $('vibration').addEventListener('change', () => { bars.engineVibration = $('vibration').checked; saveSetting('engineVibration', bars.engineVibration); });
 
 // test / debugging hook
-window.__game = { photos, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { photos, models, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };

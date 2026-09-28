@@ -89,7 +89,7 @@ float groundLayer(int style, int cls, float r) {
   return r < 0.35 ? ENTRANCE : (r < 0.5 ? GARAGE : (r < 0.78 ? GROUND_WIN : SHOP_A));
 }
 float floorLayer(int style, int cls, bool bal3d, float r) {
-  if (cls <= 1) return r < 0.7 ? COURT : PLAIN;
+  if (cls <= 1) return style == 5 ? CIVIC_WALL : (r < 0.7 ? COURT : PLAIN); // civic (churches, markets): stone, no flat windows
   if (style == 0) return bal3d ? (r < 0.6 ? ENS_DOOR_A : ENS_DOOR_B) : (r < 0.35 ? ENS_A : (r < 0.55 ? ENS_B : (r < 0.7 ? ENS_C : ENS_BAL)));
   if (style == 1) return bal3d ? CLS_DOOR : (r < 0.6 ? CLS_A : CLS_B);
   if (style == 2) return r < 0.6 ? OLD_A : OLD_B;

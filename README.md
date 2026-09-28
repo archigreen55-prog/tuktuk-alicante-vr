@@ -60,6 +60,20 @@ gables is cut out with a mask (alpha to coverage), the dome is a body of revolut
 - To use your own photo: put it into `assets/facades/`, set `from`, `corners` (and `outline`) of the entry,
   run the tool, reload the page. Code: `src/city/landmarks.js` (atlas, mesh, material).
 
+## 3D models of landmarks (scans)
+
+A scan (GLB) stands in front of its OSM building's wall; the wall behind it gets a niche so doors and deep
+recesses show. The first one is the baroque portal of the Basílica de Santa María (CC BY scan from Sketchfab,
+authors: [assets/models/CREDITS.md](assets/models/CREDITS.md)).
+
+- `data/facades.json` → `"models"` of a building: which wall, where on it, the real width, the triangle and
+  texture budget; the format is at the top of `src/city/models.js`.
+- **`node tools/prepare-model.mjs`** (`npm install` once) bakes the source glTF/GLB into one mesh, turns and
+  scales it to metres, finds the wall plane, simplifies it and writes KTX2 (Basis) textures + meshopt geometry.
+  The `ktx` tool of KTX-Software is downloaded once into `tools/.bin/` if it is not installed.
+- In the game: GLTFLoader + KTX2Loader + MeshoptDecoder (`src/city/models.js`), Lambert materials like the
+  rest of the city, +1 draw call per model; `?model=0` hides them for A/B checks.
+
 ## Controls (Quest 3, play seated)
 
 Two steering modes, switched with the right stick press or on the start screen (remembered):
@@ -104,7 +118,8 @@ per frame to find the GPU headroom), `?hz=72` (force the headset refresh rate; o
 72 Hz by itself if 90 cannot be held), `?fbs=0.85` (XR framebuffer scale),
 `?fov=0.5` (XR foveation 0..1, default 1), `?vignette` (show the VR vignette on desktop too),
 `?tex=0` (no textures, the 0.5.0 look, for A/B comparison), `?tex=low` (facades only, plain roads),
-`?tiles` (shows every generated tile on the page), `?photo=0` (landmarks without photo facades).
+`?tiles` (shows every generated tile on the page), `?photo=0` (landmarks without photo facades),
+`?model=0` (without the 3D models of landmarks).
 
 ## Run locally
 

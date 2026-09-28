@@ -76,6 +76,31 @@
     "style": "civic"
   },
   "way/22560738": {
+    "style": "civic",
+    "models": [
+      {
+        "id": "santa-maria-portal",
+        "edge": 10,
+        "at": 0.34,
+        "src": "assets/models/santa-maria-portal.glb",
+        "from": "assets/models/src/portada_basilica_santa_maria.glb",
+        "rotate": [0, 0, 0],
+        "scale": 1,
+        "triangles": 60000,
+        "texture": 2048,
+        "credit": {
+          "author": "David González",
+          "license": "CC BY 4.0",
+          "site": "Sketchfab",
+          "url": "https://sketchfab.com/3d-models/portada-basilica-santa-maria-12d322a762e14c0db6ec2e00b0130dca"
+        }
+      }
+    ]
+  },
+  "way/265200106": {
+    "style": "civic"
+  },
+  "way/265200108": {
     "style": "civic"
   },
   "way/83998999": {
