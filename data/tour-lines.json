@@ -1,0 +1,264 @@
+{
+  "_about": [
+    "Лінії маршруту туру з TukTuk OS. Генерує tools/import-tuktuk-os.mjs — не правити вручну: лінії правляться в редакторі TukTuk OS (/route?edit=1, вкладка «Лінія»), склад турів — у data/tuktuk-os-map.json.",
+    "legs[\"звідки→куди\"].src: owner — лінія власника; gpx — схвалена з GPX; auto-tuktuk-os — автоматична з OSRM; astar — лінії немає, маршрут рахує гра (A* по city.json), why — чому.",
+    "pts — [lat, lng] по порядку руху (напрям руху), m — довжина лінії в метрах. trim — лінію обрізано на межі зони гри, гра доїжджає до місця своїм A* (joinM).",
+    "Гра цей файл ще не читає (крок 3 плану docs/plan-tuktuk-os-sync.md)."
+  ],
+  "format": 1,
+  "source": {
+    "repo": "archigreen55-prog/TukTuk-OS",
+    "ref": "origin/feat/route-preview",
+    "commit": "db6660fb66b1b1d2dc666583482b34155daa87b8",
+    "commitDate": "2026-09-27T14:43:38+00:00",
+    "route": "alicante-classic",
+    "lines": "route-line.json"
+  },
+  "points": {
+    "melia": {
+      "lat": 38.342628,
+      "lng": -0.478838,
+      "zone": "in",
+      "vr": "melia"
+    },
+    "casa-carbonell": {
+      "lat": 38.344433,
+      "lng": -0.480883,
+      "zone": "in",
+      "vr": "explanada"
+    },
+    "explanada": {
+      "lat": 38.342881,
+      "lng": -0.48378,
+      "zone": "in"
+    },
+    "canalejas": {
+      "lat": 38.341982,
+      "lng": -0.486173,
+      "zone": "in",
+      "vr": "canalejas"
+    },
+    "ficus-canalejas": {
+      "lat": 38.341344,
+      "lng": -0.486681,
+      "zone": "in"
+    },
+    "casa-de-las-brujas": {
+      "lat": 38.342146,
+      "lng": -0.487632,
+      "zone": "in",
+      "vr": "brujas"
+    },
+    "sede-universitaria": {
+      "lat": 38.34297,
+      "lng": -0.48537,
+      "zone": "in",
+      "vr": "university"
+    },
+    "rambla-mendez-nunez": {
+      "lat": 38.343816,
+      "lng": -0.482944,
+      "zone": "in",
+      "vr": "rambla"
+    },
+    "ayuntamiento": {
+      "lat": 38.345231,
+      "lng": -0.481331,
+      "zone": "in",
+      "vr": "townHall"
+    },
+    "santa-maria": {
+      "lat": 38.346167,
+      "lng": -0.479306,
+      "zone": "in",
+      "vr": "santaMaria"
+    },
+    "postiguet": {
+      "lat": 38.346789,
+      "lng": -0.476955,
+      "zone": "out",
+      "out": 34,
+      "vr": "postiguet"
+    },
+    "mercado-central": {
+      "lat": 38.347928,
+      "lng": -0.485996,
+      "zone": "in",
+      "vr": "mercado"
+    },
+    "luceros": {
+      "lat": 38.34602,
+      "lng": -0.49068,
+      "zone": "in",
+      "vr": "luceros"
+    },
+    "calle-san-francisco": {
+      "lat": 38.343836,
+      "lng": -0.485777,
+      "zone": "in",
+      "vr": "sanFrancisco"
+    }
+  },
+  "tours": {
+    "full": {
+      "points": [["melia","start"],["casa-carbonell","stop"],["explanada","pass"],["canalejas","pass"],["ficus-canalejas","pass"],["casa-de-las-brujas","pass"],["sede-universitaria","pass"],["rambla-mendez-nunez","pass"],["ayuntamiento","stop"],["santa-maria","stop"],["postiguet","stop"],["mercado-central","stop"],["luceros","pass"],["calle-san-francisco","pass"],["melia","finish"]],
+      "legs": [
+        "melia→casa-carbonell",
+        "casa-carbonell→explanada",
+        "explanada→canalejas",
+        "canalejas→ficus-canalejas",
+        "ficus-canalejas→casa-de-las-brujas",
+        "casa-de-las-brujas→sede-universitaria",
+        "sede-universitaria→rambla-mendez-nunez",
+        "rambla-mendez-nunez→ayuntamiento",
+        "ayuntamiento→santa-maria",
+        "santa-maria→postiguet",
+        "postiguet→mercado-central",
+        "mercado-central→luceros",
+        "luceros→calle-san-francisco",
+        "calle-san-francisco→melia"
+      ],
+      "summary": {
+        "legs": 14,
+        "owner": 0,
+        "gpx": 0,
+        "auto": 0,
+        "astar": 14,
+        "lineM": 0,
+        "astarM": 7128,
+        "lineShare": 0
+      }
+    },
+    "short": {
+      "sameLineAs": "full",
+      "points": [["melia","start"],["casa-carbonell","stop"],["explanada","via"],["canalejas","via"],["ficus-canalejas","via"],["casa-de-las-brujas","via"],["sede-universitaria","via"],["rambla-mendez-nunez","via"],["ayuntamiento","stop"],["santa-maria","stop"],["postiguet","stop"],["mercado-central","stop"],["luceros","via"],["calle-san-francisco","via"],["melia","finish"]],
+      "legs": [
+        "melia→casa-carbonell",
+        "casa-carbonell→explanada",
+        "explanada→canalejas",
+        "canalejas→ficus-canalejas",
+        "ficus-canalejas→casa-de-las-brujas",
+        "casa-de-las-brujas→sede-universitaria",
+        "sede-universitaria→rambla-mendez-nunez",
+        "rambla-mendez-nunez→ayuntamiento",
+        "ayuntamiento→santa-maria",
+        "santa-maria→postiguet",
+        "postiguet→mercado-central",
+        "mercado-central→luceros",
+        "luceros→calle-san-francisco",
+        "calle-san-francisco→melia"
+      ],
+      "summary": {
+        "legs": 14,
+        "owner": 0,
+        "gpx": 0,
+        "auto": 0,
+        "astar": 14,
+        "lineM": 0,
+        "astarM": 7128,
+        "lineShare": 0
+      }
+    }
+  },
+  "legs": {
+    "melia→casa-carbonell": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.342628,-0.478838],[38.344433,-0.480883]],
+      "m": 778,
+      "pts": []
+    },
+    "casa-carbonell→explanada": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.344433,-0.480883],[38.342881,-0.48378]],
+      "m": 425,
+      "pts": []
+    },
+    "explanada→canalejas": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.342881,-0.48378],[38.341982,-0.486173]],
+      "m": 250,
+      "pts": []
+    },
+    "canalejas→ficus-canalejas": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.341982,-0.486173],[38.341344,-0.486681]],
+      "m": 103,
+      "pts": []
+    },
+    "ficus-canalejas→casa-de-las-brujas": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.341344,-0.486681],[38.342146,-0.487632]],
+      "m": 126,
+      "pts": []
+    },
+    "casa-de-las-brujas→sede-universitaria": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.342146,-0.487632],[38.34297,-0.48537]],
+      "m": 355,
+      "pts": []
+    },
+    "sede-universitaria→rambla-mendez-nunez": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.34297,-0.48537],[38.343816,-0.482944]],
+      "m": 231,
+      "pts": []
+    },
+    "rambla-mendez-nunez→ayuntamiento": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.343816,-0.482944],[38.345231,-0.481331]],
+      "m": 374,
+      "pts": []
+    },
+    "ayuntamiento→santa-maria": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.345231,-0.481331],[38.346167,-0.479306]],
+      "m": 598,
+      "pts": []
+    },
+    "santa-maria→postiguet": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.346167,-0.479306],[38.346789,-0.476955]],
+      "m": 94,
+      "pts": []
+    },
+    "postiguet→mercado-central": {
+      "src": "astar",
+      "why": "use: astar — рішення власника 28.09: поки A*; справжнім шляхом — після розширення зони (гора, замок, північ міста)",
+      "ends": [[38.346789,-0.476955],[38.347928,-0.485996]],
+      "m": 1055,
+      "pts": []
+    },
+    "mercado-central→luceros": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.347928,-0.485996],[38.34602,-0.49068]],
+      "m": 469,
+      "pts": []
+    },
+    "luceros→calle-san-francisco": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.34602,-0.49068],[38.343836,-0.485777]],
+      "m": 722,
+      "pts": []
+    },
+    "calle-san-francisco→melia": {
+      "src": "astar",
+      "why": "лінії власника немає; автоматична вимкнена (auto.osrm = null)",
+      "ends": [[38.343836,-0.485777],[38.342628,-0.478838]],
+      "m": 1548,
+      "pts": []
+    }
+  },
+  "hash": "8e88d016f8f455ac"
+}

@@ -1,0 +1,96 @@
+{
+  "_help": [
+    "Файл відповідностей TukTuk OS → VR-гра. Редагуєш ти; tools/import-tuktuk-os.mjs його лише читає (і створює, якщо файла немає).",
+    "source: локальна копія TukTuk OS лише для читання, гілка й маршрут.",
+    "auto.osrm: адреса сервера OSRM для автоматичних ліній (напр. \"http://localhost:5000\"). null — сервер не питати: плечі без лінії власника беруть автоматичну лінію з минулого імпорту або йдуть нашим A*.",
+    "tours: тури гри. line: \"order\" — точки класичного маршруту (order 1–20 у points.json) від start до finish; або id туру TukTuk OS (напр. \"60-classic-stops\") — тоді порядок з його computed.rows. sameLineAs: та сама лінія, що в іншому турі.",
+    "Точки поза зоною гри випадають, крім тих, що мають vr (тоді у грі використовується місце vr). exclude — не брати точку взагалі.",
+    "stops — зупинки з карткою й фото; passes: \"all\" — решта точок лінії стають фактами на ходу, [] — без фактів (точки лишаються лише вершинами лінії).",
+    "legs: поправки окремих плечей «звідки→куди». use: \"astar\" — автоматичну лінію не брати, лише наш A*. Лінія власника з редактора TukTuk OS однаково має пріоритет.",
+    "points: vr — id місця в data/tour.json зараз; exclude — причина, чому точку не беремо. credits — для assets/tour/CREDITS.md (крок 2)."
+  ],
+  "source": {
+    "repo": "~/projects/_ref/TukTuk-OS",
+    "ref": "origin/feat/route-preview",
+    "route": "alicante-classic"
+  },
+  "auto": {
+    "osrm": null,
+    "profile": "driving"
+  },
+  "tours": {
+    "full": {
+      "line": "order",
+      "start": "melia",
+      "finish": "melia",
+      "stops": ["casa-carbonell","ayuntamiento","santa-maria","postiguet","mercado-central"],
+      "passes": "all"
+    },
+    "short": {
+      "sameLineAs": "full",
+      "stops": ["casa-carbonell","ayuntamiento","santa-maria","postiguet","mercado-central"],
+      "passes": []
+    }
+  },
+  "legs": {
+    "postiguet→mercado-central": {
+      "use": "astar",
+      "why": "рішення власника 28.09: поки A*; справжнім шляхом — після розширення зони (гора, замок, північ міста)"
+    }
+  },
+  "points": {
+    "melia": {
+      "vr": "melia",
+      "note": "крок 2: зону посадки перенести на точку власника з редактора"
+    },
+    "casa-carbonell": {
+      "vr": "explanada",
+      "note": "одна зупинка з карткою Casa Carbonell"
+    },
+    "explanada": {
+      "note": "факт на ходу одразу після Casa Carbonell"
+    },
+    "canalejas": {
+      "vr": "canalejas"
+    },
+    "ficus-canalejas": {},
+    "casa-de-las-brujas": {
+      "vr": "brujas"
+    },
+    "sede-universitaria": {
+      "vr": "university"
+    },
+    "rambla-mendez-nunez": {
+      "vr": "rambla"
+    },
+    "ayuntamiento": {
+      "vr": "townHall"
+    },
+    "santa-maria": {
+      "vr": "santaMaria"
+    },
+    "postiguet": {
+      "vr": "postiguet",
+      "note": "точка TukTuk OS (ліфт до замку) за межею зони; у грі — наше місце postiguet"
+    },
+    "colegio-san-antonio": {
+      "exclude": "у зоні, але плечі до нього й від нього виходять за зону (інші тури — пізніше)"
+    },
+    "mercado-central": {
+      "vr": "mercado"
+    },
+    "luceros": {
+      "vr": "luceros"
+    },
+    "calle-san-francisco": {
+      "vr": "sanFrancisco"
+    }
+  },
+  "credits": {
+    "icons": {
+      "source": "TukTuk OS, client/public/media/alicante-classic/<id>/illustration.svg",
+      "author": "власник TukTuk OS",
+      "license": "All rights reserved"
+    }
+  }
+}
