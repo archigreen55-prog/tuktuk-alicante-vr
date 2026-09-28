@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { GeoBuilder, pairs, orient, rand } from './geo.js';
 import { ZEBRA_DEPTH, BAY_W } from './tiles.js';
 import { facadeMaterial, roadMaterial, plazaMaterial, buildBuildingTable, buildingLayout, TPL, MARK_TEMPLATES, SHUTTER_COLORS } from './facades.js';
+import { PhotoBuilder, addPhotoBuilding, photoMaterial } from './landmarks.js';
 
 const COLORS = {
   ground: 0xd9ccb0,
@@ -37,9 +38,9 @@ function flatMesh(geo, order, name, material) {
   return mesh;
 }
 
-// options: { texMode: 'full' | 'low' | 'off', tiles (from buildTiles), sky }
+// options: { texMode: 'full' | 'low' | 'off', tiles (from buildTiles), sky, photos (from loadPhotoFacades) }
 export function buildCity(city, options = {}) {
-  const { texMode = 'off', tiles = null, sky = 0xbfe3f5 } = options;
+  const { texMode = 'off', tiles = null, sky = 0xbfe3f5, photos = null } = options;
   const texFacades = texMode !== 'off' && tiles;
   const texGround = texMode === 'full' && tiles;
   const group = new THREE.Group();
@@ -111,6 +112,8 @@ export function buildCity(city, options = {}) {
     let tris = 0, facades = 0, plainFacades = 0;
     const layouts = [];
     const balconyCandidates = [];
+    const pb = new PhotoBuilder(); // walls of landmarks with photo facades (landmarks.js), one mesh
+    let photoBuildings = 0;
     const ramblaS = city.landmarks?.rambla?.south || [279, 240], ramblaN = city.landmarks?.rambla?.north || [98, -270];
     const explC = city.landmarks?.explanada ? [city.landmarks.explanada.x, city.landmarks.explanada.z] : [234, 291];
     city.buildings.forEach((b, idx) => {
@@ -141,8 +144,11 @@ export function buildCity(city, options = {}) {
       const info = { idx, b, L, runs, ring, top, bottom, codes, styleName };
       facades += runs.length;
       for (const run of runs) if (run.L < MIN_FACADE) plainFacades++;
+      // photo facade: its walls go to the photo mesh, the procedural builder skips them
+      const photoItems = photos && photos.byBuilding.get(b.id);
+      if (photoItems) { info.skip = addPhotoBuilding(pb, b, photoItems); photoBuildings++; }
       // 3D balcony candidates: ensanche / classic along main streets
-      if (texFacades && (styleName === 'ensanche' || styleName === 'classic') && L.floors >= 2) {
+      if (!photoItems && texFacades && (styleName === 'ensanche' || styleName === 'classic') && L.floors >= 2) {
         for (const run of runs) {
           if (run.L < 4 || run.bw < 2.2) continue;
           if (!run.edges.some((ei) => kindOf(codes, ei) === 3)) continue;
@@ -177,6 +183,15 @@ export function buildCity(city, options = {}) {
     }
     let balconyMesh = null;
     if (chosen.length) { balconyMesh = buildBalconies(chosen, palette); group.add(balconyMesh); balconies = balconyMesh.count; }
+    if (pb.triangles) {
+      const mesh = new THREE.Mesh(pb.build(), photoMaterial(photos.texture));
+      mesh.name = 'photo facades';
+      mesh.matrixAutoUpdate = false;
+      group.add(mesh);
+      stats.photoTris = pb.triangles;
+      stats.photoBuildings = photoBuildings;
+      Object.assign(stats, { photoAtlas: photos.stats.atlas, photoMB: photos.stats.mb, photos: photos.stats.photos });
+    }
     stats.buildingTris = tris;
     stats.buildingChunks = chunks.size;
     stats.facades = facades;
@@ -254,6 +269,7 @@ function addWalls(gb, ring, h, isHole, top, bottom, info) {
     const t = 0.95 + 0.1 * rand(info.idx * 31 + ri * 7);
     const topT = tint.copy(top).multiplyScalar(t).clone(), botT = tint.copy(bottom).multiplyScalar(t).clone();
     run.edges.forEach((i, k) => {
+      if (!isHole && info.skip && info.skip.has(i)) return; // covered by a photo facade
       const a = ring[i], b = ring[(i + 1) % n];
       const dx = b[0] - a[0], dz = b[1] - a[1];
       const len = Math.hypot(dx, dz) || 1;

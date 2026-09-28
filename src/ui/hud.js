@@ -28,7 +28,7 @@ export class DesktopHud {
     }
     if (status !== this.lastStatus) { this.status.innerHTML = status; this.lastStatus = status; }
     let card = '';
-    if (panel.mode === 'card') card = `<div class="t">${esc(panel.title)} <span class="c">${esc(panel.counter || '')}</span></div><div class="b">${esc(panel.body || '')}</div><div class="f">${esc(panel.footer || '')}</div>`;
+    if (panel.mode === 'card') card = `<div class="t">${esc(panel.title)} <span class="c">${esc(panel.counter || '')}</span></div><div class="b">${esc(panel.body || '')}</div>${panel.credit ? `<div class="c">${esc(panel.credit)}</div>` : ''}<div class="f">${esc(panel.footer || '')}</div>`;
     else if (panel.mode === 'summary') {
       card = `<div class="t">Тур завершено! <span class="s">${'★'.repeat(panel.stars)}${'☆'.repeat(5 - panel.stars)}</span></div>` +
         `<div class="b">Чайові ${euro(panel.tips)} · час ${clock(panel.time)} / ${clock(panel.target)}<br>${esc(panel.events)}<br><i>${panel.review ? '«' + esc(panel.review) + '»' : ''}</i><br><span class="c">${esc(panel.best || '')}</span></div><div class="f">${esc(panel.footer || '')}</div>`;

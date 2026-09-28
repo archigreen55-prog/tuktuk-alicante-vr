@@ -1,0 +1,13 @@
+{
+  "name": "tuktuk-alicante-vr",
+  "private": true,
+  "type": "module",
+  "description": "The game itself needs no build and no packages; sharp is only for tools/prepare-facade.mjs (photo facades).",
+  "scripts": {
+    "facades": "node tools/prepare-facade.mjs",
+    "city": "node tools/build-city.mjs"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.5"
+  }
+}

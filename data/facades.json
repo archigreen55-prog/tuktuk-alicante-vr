@@ -1,12 +1,96 @@
 {
-  "_comment": "Manual facade data per OSM id (tools/build-city.mjs merges it into city.json). style: ensanche | classic | old | tower | office | civic. photos: reserved for stage 5c (photo facades), ignored for now.",
-  "way/21410214": { "style": "civic", "photos": [ { "facade": 2, "src": "assets/facades/mercado-front.jpg", "fit": "stretch" } ] },
-  "relation/21053576": { "style": "classic" },
-  "way/265207919": { "style": "civic" },
-  "way/22560738": { "style": "civic" },
-  "way/83998999": { "style": "civic" },
-  "way/20929398": { "style": "office" },
-  "way/20929405": { "style": "office" },
-  "way/53271502": { "style": "tower" },
-  "way/46166208": { "style": "tower" }
+  "_comment": "Manual data per OSM id. style (ensanche | classic | old | tower | office | civic) and h (height, m) are merged into city.json by tools/build-city.mjs. photos: photo facades, read by the game at load time and prepared by tools/prepare-facade.mjs; the format is described at the top of src/city/photoFacades.js and in docs/report-mercado.md.",
+  "way/21410214": {
+    "style": "civic",
+    "h": 10,
+    "photos": [
+      {
+        "id": "mercado-front",
+        "edges": [6, 15],
+        "align": { "7": 0.689, "9": 0.602, "11": 0.39, "13": 0.304 },
+        "src": "assets/facades/mercado-front.jpg",
+        "from": "https://upload.wikimedia.org/wikipedia/commons/d/d6/Mercado_Central_de_Alicante_03.jpg",
+        "corners": [[55, 2183], [4205, 2208], [4242, 2673], [19, 2648]],
+        "outline": [[-10, 2960], [40, 2183], [85, 1525], [100, 1520], [249, 1469], [500, 1373], [747, 1276], [993, 1180], [993, 1124], [1070, 1124], [1072, 817], [1088, 787], [1120, 774], [1160, 775], [1195, 790], [1216, 817], [1216, 827], [1245, 827], [1300, 830], [1340, 880], [1393, 917], [1400, 917], [1413, 837], [1411, 773], [1389, 763], [1389, 697], [1400, 679], [1507, 674], [1513, 650], [1540, 643], [1544, 623], [1533, 603], [1540, 577], [1567, 559], [1593, 567], [1607, 594], [1600, 623], [1593, 643], [1616, 650], [1616, 674], [1720, 679], [1724, 763], [1693, 777], [1689, 877], [1747, 877], [1753, 797], [1797, 790], [1797, 650], [1829, 577], [1833, 523], [1853, 490], [1900, 463], [1940, 430], [1940, 383], [1949, 377], [1953, 343], [1967, 314], [1987, 303], [2007, 310], [2020, 337], [2016, 370], [2029, 383], [2029, 417], [2213, 417], [2220, 383], [2233, 377], [2229, 343], [2243, 314], [2263, 303], [2284, 310], [2299, 337], [2293, 373], [2309, 383], [2313, 417], [2349, 443], [2393, 483], [2413, 523], [2407, 563], [2400, 610], [2440, 643], [2447, 797], [2513, 797], [2520, 710], [2627, 703], [2627, 690], [2637, 674], [2637, 650], [2633, 623], [2640, 590], [2667, 573], [2696, 581], [2709, 610], [2704, 643], [2731, 670], [2847, 710], [2848, 777], [2827, 783], [2827, 910], [2867, 910], [2907, 850], [2960, 843], [2987, 850], [3020, 837], [3024, 810], [3040, 795], [3075, 790], [3115, 793], [3150, 805], [3164, 836], [3164, 1136], [3257, 1136], [3257, 1211], [3500, 1329], [3750, 1450], [4000, 1564], [4210, 1660], [4230, 2208], [4290, 2960]],
+        "credit": {
+          "author": "Varondán",
+          "license": "CC BY-SA 4.0",
+          "url": "https://commons.wikimedia.org/wiki/File:Mercado_Central_de_Alicante_03.jpg"
+        }
+      },
+      {
+        "id": "mercado-rotunda",
+        "edges": [16, 28],
+        "view": 5,
+        "lathe": [[10.17, 7.55], [11.9, 7.37], [13.28, 6.84], [14.9, 5.86], [16.05, 4.57], [16.72, 3.27], [17.13, 2.03], [18.96, 2.03], [19.13, 1.91], [19.71, 1.68], [20.1, 0.93], [20.26, 0.12], [20.56, 0.05]],
+        "mirror": 0.54,
+        "src": "assets/facades/mercado-rotunda.jpg",
+        "px": 1024,
+        "from": "https://upload.wikimedia.org/wikipedia/commons/3/36/Central_Market%2C_Avinguda_Alfons_el_Savi%2C_Alicante%2C_16_July_2016.JPG",
+        "focal35": 24,
+        "corners": [[812, 1400], [1995, 1400], [1995, 2212], [812, 2200]],
+        "outline": [[812, 2260], [812, 1400], [812, 1391], [827, 1264], [873, 1155], [955, 1027], [1064, 936], [1173, 882], [1291, 849], [1291, 704], [1300, 691], [1318, 645], [1373, 613], [1436, 600], [1445, 576], [1455, 600], [1518, 613], [1582, 655], [1600, 691], [1609, 704], [1609, 849], [1685, 882], [1780, 936], [1873, 1027], [1944, 1155], [1982, 1264], [1995, 1391], [1995, 1400], [1995, 2260]],
+        "credit": {
+          "author": "Kolforn",
+          "license": "CC BY 3.0",
+          "url": "https://commons.wikimedia.org/wiki/File:Central_Market,_Avinguda_Alfons_el_Savi,_Alicante,_16_July_2016.JPG"
+        }
+      },
+      {
+        "id": "mercado-back",
+        "edges": [35, 2],
+        "span": [13.7, 28.9],
+        "src": "assets/facades/mercado-back.jpg",
+        "px": 1024,
+        "from": "https://upload.wikimedia.org/wikipedia/commons/8/88/Mercat_Central_d%27Alacant%2C_fa%C3%A7ana_posterior.JPG",
+        "corners": [[981, 1590], [2724, 1590], [2730, 2364], [975, 2364]],
+        "outline": [[945, 2420], [957, 864], [993, 824], [1529, 412], [1498, 400], [1498, 352], [1831, 198], [2188, 352], [2188, 400], [2155, 412], [2719, 793], [2731, 840], [2743, 2420]],
+        "credit": {
+          "author": "Joanbanjo",
+          "license": "CC BY-SA 3.0",
+          "url": "https://commons.wikimedia.org/wiki/File:Mercat_Central_d'Alacant,_fa%C3%A7ana_posterior.JPG"
+        }
+      },
+      {
+        "id": "mercado-wall",
+        "wall": 4.2,
+        "src": "assets/facades/mercado-wall.jpg",
+        "px": 512,
+        "from": "https://upload.wikimedia.org/wikipedia/commons/f/fa/Alicante042009MercadoCentral.jpg",
+        "focal35": 38,
+        "height": 9.65,
+        "corners": [[1558, 594], [1681, 612], [1681, 1050], [1558, 1056]],
+        "outline": [[1558, 1075], [1558, 526], [1681, 543], [1681, 1075]],
+        "credit": {
+          "author": "Etnacila",
+          "license": "public domain",
+          "url": "https://commons.wikimedia.org/wiki/File:Alicante042009MercadoCentral.jpg"
+        }
+      }
+    ]
+  },
+  "relation/21053576": {
+    "style": "classic"
+  },
+  "way/265207919": {
+    "style": "civic"
+  },
+  "way/22560738": {
+    "style": "civic"
+  },
+  "way/83998999": {
+    "style": "civic"
+  },
+  "way/20929398": {
+    "style": "office"
+  },
+  "way/20929405": {
+    "style": "office"
+  },
+  "way/53271502": {
+    "style": "tower"
+  },
+  "way/46166208": {
+    "style": "tower"
+  }
 }

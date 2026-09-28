@@ -156,7 +156,8 @@ function styleOf(t, lv, h, c) {
   if (levels <= 2 && hash(Math.round(c[0] * 7 + c[1] * 13) + 11) < 0.5) return 'old';
   return 'ensanche';
 }
-// manual overrides: data/facades.json { "way/123": { "style": "civic", "photos": [...] } } (photos: later)
+// manual overrides: data/facades.json { "way/123": { "style": "civic", "h": 10, "photos": [...] } }
+// (style and height are merged here; photos are read by the game itself, see src/city/photoFacades.js)
 let facadeOverrides = {};
 try { facadeOverrides = JSON.parse(await readFile('data/facades.json', 'utf8')); } catch { /* optional */ }
 const overridesUsed = [];
@@ -173,10 +174,11 @@ function addBuilding(outer, holes, t, id, osmId) {
   if (signedArea(outer) < 0) outer.reverse(); // consistent orientation
   holes = holes.map(cleanRing).filter((h) => h.length >= 3 && area(h) > 4).map((h) => (signedArea(h) > 0 ? h.reverse() : h));
   const { h: h0, lv, src } = heightOf(t, id);
-  const h = r1(Math.min(Math.max(h0, 3), 120));
+  let h = r1(Math.min(Math.max(h0, 3), 120));
   stats.heightSrc[src] = (stats.heightSrc[src] || 0) + 1;
   let style = styleOf(t, lv, h, c);
   const ov = facadeOverrides[osmId];
+  if (ov && ov.h > 0) h = ov.h; // measured by hand (photo facades: the roof height)
   if (ov && ov.style) { const s = STYLE_ALIASES[ov.style] || ov.style; if (STYLES.includes(s)) { style = s; overridesUsed.push(osmId); } else console.warn(`facades.json ${osmId}: unknown style "${ov.style}"`); }
   stats.styles[style] = (stats.styles[style] || 0) + 1;
   const b = { id: osmId, p: flat(outer), h, c: Math.floor(hash(id * 7 + 3) * PALETTE.length), s: STYLES.indexOf(style) };

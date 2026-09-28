@@ -128,7 +128,8 @@ export class Dashboard {
     g.textAlign = 'right'; g.fillStyle = '#9fb3c8'; g.font = `24px ${FONT}`;
     g.fillText(t.counter || '', W - 20, 48);
     g.textAlign = 'left'; g.fillStyle = '#ffffff';
-    wrapFit(g, t.body || '', 20, 70, W - 40, 250, 32, 18);
+    wrapFit(g, t.body || '', 20, 70, W - 40, t.credit ? 212 : 250, 32, 18);
+    if (t.credit) { g.fillStyle = '#9fb3c8'; wrapFit(g, t.credit, 20, 286, W - 40, 42, 17, 13); } // photo authors (licences)
     g.fillStyle = '#6fe06f';
     fitText(g, t.footer || '', 20, 350, W - 40, 26, 16, 'bold ');
   }

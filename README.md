@@ -7,7 +7,8 @@ Mercado Central, the port) in the browser — on Meta Quest 3 via WebXR, or on a
 
 Status: prototype (stages 0–5 and 6a of [docs/plan.md](docs/plan.md), [docs/plan-stage-6.md](docs/plan-stage-6.md)): city
 from OpenStreetMap, keyboard driving, collisions, WebXR on Quest 3 with controllers, hands-on-handlebar steering, a comfort
-vignette, code-drawn textures (facades, roads, sidewalks, the Explanada mosaic) and the **tour mission**.
+vignette, code-drawn textures (facades, roads, sidewalks, the Explanada mosaic), the **tour mission** and
+the first **photo landmark** (Mercado Central).
 The build version is shown small on the dashboard and on the start screen.
 
 ## Tour mission (stage 6a)
@@ -38,8 +39,26 @@ arrays with mip levels and 8x anisotropic filtering. Facade tiles are material m
 metal weights + shade), so one tile serves every building colour. The shaders (`src/city/facades.js`) extend
 `MeshLambertMaterial` via `onBeforeCompile`; the meshes and draw calls stay the same. Facade layout (floors, bays,
 shop fronts by street, blank shared walls) comes from `tools/build-city.mjs` + `data/facades.json` (manual style
-overrides per OSM id; photo facades are reserved for later). Balconies along the main streets are one
+overrides per OSM id; photo facades for landmarks: see below). Balconies along the main streets are one
 `InstancedMesh`.
+
+## Photo facades (landmarks)
+
+The Mercado Central is the first landmark with real photos: the main facade, the round corner pavilion with
+its dome, the back facade and a repeating bay of the long side walls, all from free Wikimedia Commons photos
+(authors and licences: [assets/facades/CREDITS.md](assets/facades/CREDITS.md), also on the tour card of the
+place). The walls a photo covers leave the procedural meshes and go into one extra mesh with its own UVs; all
+photos share one atlas texture (+1 draw call for every photo landmark together). The sky around towers and
+gables is cut out with a mask (alpha to coverage), the dome is a body of revolution textured by the same photo.
+
+- **`data/facades.json`** says which walls of which building (OSM id) a photo covers, where the photo comes
+  from and its 4 corners; the format is described at the top of `src/city/photoFacades.js`.
+- **`node tools/prepare-facade.mjs`** (needs `npm install` once, for `sharp`) straightens each source photo by
+  its 4 corners, cuts it to the facade, scales it to ≤ 2048 px, writes a JPEG + sky mask into `assets/facades/`.
+  `--list way/21410214` prints the building's walls (numbers for `edges`), `--check <id>` draws the corners and
+  the outline on the source photo and the OSM wall corners on the result (`assets/facades/.check/`).
+- To use your own photo: put it into `assets/facades/`, set `from`, `corners` (and `outline`) of the entry,
+  run the tool, reload the page. Code: `src/city/landmarks.js` (atlas, mesh, material).
 
 ## Controls (Quest 3, play seated)
 
@@ -85,7 +104,7 @@ per frame to find the GPU headroom), `?hz=72` (force the headset refresh rate; o
 72 Hz by itself if 90 cannot be held), `?fbs=0.85` (XR framebuffer scale),
 `?fov=0.5` (XR foveation 0..1, default 1), `?vignette` (show the VR vignette on desktop too),
 `?tex=0` (no textures, the 0.5.0 look, for A/B comparison), `?tex=low` (facades only, plain roads),
-`?tiles` (shows every generated tile on the page).
+`?tiles` (shows every generated tile on the page), `?photo=0` (landmarks without photo facades).
 
 ## Run locally
 
@@ -110,7 +129,8 @@ Downloaded once and stored in `data/`; the game makes no API calls at runtime.
 
     node tools/fetch-osm.mjs    # one-time Overpass download -> data/raw/alicante.osm.json
     node tools/build-city.mjs   # -> data/city.json (levels, facade styles, shared walls, street classes,
-                                #    lanes / oneway / junctions, plaza kinds; merges data/facades.json;
+                                #    lanes / oneway / junctions, plaza kinds; merges style / h from data/facades.json;
                                 #    tour places from data/tour.json + the drivable street graph)
 
-Code: MIT. Data: ODbL (see data/LICENSE).
+Code: MIT. Data: ODbL (see data/LICENSE). Facade photos: their authors' licences (CC BY-SA / CC BY / public
+domain, see assets/facades/CREDITS.md).

@@ -54,7 +54,7 @@ export class Tour {
     this.events = [];
     this.text = null;              // { title, body, until } passing fact / intro on the panel
     this.queue = [];               // facts waiting for the panel
-    this.card = null;              // { title, body } at a stop
+    this.card = null;              // { title, body, footer, credit } at a stop
     this.result = null;
     this.route = null; this.routeVersion = (this.routeVersion || 0) + 1;
     this.offT = 0; this.lastRoute = -1e9;
@@ -213,7 +213,7 @@ export class Tour {
         this.events.push({ type: 'dropoff' });
         if (this.def.outro) this.showText(this.start.title, this.def.outro, TOUR.introTime);
       } else {
-        this.card = { title: it.place.title, body: it.place.fact, footer: 'Фото…' };
+        this.card = { title: it.place.title, body: it.place.fact, footer: 'Фото…', credit: it.place.credit || '' };
         this.setState('photo');
         this.events.push({ type: 'stop', id: it.place.id });
       }
