@@ -1,9 +1,11 @@
 // Keyboard input -> the common input state { throttle, brake, steer, handbrake, horn } + one-shot actions.
+const BRAKE_START = 0.35, BRAKE_RAMP = 0.6; // brake at the key press, s to full brake
 export class KeyboardInput {
   constructor(target = window) {
     this.down = new Set();
     this.pressed = new Set();
     this.steer = 0;
+    this.brakeT = 0;
     target.addEventListener('keydown', (e) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
       if (!this.down.has(e.code)) this.pressed.add(e.code);
@@ -18,7 +20,10 @@ export class KeyboardInput {
 
   read(dt, out) {
     out.throttle = this.any('KeyW', 'ArrowUp') ? 1 : 0;
-    out.brake = this.any('KeyS', 'ArrowDown') ? 1 : 0;
+    // keys are digital: the brake builds up (0.35 -> 1 in 0.6 s), so a tap brakes gently and only
+    // holding the key brakes hard (stage 6: the tourists feel hard braking)
+    this.brakeT = this.any('KeyS', 'ArrowDown') ? this.brakeT + dt : 0;
+    out.brake = this.brakeT > 0 ? Math.min(1, BRAKE_START + (1 - BRAKE_START) * this.brakeT / BRAKE_RAMP) : 0;
     out.handbrake = this.any('Space');
     out.horn = this.any('KeyH');
     // keys are digital: ramp the steering so the wheel does not snap

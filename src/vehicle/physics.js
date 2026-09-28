@@ -18,8 +18,8 @@ export const TUNING = {
   handbrakeDecel: 2.2,
   handbrakeYaw: 1.35,
   reverseDelay: 0.5,      // hold brake this long at standstill to start reversing
-  circleR: 0.72,          // two collision circles along the body
-  circleOffset: 0.62,
+  circleR: 0.72,          // collision circles along the body (offset forward, m): cab front and
+  circles: [0.62, -0.62, -1.6],  // middle, plus the rear of the long body (second passenger bench)
   impactSlow: 4.0,        // m/s into a wall -> heavy slowdown
   wallSlideKeep: 0.995,   // lateral speed kept per 1/60 s while touching a wall
   edgeZone: 20,           // soft play-area edge: speed towards the boundary is capped within this distance
@@ -144,7 +144,7 @@ export class TukTukPhysics {
     const normals = [];
     for (let iter = 0; iter < 3; iter++) {
       let moved = false;
-      for (const o of [T.circleOffset, -T.circleOffset]) {
+      for (const o of T.circles) {
         const cx = this.x + fx * o, cz = this.z + fz * o;
         const [nx2, nz2] = W.resolveCircle(cx, cz, T.circleR, (nx, nz) => normals.push(nx, nz));
         if (nx2 !== cx || nz2 !== cz) { this.x += nx2 - cx; this.z += nz2 - cz; moved = true; }
@@ -166,7 +166,7 @@ export class TukTukPhysics {
 
     // anti-stuck: still deep inside something after resolving -> back to last safe spot
     let worst = 0;
-    for (const o of [T.circleOffset, -T.circleOffset]) worst = Math.max(worst, W.penetration(this.x + fx * o, this.z + fz * o, T.circleR));
+    for (const o of T.circles) worst = Math.max(worst, W.penetration(this.x + fx * o, this.z + fz * o, T.circleR));
     if (worst > 0.25) {
       this.x = this.safe.x; this.z = this.safe.z; this.heading = this.safe.heading;
       this.vx = this.vz = 0;
@@ -178,8 +178,7 @@ export class TukTukPhysics {
 
   fits(x, z, heading) {
     const fx = -Math.sin(heading), fz = -Math.cos(heading), T = TUNING;
-    return this.world.penetration(x + fx * T.circleOffset, z + fz * T.circleOffset, T.circleR + 0.3) === 0 &&
-      this.world.penetration(x - fx * T.circleOffset, z - fz * T.circleOffset, T.circleR + 0.3) === 0;
+    return T.circles.every((o) => this.world.penetration(x + fx * o, z + fz * o, T.circleR + 0.3) === 0);
   }
 
   teleport(x, z, heading) {

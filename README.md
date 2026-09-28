@@ -5,10 +5,30 @@ Mercado Central, the port) in the browser — on Meta Quest 3 via WebXR, or on a
 
 **Play:** https://archigreen55-prog.github.io/tuktuk-alicante-vr/
 
-Status: prototype (stages 0–4, 5a and 5b of [docs/plan.md](docs/plan.md)): city from OpenStreetMap,
-keyboard driving, collisions, WebXR on Quest 3 with controllers, hands-on-handlebar steering, a comfort vignette
-and code-drawn textures (facades, roads, sidewalks, the Explanada mosaic).
+Status: prototype (stages 0–5 and 6a of [docs/plan.md](docs/plan.md), [docs/plan-stage-6.md](docs/plan-stage-6.md)): city
+from OpenStreetMap, keyboard driving, collisions, WebXR on Quest 3 with controllers, hands-on-handlebar steering, a comfort
+vignette, code-drawn textures (facades, roads, sidewalks, the Explanada mosaic) and the **tour mission**.
 The build version is shown small on the dashboard and on the start screen.
+
+## Tour mission (stage 6a)
+
+Pick up 2–4 tourists at the Meliá hotel, drive them along a real guide's route and bring them back. Photo stops
+(Explanada and Casa Carbonell, Ayuntamiento, Basílica de Santa María, Postiguet with the castle view, Mercado Central)
+light up as a zone on the road with a light pillar; the other sights are "on the way" facts shown on the dashboard
+when you pass them (full tour). A compass arrow on the dashboard and a heading-up minimap with the route (drivable,
+one-way-aware streets only) guide you. Smooth driving matters: hard braking, fast turns and wall hits upset the
+tourists; at the end you get tips, 1–5 stars, a review line and your best result.
+
+- **`data/tour.json`** holds everything a guide edits: tours (start place + route of `{ "stop": id }` /
+  `{ "pass": id }`), places (title, fact text, how to find them in OSM) and review lines. Texts, order and tours work
+  after a page reload (the file is never cached). A new place or a changed `osm` / `road` / `at` needs
+  `node tools/build-city.mjs`, which finds it in OSM by name (also `wikipedia` / `wikimedia_commons`), snaps it to
+  the nearest drivable street connected to the city and prints the route lengths.
+- `node tools/sim-tour.mjs [tourId] [careful|rough]` drives the tours with an autopilot in Node (same physics,
+  collisions, routes and scoring as the game) to check the data and the scoring.
+- Code: `src/game/route.js` (street graph, A*), `tour.js` (states, stops, facts, clock), `scoring.js` (comfort
+  events, mood, tips, stars — all thresholds in one table), `tourists.js`, `markers.js`, `src/ui/` (dashboard,
+  minimap, desktop HUD).
 
 ## Textures (stage 5b)
 
@@ -40,13 +60,14 @@ Two steering modes, switched with the right stick press or on the start screen (
 | Left stick press | Vignette strength (off / weak / standard / strong) |
 | Y (hold 1 s) | Recentre the seat |
 | A + B (hold 1 s) | Reset onto the nearest road (stick mode: both grips 1 s too) |
+| Y (tap) | Tour: new tour after the summary; tap twice within 2 s to restart / start a tour from free ride |
 
 ## Controls (keyboard)
 
 | Key | Action |
 |---|---|
 | W / ↑ | Throttle |
-| S / ↓ | Brake, hold at standstill to reverse |
+| S / ↓ | Brake (builds up: a tap brakes gently, holding brakes hard), hold at standstill to reverse |
 | A D / ← → | Steer |
 | Space | Handbrake (drift) |
 | R | Reset onto nearest road |
@@ -54,9 +75,12 @@ Two steering modes, switched with the right stick press or on the start screen (
 | F | FPS counter on the dashboard |
 | H | Horn |
 | G | Stress test level (×1…×8) |
+| T | Tour: new tour after the summary; twice within 2 s to restart / start a tour from free ride |
+| M | Minimap on / off |
 | Right mouse drag | Look around |
 
-URL parameters for testing: `?fps` (counter on from the start), `?stress=N` (render the scene N times
+URL parameters for testing: `?mode=free` / `?mode=tour` (free ride without the tour objects, e.g. for FPS
+comparison), `?tour=short|full`, `?fps` (counter on from the start), `?stress=N` (render the scene N times
 per frame to find the GPU headroom), `?hz=72` (force the headset refresh rate; otherwise it drops to
 72 Hz by itself if 90 cannot be held), `?fbs=0.85` (XR framebuffer scale),
 `?fov=0.5` (XR foveation 0..1, default 1), `?vignette` (show the VR vignette on desktop too),
@@ -86,6 +110,7 @@ Downloaded once and stored in `data/`; the game makes no API calls at runtime.
 
     node tools/fetch-osm.mjs    # one-time Overpass download -> data/raw/alicante.osm.json
     node tools/build-city.mjs   # -> data/city.json (levels, facade styles, shared walls, street classes,
-                                #    lanes / oneway / junctions, plaza kinds; merges data/facades.json)
+                                #    lanes / oneway / junctions, plaza kinds; merges data/facades.json;
+                                #    tour places from data/tour.json + the drivable street graph)
 
 Code: MIT. Data: ODbL (see data/LICENSE).

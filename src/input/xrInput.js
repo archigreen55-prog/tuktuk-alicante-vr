@@ -4,7 +4,7 @@
 const STICK_DEAD = 0.12;
 const TRIGGER_DEAD = 0.05;
 const HOLD = 1.0;          // s, for Y (recentre), X (stress level), A+B / both grips (reset)
-const TAP = 0.5;           // s, X released before this = FPS counter toggle
+const TAP = 0.5;           // s, X / Y released before this = FPS counter / tour button
 const REVERSE_DELAY = 0.4; // s of left trigger at standstill before reversing
 
 const pressed = (gp, i) => !!(gp && gp.buttons[i] && gp.buttons[i].pressed);
@@ -22,7 +22,7 @@ export class XRInput {
     this.gripRight = false;
     this.prev = {};
     this.holds = { y: 0, x: 0, grips: 0, ab: 0 };
-    this.actions = { fps: false, stress: false, vignette: false, recenter: false, reset: false, mode: false };
+    this.actions = { fps: false, stress: false, vignette: false, recenter: false, reset: false, mode: false, tour: false };
   }
 
   // true once per press
@@ -75,7 +75,11 @@ export class XRInput {
     act.stress = this.hold('x', x, dt);
     act.vignette = this.edge('ls', pressed(L, 3));  // left stick press: vignette strength
     act.mode = this.edge('rs', pressed(R, 3));      // right stick press: steering mode
-    act.recenter = this.hold('y', pressed(L, 5), dt);
+    // Y: tap = tour button (stage 6), hold 1 s = recentre the seat
+    const y = pressed(L, 5);
+    act.tour = !y && this.prev.y && this.holds.y < TAP;
+    this.prev.y = y;
+    act.recenter = this.hold('y', y, dt);
     const gripsReset = this.hold('grips', mode === 'stick' && this.gripLeft && this.gripRight, dt);
     act.reset = this.hold('ab', btnA && btnB, dt) || gripsReset;
     return act;

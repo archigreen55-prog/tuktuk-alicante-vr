@@ -31,6 +31,15 @@
   #status { font-size: 13px; opacity: .8; margin-top: 10px; }
   #attr { position: fixed; right: 6px; bottom: 4px; font-size: 12px; background: rgba(255, 255, 255, .75); padding: 2px 6px; border-radius: 4px; z-index: 5; }
   #attr a { color: #245; }
+  #tourError { display: none; color: #ff9f80; font-size: 13px; margin: 4px 0; }
+  #best { font-size: 13px; color: #ffd166; min-height: 1em; }
+  /* desktop copy of the tour UI (the dashboard is small in the laptop cockpit view) */
+  #tourHud { position: fixed; right: 10px; top: 10px; min-width: 250px; max-width: 360px; padding: 8px 12px; border-radius: 8px; background: rgba(16, 22, 28, .82); color: #fff; font: 14px/1.35 system-ui, sans-serif; display: none; z-index: 5; }
+  #tourHud .l1 { color: #9fb3c8; font-size: 12px; } #tourHud .l2 { font-weight: 700; font-size: 17px; } #tourHud .l3 { color: #cfe3f5; } #tourHud .l4 { margin-top: 3px; }
+  #tourCard { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(640px, calc(100vw - 32px)); box-sizing: border-box; padding: 10px 14px; border-radius: 10px; background: rgba(16, 22, 28, .88); color: #fff; font: 15px/1.4 system-ui, sans-serif; display: none; z-index: 5; }
+  #tourCard .t { color: #f2c230; font-weight: 700; font-size: 17px; } #tourCard .c { color: #9fb3c8; font-weight: 400; font-size: 13px; } #tourCard .s { color: #ffd166; }
+  #tourCard .f { color: #6fe06f; font-weight: 700; margin-top: 4px; }
+  #miniMap { position: fixed; left: 10px; bottom: 30px; width: 180px; height: 180px; display: none; z-index: 5; }
   #debug { position: fixed; left: 8px; top: 8px; font: 12px/1.35 ui-monospace, monospace; color: #fff; background: rgba(0, 0, 0, .55); padding: 4px 8px; border-radius: 4px; white-space: pre; display: none; z-index: 5; }
 </style>
 <script type="importmap">
@@ -38,23 +47,31 @@
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
-    "./src/city/buildCity.js": "./src/city/buildCity.js?v=0.6.0",
-    "./src/city/facades.js": "./src/city/facades.js?v=0.6.0",
-    "./src/city/geo.js": "./src/city/geo.js?v=0.6.0",
-    "./src/city/tiles.js": "./src/city/tiles.js?v=0.6.0",
-    "./src/comfort/vignette.js": "./src/comfort/vignette.js?v=0.6.0",
-    "./src/input/handlebarInput.js": "./src/input/handlebarInput.js?v=0.6.0",
-    "./src/input/keyboard.js": "./src/input/keyboard.js?v=0.6.0",
-    "./src/input/xrInput.js": "./src/input/xrInput.js?v=0.6.0",
-    "./src/main.js": "./src/main.js?v=0.6.0",
-    "./src/perf/gpuTimer.js": "./src/perf/gpuTimer.js?v=0.6.0",
-    "./src/settings.js": "./src/settings.js?v=0.6.0",
-    "./src/vehicle/collision.js": "./src/vehicle/collision.js?v=0.6.0",
-    "./src/vehicle/horn.js": "./src/vehicle/horn.js?v=0.6.0",
-    "./src/vehicle/physics.js": "./src/vehicle/physics.js?v=0.6.0",
-    "./src/vehicle/tuktuk.js": "./src/vehicle/tuktuk.js?v=0.6.0",
-    "./src/version.js": "./src/version.js?v=0.6.0",
-    "./src/xr/xrRig.js": "./src/xr/xrRig.js?v=0.6.0"
+    "./src/city/buildCity.js": "./src/city/buildCity.js?v=0.7.0",
+    "./src/city/facades.js": "./src/city/facades.js?v=0.7.0",
+    "./src/city/geo.js": "./src/city/geo.js?v=0.7.0",
+    "./src/city/tiles.js": "./src/city/tiles.js?v=0.7.0",
+    "./src/comfort/vignette.js": "./src/comfort/vignette.js?v=0.7.0",
+    "./src/game/markers.js": "./src/game/markers.js?v=0.7.0",
+    "./src/game/route.js": "./src/game/route.js?v=0.7.0",
+    "./src/game/scoring.js": "./src/game/scoring.js?v=0.7.0",
+    "./src/game/tour.js": "./src/game/tour.js?v=0.7.0",
+    "./src/game/tourists.js": "./src/game/tourists.js?v=0.7.0",
+    "./src/input/handlebarInput.js": "./src/input/handlebarInput.js?v=0.7.0",
+    "./src/input/keyboard.js": "./src/input/keyboard.js?v=0.7.0",
+    "./src/input/xrInput.js": "./src/input/xrInput.js?v=0.7.0",
+    "./src/main.js": "./src/main.js?v=0.7.0",
+    "./src/perf/gpuTimer.js": "./src/perf/gpuTimer.js?v=0.7.0",
+    "./src/settings.js": "./src/settings.js?v=0.7.0",
+    "./src/ui/dashboard.js": "./src/ui/dashboard.js?v=0.7.0",
+    "./src/ui/hud.js": "./src/ui/hud.js?v=0.7.0",
+    "./src/ui/minimap.js": "./src/ui/minimap.js?v=0.7.0",
+    "./src/vehicle/collision.js": "./src/vehicle/collision.js?v=0.7.0",
+    "./src/vehicle/horn.js": "./src/vehicle/horn.js?v=0.7.0",
+    "./src/vehicle/physics.js": "./src/vehicle/physics.js?v=0.7.0",
+    "./src/vehicle/tuktuk.js": "./src/vehicle/tuktuk.js?v=0.7.0",
+    "./src/version.js": "./src/version.js?v=0.7.0",
+    "./src/xr/xrRig.js": "./src/xr/xrRig.js?v=0.7.0"
   }
 }
 </script>
@@ -63,7 +80,7 @@
   // cached) page, reload once with ?v=<new>, a URL no cache has seen. Every module and data URL
   // carries ?v=<version> too (import map above). Versions are set by tools/bump-version.mjs.
   {
-    const PAGE_VERSION = '0.6.0';
+    const PAGE_VERSION = '0.7.0';
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then(({ version }) => {
       const url = new URL(location.href);
       if (version && version !== PAGE_VERSION && url.searchParams.get('v') !== version) {
@@ -77,10 +94,13 @@
 <body>
 <div id="overlay"><div class="card">
   <h1>🛺 Tuk-Tuk Alicante</h1>
-  <p>Їзда на тук-туку справжнім центром Аліканте. Прототип: місто з OpenStreetMap, керування з клавіатури або контролерів Meta Quest 3.</p>
+  <p>Їзда на тук-туку справжнім центром Аліканте. Забери туристів біля готелю Meliá, покажи їм місто й привези назад — плавно, щоб отримати чайові й п'ять зірок. Місто з OpenStreetMap, керування з клавіатури або контролерів Meta Quest 3.</p>
   <div id="buttons"><button id="start" disabled>Завантаження…</button></div>
   <div id="status"></div>
   <div id="settings">
+    <label>Режим:<select id="mode"><option value="tour">тур з туристами</option><option value="free">вільна їзда</option></select></label>
+    <label>Тур:<select id="tourSel"></select> <span id="best"></span></label>
+    <div id="tourError"></div>
     <label>Керування у VR:<select id="steering"><option value="stick">стік</option><option value="hands">руки на кермі</option></select></label>
     <label>Віньєтка у VR (затемнення країв у поворотах і на гальмуванні):<select id="vignette"></select></label>
     <label><input type="checkbox" id="vibration">Вібрація двигуна в правій ручці (режим «руки на кермі»; типово вимкнена)</label>
@@ -89,7 +109,7 @@
   <h2>Клавіатура</h2>
   <table>
     <tr><td>W / ↑</td><td>газ</td></tr>
-    <tr><td>S / ↓</td><td>гальмо; утримуй на місці — задній хід</td></tr>
+    <tr><td>S / ↓</td><td>гальмо (коротко — м'яко, довше — сильніше); утримуй на місці — задній хід</td></tr>
     <tr><td>A D / ← →</td><td>поворот</td></tr>
     <tr><td>Пробіл</td><td>ручник (занос)</td></tr>
     <tr><td>R</td><td>повернутися на найближчу дорогу</td></tr>
@@ -97,6 +117,8 @@
     <tr><td>F</td><td>лічильник FPS на панелі</td></tr>
     <tr><td>H</td><td>гудок</td></tr>
     <tr><td>G</td><td>тест навантаження (×1…×8)</td></tr>
+    <tr><td>T</td><td>тур: новий після підсумку; двічі — почати заново</td></tr>
+    <tr><td>M</td><td>мінікарта</td></tr>
     <tr><td>Права кнопка миші</td><td>озирнутися</td></tr>
   </table>
   </div><div>
@@ -112,6 +134,7 @@
     <tr><td>Натиск правого стіка</td><td>режим керування: стік / руки</td></tr>
     <tr><td>X / утримати X 1 с</td><td>лічильник FPS / тест навантаження</td></tr>
     <tr><td>Натиск лівого стіка</td><td>сила віньєтки</td></tr>
+    <tr><td>Y коротко</td><td>тур: новий після підсумку; двічі — почати заново</td></tr>
     <tr><td>Y (утримати 1 с)</td><td>перецентрувати сидіння</td></tr>
     <tr><td>A + B (1 с)</td><td>повернутися на дорогу (у режимі стіка — ще й обидва grip 1 с)</td></tr>
   </table>
@@ -119,7 +142,10 @@
   <div id="version"></div>
 </div></div>
 <div id="debug"></div>
+<div id="tourHud"></div>
+<div id="tourCard"></div>
+<canvas id="miniMap" width="180" height="180"></canvas>
 <div id="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</div>
-<script type="module" src="src/main.js?v=0.6.0"></script>
+<script type="module" src="src/main.js?v=0.7.0"></script>
 </body>
 </html>

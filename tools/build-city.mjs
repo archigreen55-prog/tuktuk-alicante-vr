@@ -3,6 +3,7 @@
 // Axes: x = east, z = south (three.js convention, y up). Origin = bbox centre.
 // Data © OpenStreetMap contributors, ODbL.
 import { readFile, writeFile } from 'node:fs/promises';
+import { RoadGraph } from '../src/game/route.js';
 
 const BBOX = { south: 38.3400, west: -0.4950, north: 38.3515, east: -0.4770 };
 const LAT0 = (BBOX.south + BBOX.north) / 2;
@@ -463,6 +464,157 @@ for (const [key, L] of Object.entries(LANDMARKS)) {
   }
 }
 
+// ---------- tour (stage 6): places from data/tour.json + drivable street graph ----------
+// A place is found in OSM by name (name, name:es/ca/en, official/alt name, wikipedia, wikimedia
+// commons: the Meliá hotel and Casa de les Bruixes have no usable `name`) or by exact id. Its road
+// point is the nearest point of a drivable street (optionally the one named in `road`, near `at`),
+// never on pedestrian streets and at least EDGE_MARGIN inside the play area.
+const TOUR_CLASS = { primary: 0, primary_link: 1, secondary: 0, secondary_link: 1, tertiary: 2, tertiary_link: 2, residential: 3, unclassified: 3, living_street: 4, service: 1 };
+const EDGE_MARGIN = 30;
+const normName = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+const searchNames = (t) => [t.name, t['name:es'], t['name:ca'], t['name:en'], t.official_name, t.alt_name,
+  t.wikipedia && t.wikipedia.replace(/^\w+:/, ''), t.wikimedia_commons && t.wikimedia_commons.replace(/^Category:/, '')].filter(Boolean).map(normName);
+const drivable = (t) => TOUR_CLASS[t.highway] !== undefined && t.area !== 'yes' && !/^(private|no)$/.test(t.access || '') && t.motor_vehicle !== 'no';
+const inPlay = (p, m = EDGE_MARGIN) => p[0] >= RECT.minX + m && p[0] <= RECT.maxX - m && p[1] >= RECT.minZ + m && p[1] <= RECT.maxZ - m;
+let tourSpec = null;
+try { tourSpec = JSON.parse(await readFile('data/tour.json', 'utf8')); } catch (err) { console.warn('data/tour.json:', err.message); }
+
+// drivable street graph (OSM nodes, cut like the rendered roads: no mount, inside the play area)
+const graphIdx = new Map(), graphN = [], graphE = [];
+const driveRoads = [];
+for (const e of E) {
+  const t = e.tags || {};
+  if (e.type !== 'way' || !drivable(t) || !e.nodes || !e.geometry) continue;
+  const pts = geomToPts(e.geometry);
+  const ow = t.oneway === 'yes' || t.oneway === '1' || t.oneway === 'true' || t.junction === 'roundabout' ? 1 : t.oneway === '-1' ? -1 : 0;
+  driveRoads.push({ osm: 'way/' + e.id, names: searchNames(t), k: t.highway, w: ROAD_W[t.highway] || 6, ow, pts });
+  const ok = pts.map((p) => !inMount(p) && inPlay(p, 5));
+  const idx = (i) => {
+    const id = e.nodes[i];
+    if (!graphIdx.has(id)) { graphIdx.set(id, graphN.length / 2); graphN.push(r1(pts[i][0]), r1(pts[i][1])); }
+    return graphIdx.get(id);
+  };
+  for (let i = 1; i < pts.length; i++) {
+    if (!ok[i - 1] || !ok[i]) continue;
+    let a = idx(i - 1), b = idx(i);
+    if (ow < 0) [a, b] = [b, a];
+    graphE.push(a, b, (ow ? 1 : 0) | (TOUR_CLASS[t.highway] << 1));
+  }
+}
+function resolveOsm(q) {
+  const m = /^(way|node|relation)\/(\d+)$/.exec(String(q).trim());
+  if (m) { const e = E.find((x) => x.type === m[1] && x.id === +m[2]); return e ? { els: [e], street: false } : null; }
+  const nq = normName(q);
+  let best = null;
+  for (const e of E) {
+    const t = e.tags;
+    if (!t || t.public_transport || t.highway === 'bus_stop' || t.route || (e.type === 'relation' && t.type !== 'multipolygon')) continue;
+    let s = 0;
+    for (const n of searchNames(t)) s = Math.max(s, n === nq ? 3 : n.includes(nq) ? 1 : 0);
+    if (!s) continue;
+    const kind = t.building ? 3 : (e.type !== 'node' && !t.highway) ? 2 : t.highway ? 1 : 0;
+    const score = s * 10 + kind;
+    if (!best || score > best.score) best = { e, score, kind, exact: s === 3 };
+  }
+  if (!best) return null;
+  if (best.kind === 1) { // a street: every highway way with this name (exact matches if there are any)
+    const match = (e) => e.type === 'way' && e.tags?.highway && e.geometry && searchNames(e.tags).some((n) => (best.exact ? n === nq : n.includes(nq)));
+    return { els: E.filter(match), street: true };
+  }
+  return { els: [best.e], street: false };
+}
+// outline(s) of an element in local metres: rings for areas / buildings, lines for streets, a point for nodes
+function shapesOf(e) {
+  if (e.type === 'node') return [[proj(e.lat, e.lon)]];
+  if (e.type === 'way') return [geomToPts(e.geometry)];
+  return e.members.filter((mb) => mb.role === 'outer' && mb.geometry).map((mb) => geomToPts(mb.geometry));
+}
+// Candidate road points near p: the nearest point of every drivable way (optionally only ways named
+// roadName), nearest first. The first one that is connected both ways to the city core wins, so a stop
+// never sits on a carriageway that only leads out of the play area (one-way streets at the edge).
+const tourGraph = new RoadGraph({ n: graphN, e: graphE });
+const HUB = [landmarks.rambla.x, landmarks.rambla.z];
+function nearestRoadPoint(p, roadName) {
+  let cands = driveRoads;
+  if (roadName) {
+    const nr = normName(roadName);
+    const named = driveRoads.filter((r) => r.names.some((n) => n.includes(nr)));
+    if (named.length) cands = named; else console.warn(`tour: road "${roadName}" not found among drivable streets, using the nearest one`);
+  }
+  const found = [];
+  for (const r of cands) {
+    let best = null;
+    for (let i = 1; i < r.pts.length; i++) {
+      const a = r.pts[i - 1], b = r.pts[i];
+      if (inMount(a) || inMount(b) || !inPlay(a) || !inPlay(b)) continue;
+      const ex = b[0] - a[0], ez = b[1] - a[1], l2 = ex * ex + ez * ez;
+      if (l2 < 0.01) continue;
+      let t = ((p[0] - a[0]) * ex + (p[1] - a[1]) * ez) / l2;
+      t = Math.max(0, Math.min(1, t));
+      const q = [a[0] + ex * t, a[1] + ez * t], d = Math.hypot(q[0] - p[0], q[1] - p[1]);
+      if (!best || d < best.d) { const L = Math.sqrt(l2), sg = r.ow < 0 ? -1 : 1; best = { d, q, dir: [sg * ex / L, sg * ez / L], r, i, t }; }
+    }
+    if (best) found.push(best);
+  }
+  found.sort((a, b) => a.d - b.d);
+  for (const c of found) {
+    if (c.d > found[0].d + 80) break;
+    if (tourGraph.route(c.q, HUB) && tourGraph.route(HUB, c.q)) return c;
+  }
+  if (found.length) console.warn(`tour: no connected street near ${p.map(Math.round)}, using a dead end`);
+  return found[0] || null;
+}
+// points `dists` metres back along the street (against the driving direction) from a road point:
+// where the tuk-tuk starts before the pickup, on the road even where it bends
+function backAlong(rp, dists) {
+  const pts = rp.r.ow < 0 ? rp.r.pts.slice().reverse() : rp.r.pts;
+  let i = rp.r.ow < 0 ? pts.length - rp.i : rp.i; // segment (i-1, i) holds the point, in driving order
+  let cur = rp.q, acc = 0;
+  const out = [];
+  for (const want of dists) {
+    while (i >= 1) {
+      const a = pts[i - 1], L = Math.hypot(cur[0] - a[0], cur[1] - a[1]);
+      if (acc + L >= want) {
+        const k = (want - acc) / (L || 1), p = [cur[0] + (a[0] - cur[0]) * k, cur[1] + (a[1] - cur[1]) * k];
+        const b = pts[i], dx = b[0] - a[0], dz = b[1] - a[1];
+        if (inPlay(p) && !inMount(p)) out.push([r1(p[0]), r1(p[1]), +Math.atan2(-dx, -dz).toFixed(3)]);
+        break;
+      }
+      acc += L; cur = a; i--;
+    }
+  }
+  return out;
+}
+const tourPlaces = {};
+const tourIssues = [];
+for (const [id, spec] of Object.entries(tourSpec?.places || {})) {
+  const found = spec.osm ? resolveOsm(spec.osm) : null;
+  if (spec.osm && !found) tourIssues.push(`${id}: "${spec.osm}" not found in OSM`);
+  let look = null, trig = [], osmIds = [], osmName = '';
+  if (found) {
+    const shapes = found.els.flatMap(shapesOf);
+    look = centroid(shapes.flat());
+    trig = shapes.map((s) => flat(s));
+    osmIds = found.els.map((e) => `${e.type}/${e.id}`);
+    const t = found.els[0].tags;
+    osmName = t.name || t['name:es'] || (t.wikimedia_commons || '').replace(/^Category:/, '') || '';
+  }
+  const at = Array.isArray(spec.at) && spec.at.length === 2 ? proj(spec.at[0], spec.at[1]) : null;
+  if (!look && at) look = at;
+  if (!look) { tourIssues.push(`${id}: needs "osm" or "at"`); continue; }
+  // a drivable street place (the Rambla) snaps to itself unless `road` says otherwise
+  const roadName = spec.road || (found?.street && found.els.some((e) => drivable(e.tags)) ? spec.osm : null);
+  const rp = nearestRoadPoint(at || look, roadName);
+  if (!rp) { tourIssues.push(`${id}: no drivable street nearby`); continue; }
+  tourPlaces[id] = {
+    name: osmName, osm: osmIds.slice(0, 6), street: found?.street || false,
+    look: [r1(look[0]), r1(look[1])], p: [r1(rp.q[0]), r1(rp.q[1])], d: rp.dir.map((v) => +v.toFixed(3)),
+    w: rp.r.w, ow: rp.r.ow ? 1 : 0, road: rp.r.names[0] || rp.r.k, dist: Math.round(rp.d),
+    back: backAlong(rp, [45, 35, 25, 15]),
+    trig,
+  };
+}
+
 // start: southern end of the Rambla, a little north, facing north along it
 const rs = landmarks.rambla.south, rn = landmarks.rambla.north;
 const dirLen = Math.hypot(rn[0] - rs[0], rn[1] - rs[1]);
@@ -487,6 +639,7 @@ const out = {
   parks,
   palms: flat(palms),
   sea: flat(sea),
+  tour: { places: tourPlaces, graph: { n: graphN, e: graphE } },
   mount: { foot: flat(MOUNT_FOOT), peak: flat([proj(peakNode.lat, peakNode.lon)]), peakName: peakNode.tags.name, height: 166, castle: flat(castleHull), castleName: castleWay.tags['name:es'] || castleWay.tags.name },
 };
 const json = JSON.stringify(out);
@@ -499,4 +652,28 @@ console.log(`roads: ${roads.length} polylines ${JSON.stringify(roadCount)}; junc
 console.log(`sea: ${seaSource} (${sea.length} vertices) — ${seaNote}`);
 for (const [k, v] of Object.entries(landmarks)) console.log(`landmark ${k}: ${v.lat}, ${v.lon}  local (${v.x}, ${v.z})  ${v.osm.slice(0, 3).join(' ')}`);
 console.log(`start: ${JSON.stringify(start)}`);
+
+// tour report: places and route lengths (the same A* as the game, src/game/route.js)
+{
+  const g = tourGraph;
+  console.log(`tour graph: ${g.nodeCount} nodes, ${g.edgeCount} edges`);
+  for (const [id, p] of Object.entries(tourPlaces)) {
+    const [lat, lon] = unproj(p.p[0], p.p[1]);
+    console.log(`place ${id.padEnd(13)} ${(p.osm[0] || '(at)').padEnd(18)} ${(p.name || '').slice(0, 34).padEnd(34)} road point ${p.p.join(', ').padEnd(14)} (${lat.toFixed(5)}, ${lon.toFixed(5)}) ${p.dist} m from target, ${p.road}${p.ow ? ' (one-way)' : ''}`);
+  }
+  for (const t of tourSpec?.tours || []) {
+    const ids = [t.start, ...t.route.map((r) => r.stop || r.pass), t.start];
+    const pts = ids.map((id) => tourPlaces[id]?.p);
+    if (pts.some((p) => !p)) { console.warn(`tour ${t.id}: unknown place`); continue; }
+    const legs = [];
+    let L = 0, T = 0;
+    for (let i = 1; i < pts.length; i++) {
+      const r = g.route(pts[i - 1], pts[i]);
+      if (!r) { legs.push(`${ids[i]}: NO ROUTE`); continue; }
+      L += r.len; T += r.time; legs.push(`${ids[i]} ${Math.round(r.len)} m`);
+    }
+    console.log(`tour ${t.id}: ${(L / 1000).toFixed(2)} km, estimate ${(T / 60).toFixed(1)} min | ${legs.join(', ')}`);
+  }
+  for (const issue of tourIssues) console.warn('tour:', issue);
+}
 console.log(`city.json: ${(json.length / 1024).toFixed(0)} KB`);

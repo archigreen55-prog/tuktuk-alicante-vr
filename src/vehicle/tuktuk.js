@@ -1,7 +1,17 @@
 // Tuk-tuk built from primitives, merged into a single vertex-coloured mesh (1 draw call),
 // plus the turning handlebar, the dashboard panel (canvas texture) and a seat anchor for the camera.
+// Stage 6: the body is stretched by REAR_EXT for a second passenger bench (4 passengers).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { Dashboard } from '../ui/dashboard.js';
+
+export const REAR_EXT = 0.85;   // m added behind the first passenger bench (knee room for the second row)
+const BENCH_Z = [0.98, 0.98 + REAR_EXT];
+// passenger seats in the tuk-tuk frame (hip point on the bench top), first row first
+export const SEATS = [
+  { x: -0.27, y: 0.84, z: BENCH_Z[0] + 0.08 }, { x: 0.27, y: 0.84, z: BENCH_Z[0] + 0.08 },
+  { x: -0.27, y: 0.84, z: BENCH_Z[1] + 0.08 }, { x: 0.27, y: 0.84, z: BENCH_Z[1] + 0.08 },
+];
 
 const C = {
   body: 0xf2c230, bodyDark: 0xd9a51f, roof: 0x1f6b45, frame: 0x2a2a2a, seat: 0x5a3422,
@@ -56,37 +66,40 @@ function limb(a, b, r0, r1, color, sides = 8) {
 export function createTukTuk({ version = '' } = {}) {
   const P = [];
   // chassis & floor
-  P.push(part(box(1.3, 0.1, 2.2), C.floor, 0, 0.36, 0.35));
+  P.push(part(box(1.3, 0.1, 2.2 + REAR_EXT), C.floor, 0, 0.36, 0.35 + REAR_EXT / 2));
   // front cowl around the front wheel + dash top
   P.push(part(box(0.78, 0.55, 0.55), C.body, 0, 0.66, -0.98));
   P.push(part(box(1.16, 0.12, 0.36), C.body, 0, 0.94, -0.8));
   P.push(part(box(1.16, 0.5, 0.06), C.bodyDark, 0, 0.66, -0.64));
   // side skirts and rear body
   for (const s of [-1, 1]) {
-    P.push(part(box(0.06, 0.42, 1.55), C.body, s * 0.64, 0.6, 0.65));
+    P.push(part(box(0.06, 0.42, 1.55 + REAR_EXT), C.body, s * 0.64, 0.6, 0.65 + REAR_EXT / 2));
     P.push(part(box(0.06, 0.12, 0.9), C.bodyDark, s * 0.64, 0.46, -0.55));
   }
-  P.push(part(box(1.3, 0.75, 0.08), C.body, 0, 0.78, 1.44));
+  P.push(part(box(1.3, 0.75, 0.08), C.body, 0, 0.78, 1.44 + REAR_EXT));
   // pillars
   for (const s of [-1, 1]) {
     P.push(part(box(0.05, 1.0, 0.05), C.frame, s * 0.58, 1.43, -0.98));
-    P.push(part(box(0.05, 1.45, 0.05), C.frame, s * 0.62, 1.2, 1.42));
-    P.push(part(box(0.04, 0.04, 2.4), C.frame, s * 0.62, 1.88, 0.22)); // roof rails
+    P.push(part(box(0.05, 1.45, 0.05), C.frame, s * 0.62, 1.2, 1.42 + REAR_EXT));
+    P.push(part(box(0.04, 0.04, 2.4 + REAR_EXT), C.frame, s * 0.62, 1.88, 0.22 + REAR_EXT / 2)); // roof rails
   }
   // windscreen frame (top bar) and roof
   P.push(part(box(1.2, 0.05, 0.05), C.frame, 0, 1.9, -0.98));
-  P.push(part(box(1.46, 0.07, 2.7), C.roof, 0, 1.95, 0.22));
+  P.push(part(box(1.46, 0.07, 2.7 + REAR_EXT), C.roof, 0, 1.95, 0.22 + REAR_EXT / 2));
   P.push(part(box(1.5, 0.12, 0.08), C.roof, 0, 1.9, -1.12)); // visor lip
-  // driver seat & passenger bench
+  // driver seat & two passenger benches
   P.push(part(box(0.5, 0.12, 0.42), C.seat, 0, 0.66, -0.02));
   P.push(part(box(0.5, 0.42, 0.08), C.seat, 0, 0.9, 0.22, -0.12));
-  P.push(part(box(1.18, 0.16, 0.46), C.seat, 0, 0.66, 0.98));
-  P.push(part(box(1.18, 0.5, 0.08), C.seat, 0, 0.98, 1.3, -0.12));
+  for (const bz of BENCH_Z) {
+    P.push(part(box(1.18, 0.16, 0.46), C.seat, 0, 0.66, bz));
+    P.push(part(box(1.18, 0.5, 0.08), C.seat, 0, 0.98, bz + 0.32, -0.12));
+    P.push(part(box(1.1, 0.24, 0.06), C.frame, 0, 0.46, bz - 0.2)); // bench front panel
+  }
   // steering column along the steering axis (the handlebar on top turns: see createHandlebar)
   P.push(part(cyl(0.025, 0.3, 8), C.chrome, 0, 0.884, -0.723, BAR_TILT));
   // wheels
   P.push(part(cyl(0.26, 0.16, 14), C.tire, 0, 0.26, -1.08, 0, 0, Math.PI / 2));
-  for (const s of [-1, 1]) P.push(part(cyl(0.26, 0.16, 14), C.tire, s * 0.62, 0.26, 0.98, 0, 0, Math.PI / 2));
+  for (const s of [-1, 1]) P.push(part(cyl(0.26, 0.16, 14), C.tire, s * 0.62, 0.26, 0.98 + REAR_EXT * 0.55, 0, 0, Math.PI / 2));
   // headlight
   P.push(part(cyl(0.09, 0.06, 10), C.light, 0, 0.82, -1.27, Math.PI / 2));
   // brake pedal under the driver's right foot: bracket (fixed) + arm and pad (hinged)
@@ -150,7 +163,7 @@ if (aPedal > 0.001) transformed = vec3(${h.x}, ${h.y}, ${h.z}) + pedalRot(transf
   group.add(handlebar.pivot);
 
   const dashboard = new Dashboard(version);
-  dashboard.mesh.position.set(0, 1.134, -0.87);
+  dashboard.mesh.position.set(0, 1.134, -0.875);
   dashboard.mesh.rotation.x = -0.45;
   group.add(dashboard.mesh);
 
@@ -264,58 +277,4 @@ function createHandlebar() {
   rightGlove.visible = false;
   rightGrip.add(rightGlove);
   return { pivot, steer, rightGripBase, rightGrip, leftGlove, rightGlove };
-}
-
-// Dashboard panel: speed, optional FPS counter, message line, OSM attribution, build version.
-export class Dashboard {
-  constructor(version = '') {
-    this.version = version;
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = 512; this.canvas.height = 256;
-    this.ctx = this.canvas.getContext('2d');
-    this.texture = new THREE.CanvasTexture(this.canvas);
-    this.texture.colorSpace = THREE.SRGBColorSpace;
-    this.texture.anisotropy = 4;
-    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.21), new THREE.MeshBasicMaterial({ map: this.texture }));
-    this.mesh.name = 'dashboard';
-    this.showFps = false;
-    this.draw({ speed: 0, fps: 0, calls: 0, tris: 0 });
-  }
-  // msg: optional text for the message line (msgColor defaults to orange).
-  // Stats (shown with showFps): fps, hz (display rate), calls, tris, gpuMs / cpuMs (null = n/a), stress.
-  draw({ speed, fps, calls, tris, hz = 0, gpuMs = null, cpuMs = null, stress = 1, msg = '', msgColor = '#ff9f43' }) {
-    const g = this.ctx, W = 512, H = 256;
-    g.fillStyle = '#10161c'; g.fillRect(0, 0, W, H);
-    g.strokeStyle = '#f2c230'; g.lineWidth = 6; g.strokeRect(3, 3, W - 6, H - 6);
-    g.fillStyle = '#ffffff'; g.font = 'bold 96px system-ui, sans-serif'; g.textBaseline = 'alphabetic';
-    g.textAlign = 'right'; g.fillText(String(Math.round(Math.abs(speed) * 3.6)), 190, 118);
-    g.textAlign = 'left'; g.font = 'bold 34px system-ui, sans-serif'; g.fillStyle = '#f2c230'; g.fillText('km/h', 200, 116);
-    if (speed < -0.1) { g.fillStyle = '#ff8a5c'; g.fillText('R', 290, 116); }
-    if (this.showFps) {
-      const target = hz || 72;
-      const ms = (v) => (v == null ? 'н/д' : v.toFixed(1) + ' мс');
-      g.textAlign = 'right';
-      g.fillStyle = fps >= target - 2 ? '#6fe06f' : fps >= target * 0.8 ? '#ffd166' : '#ff5c5c';
-      g.font = 'bold 40px system-ui, sans-serif'; g.fillText(`${Math.round(fps)} FPS`, W - 20, 50);
-      g.font = '22px system-ui, sans-serif'; g.fillStyle = '#9fb3c8';
-      g.fillText(`GPU ${ms(gpuMs)}`, W - 20, 80);
-      g.fillText(`CPU ${ms(cpuMs)}`, W - 20, 106);
-      g.textAlign = 'center'; g.font = '18px system-ui, sans-serif';
-      g.fillStyle = stress > 1 ? '#ffd166' : '#9fb3c8';
-      g.fillText(`${hz ? hz + ' Гц · ' : ''}${calls} calls · ${(tris / 1000).toFixed(0)}k tris${stress > 1 ? ` · навантаження ×${stress}` : ''}`, W / 2, 140);
-    }
-    if (msg) {
-      g.textAlign = 'center'; g.fillStyle = msgColor;
-      let size = 34;
-      do { g.font = `bold ${size}px system-ui, sans-serif`; size -= 2; } while (g.measureText(msg).width > W - 40 && size > 16);
-      g.fillText(msg, W / 2, 178);
-    }
-    g.textAlign = 'left'; g.font = '22px system-ui, sans-serif'; g.fillStyle = '#9fb3c8';
-    g.fillText('© OpenStreetMap contributors', 20, H - 22);
-    if (this.version) {
-      g.textAlign = 'right'; g.font = '18px system-ui, sans-serif'; g.fillStyle = '#6f8396';
-      g.fillText('v' + this.version, W - 18, H - 22);
-    }
-    this.texture.needsUpdate = true;
-  }
 }

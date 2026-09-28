@@ -1,0 +1,130 @@
+{
+  "_help": [
+    "Тексти й маршрути туру. Редагуй сміливо: title, intro, outro, fact, reviews.",
+    "Рядки — у лапках, між полями — коми. Кілька абзаців — список рядків через кому.",
+    "Тур: start (місце старту й фінішу) + route: список { \"stop\": id } (зупинка з фото) або { \"pass\": id } (факт на ходу).",
+    "Порядок, склад маршруту й тексти працюють одразу після оновлення сторінки.",
+    "Нове місце або зміна osm / road / at — після цього запусти: node tools/build-city.mjs",
+    "osm: назва з OpenStreetMap (name, name:es, name:ca, wikipedia...) або точний id, напр. \"way/265207919\".",
+    "road: вулиця, до якої прив'язати зупинку. at: [lat, lon] — точне місце на дорозі, якщо автоматика поставила не туди.",
+    "targetMin у турі — свій цільовий час у хвилинах (інакше рахується з маршруту)."
+  ],
+  "tours": [
+    {
+      "id": "short",
+      "title": "Короткий тур",
+      "start": "melia",
+      "group": [2, 4],
+      "intro": "ЗАГЛУШКА: привітання туристів біля Meliá (1–2 речення).",
+      "outro": "ЗАГЛУШКА: прощання біля Meliá.",
+      "route": [
+        { "stop": "explanada" },
+        { "stop": "townHall" },
+        { "stop": "santaMaria" },
+        { "stop": "postiguet" },
+        { "stop": "mercado" }
+      ]
+    },
+    {
+      "id": "full",
+      "title": "Повний тур",
+      "start": "melia",
+      "group": [2, 4],
+      "intro": "ЗАГЛУШКА: привітання туристів біля Meliá (1–2 речення).",
+      "outro": "ЗАГЛУШКА: прощання біля Meliá.",
+      "route": [
+        { "stop": "explanada" },
+        { "pass": "canalejas" },
+        { "pass": "brujas" },
+        { "pass": "university" },
+        { "pass": "rambla" },
+        { "stop": "townHall" },
+        { "stop": "santaMaria" },
+        { "stop": "postiguet" },
+        { "stop": "mercado" },
+        { "pass": "luceros" },
+        { "pass": "sanFrancisco" }
+      ]
+    }
+  ],
+  "places": {
+    "melia": {
+      "title": "Готель Meliá",
+      "osm": "Hotel Meliá Alicante",
+      "road": "Passeig del Port",
+      "at": [38.34403, -0.47933]
+    },
+    "explanada": {
+      "title": "Explanada і Casa Carbonell",
+      "osm": "Casa Carbonell",
+      "road": "Passeig dels Màrtirs de la Llibertat",
+      "fact": ["ЗАГЛУШКА: факт про Explanada de España і Casa Carbonell (1–3 речення, до ~280 знаків)."]
+    },
+    "canalejas": {
+      "title": "Parque de Canalejas",
+      "osm": "Parque de Canalejas",
+      "at": [38.34157, -0.48680],
+      "fact": ["ЗАГЛУШКА: фікуси Canalejas (коротко — читаєш на ходу)."]
+    },
+    "brujas": {
+      "title": "Casa de las Brujas",
+      "osm": "Casa de les Bruixes",
+      "road": "Avinguda del Doctor Gadea",
+      "at": [38.34179, -0.48749],
+      "fact": ["ЗАГЛУШКА: Casa de las Brujas."]
+    },
+    "university": {
+      "title": "Будівля університету",
+      "osm": "Seu Universitària Ciutat d'Alacant",
+      "road": "Carrer de Sant Ferran",
+      "fact": ["ЗАГЛУШКА: університет, Calle San Fernando, 40."]
+    },
+    "rambla": {
+      "title": "Rambla de Méndez Núñez",
+      "osm": "Rambla de Méndez Núñez",
+      "fact": ["ЗАГЛУШКА: Rambla."]
+    },
+    "townHall": {
+      "title": "Ayuntamiento",
+      "osm": "way/265207919",
+      "road": "Plaça de l'Ajuntament",
+      "fact": ["ЗАГЛУШКА: факт про ратушу."]
+    },
+    "santaMaria": {
+      "title": "Basílica de Santa María",
+      "osm": "Basílica de Santa María",
+      "road": "Carrer de Jorge Juan",
+      "fact": ["ЗАГЛУШКА: факт про базиліку."]
+    },
+    "postiguet": {
+      "title": "Postiguet і замок Санта-Барбара",
+      "osm": "Castillo de Santa Bárbara",
+      "road": "Avinguda de Juan Bautista Lafora",
+      "at": [38.34546, -0.47867],
+      "fact": ["ЗАГЛУШКА: пляж Postiguet і вид на замок Санта-Барбара."]
+    },
+    "mercado": {
+      "title": "Mercado Central",
+      "osm": "Mercado Central de Alicante",
+      "road": "Avinguda Alfons el Savi",
+      "fact": ["ЗАГЛУШКА: факт про ринок."]
+    },
+    "luceros": {
+      "title": "Plaza de los Luceros",
+      "osm": "Plaza de los Luceros",
+      "fact": ["ЗАГЛУШКА: фонтан Luceros."]
+    },
+    "sanFrancisco": {
+      "title": "Calle San Francisco — вулиця грибів",
+      "osm": "Carrer de Sant Francesc",
+      "fact": ["ЗАГЛУШКА: вулиця грибів."]
+    }
+  },
+  "reviews": {
+    "great": ["Найкраща екскурсія нашого круїзу!", "Плавно, цікаво, з гумором. П'ять зірок!"],
+    "brakes": ["Гарно, але гальмували так, що мало телефон не вилетів.", "Ми трохи вивчили приладову панель лобом."],
+    "turns": ["Повороти — як на американських гірках.", "Цікаво, але на поворотах тримались за все підряд."],
+    "hits": ["Стіни Аліканте ми тепер знаємо особисто.", "Екскурсія гарна, але навіщо було таранити будинки?"],
+    "late": ["Ледь встигли на лайнер!", "Гарно, але дуже довго."]
+  }
+}
