@@ -53,16 +53,19 @@ const glslConsts = (obj) => Object.entries(obj).map(([k, v]) => `const float ${k
 const FACADE_VERTEX_PARS = /* glsl */ `
 attribute float aBld;
 attribute vec4 aWall;
+attribute float aBase;
 uniform sampler2D uTable;
 flat varying vec4 vBld;
 flat varying float vBi;
 varying vec4 vWall;
-varying vec3 vWPos;`;
+varying vec3 vWPos;
+varying float vBase;`;
 const FACADE_VERTEX = /* glsl */ `
 int bi = int(aBld + 0.5);
 vBld = texelFetch(uTable, ivec2(bi & ${TABLE_W - 1}, bi >> ${Math.log2(TABLE_W)}), 0);
 vBi = aBld;
 vWall = aWall;
+vBase = aBase;
 vWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`;
 
 const FACADE_FRAGMENT_PARS = /* glsl */ `
@@ -75,6 +78,7 @@ flat varying vec4 vBld;
 flat varying float vBi;
 varying vec4 vWall;
 varying vec3 vWPos;
+varying float vBase;
 ${glslConsts(F)}
 const float PARAPET_M = ${PARAPET_H};
 const float BAY = ${BAY_W};
@@ -102,7 +106,7 @@ vec3 facadeColor(vec3 plaster, vec3 viewNormal, vec3 viewDir) {
   int style = int(vBld.x + 0.5);
   float gH = vBld.y, fH = vBld.z;
   vec3 shutter = uShutters[int(vBld.w + 0.5) % ${SHUTTER_COLORS.length}];
-  float y = vWPos.y, h = vWall.w, u = vWall.x, bw = max(vWall.y, 0.1);
+  float y = vWPos.y - vBase, h = vWall.w, u = vWall.x, bw = max(vWall.y, 0.1);
   int bi = int(vBi + 0.5);
   float layer; vec2 uv;
   if (vWall.z < -0.5) { layer = ROOF; uv = vWPos.xz / 3.0; }

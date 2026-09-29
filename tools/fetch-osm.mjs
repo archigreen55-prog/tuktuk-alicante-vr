@@ -2,8 +2,9 @@
 // Usage: node tools/fetch-osm.mjs   -> writes data/raw/alicante.osm.json
 // Data © OpenStreetMap contributors, ODbL.
 import { writeFile, mkdir } from 'node:fs/promises';
+import { BBOX } from './area.mjs';
 
-export const BBOX = { south: 38.3400, west: -0.4950, north: 38.3515, east: -0.4770 };
+export { BBOX };
 const b = `${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east}`;
 
 const query = `
@@ -13,8 +14,13 @@ const query = `
   relation["building"](${b});
   way["highway"](${b});
   way["natural"="coastline"](${b});
-  way["natural"~"water|peak|cliff|scrub"](${b});
+  way["natural"~"water|peak|cliff|scrub|bare_rock"](${b});
   node["natural"="peak"](${b});
+  way["barrier"~"retaining_wall|city_wall|wall"](${b});
+  way["historic"~"citywalls|fort|castle"](${b});
+  relation["historic"~"citywalls|fort|castle"](${b});
+  way["amenity"="parking"](${b});
+  way["man_made"="embankment"](${b});
   way["landuse"](${b});
   way["leisure"~"park|garden|marina"](${b});
   way["historic"](${b});
@@ -23,17 +29,19 @@ const query = `
   node["natural"="tree"](${b});
   way["natural"="tree_row"](${b});
   way["place"="square"](${b});
-  node["name"~"Mercado Central|Explanada|Luceros|Méndez Núñez|Santa Bárbara",i](${b});
-  way["name"~"Mercado Central|Explanada|Luceros|Méndez Núñez|Santa Bárbara",i](${b});
-  relation["name"~"Mercado Central|Explanada|Luceros|Méndez Núñez|Santa Bárbara",i](${b});
+  node["name"~"Mercado Central|Explanada|Luceros|Méndez Núñez|Santa Bárbara|MARQ|Arqueol|Vázquez de Mella|Gómez Ulla",i](${b});
+  way["name"~"Mercado Central|Explanada|Luceros|Méndez Núñez|Santa Bárbara|MARQ|Arqueol|Vázquez de Mella|Gómez Ulla",i](${b});
+  relation["name"~"Mercado Central|Explanada|Luceros|Méndez Núñez|Santa Bárbara|MARQ|Arqueol|Vázquez de Mella|Gómez Ulla",i](${b});
 );
 out geom;
 `;
 
 const MIRRORS = [
   'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
+  'https://z.overpass-api.de/api/interpreter',
+  'https://lz4.overpass-api.de/api/interpreter',
   'https://overpass.private.coffee/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
 ];
 
 for (const url of MIRRORS) {
@@ -41,7 +49,7 @@ for (const url of MIRRORS) {
     console.log('Querying', url);
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'tuktuk-alicante-vr/0.1 (one-time fetch)' },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'tuktuk-alicante-vr/0.9 (one-time fetch)' },
       body: 'data=' + encodeURIComponent(query),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

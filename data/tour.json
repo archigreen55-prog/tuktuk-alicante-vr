@@ -26,6 +26,21 @@
       ]
     },
     {
+      "id": "castle",
+      "title": "30 хв: до замку",
+      "start": "melia",
+      "group": [2, 4],
+      "intro": "ЗАГЛУШКА: привітання туристів біля Meliá — сьогодні їдемо до замку Санта-Барбара.",
+      "outro": "ЗАГЛУШКА: прощання біля Meliá.",
+      "route": [
+        { "stop": "explanada" },
+        { "stop": "santaMaria" },
+        { "stop": "postiguet" },
+        { "pass": "marq" },
+        { "stop": "castle" }
+      ]
+    },
+    {
       "id": "full",
       "title": "Повний тур",
       "start": "melia",
@@ -108,6 +123,18 @@
       "osm": "Mercado Central de Alicante",
       "road": "Avinguda Alfons el Savi",
       "fact": ["ЗАГЛУШКА: факт про ринок."]
+    },
+    "marq": {
+      "title": "MARQ — Археологічний музей",
+      "osm": "MARQ - Museo Arqueológico de Alicante",
+      "road": "Plaça del Doctor Gómez Ulla",
+      "fact": ["ЗАГЛУШКА: MARQ, Європейський музей року 2004 (коротко — на ходу)."]
+    },
+    "castle": {
+      "title": "Замок Санта-Барбара — ворота",
+      "osm": "way/20490181",
+      "at": [38.34972, -0.47778],
+      "fact": ["ЗАГЛУШКА: замок Санта-Барбара, 166 м над морем. Тук-тук піднімається до воріт і розвертається на майданчику; 2 хв на оглядовій точці."]
     },
     "luceros": {
       "title": "Plaza de los Luceros",

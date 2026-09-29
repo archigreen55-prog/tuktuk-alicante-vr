@@ -1,4 +1,4 @@
-// 2D collision world: polygon edges (buildings, mount foot, sea, play-area bounds)
+// 2D collision world: polygon edges (buildings, walls, sea, play-area bounds)
 // indexed in a uniform grid; circles are pushed out of edges.
 export class CollisionWorld {
   constructor(rect, cell = 16, margin = 80) {

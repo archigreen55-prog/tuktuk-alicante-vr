@@ -59,7 +59,7 @@ export class Dashboard {
     // footer: attribution + version
     g.textBaseline = 'alphabetic';
     g.textAlign = 'left'; g.font = `15px ${FONT}`; g.fillStyle = '#7f93a6';
-    g.fillText('© OpenStreetMap contributors', 16, H - 12);
+    g.fillText('© OpenStreetMap contributors · рельєф © IGN (CNIG)', 16, H - 12);
     if (this.version) { g.textAlign = 'right'; g.fillText('v' + this.version, W - 14, H - 12); }
     this.texture.needsUpdate = true;
     return true;

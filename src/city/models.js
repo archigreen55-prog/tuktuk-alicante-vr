@@ -22,7 +22,7 @@ const BASIS_PATH = `https://cdn.jsdelivr.net/npm/three@0.${THREE.REVISION}/examp
 
 // Loads and places the models of the buildings present in city.json. Returns null when there are none.
 // { group, cuts: Map(osmId -> [{ edge, t0, t1, top, depth }]), footprints: [[x, z, ...]], credits, stats }
-export async function loadModels(city, spec, { renderer, version = '' } = {}) {
+export async function loadModels(city, spec, { renderer, version = '', groundY = () => 0 } = {}) {
   const byId = new Map(city.buildings.map((b) => [b.id, b]));
   const jobs = [];
   for (const [osmId, s] of Object.entries(spec || {})) {
@@ -53,7 +53,8 @@ export async function loadModels(city, spec, { renderer, version = '' } = {}) {
     const ring = ringOf(byId.get(osmId).p);
     const e = edgeOf(ring, entry.edge);
     const t = (entry.at ?? 0.5) * e.len, off = entry.offset ?? 0.02;
-    obj.position.set(e.a[0] + e.dir[0] * t + e.n[0] * off, 0, e.a[1] + e.dir[1] * t + e.n[1] * off);
+    const px = e.a[0] + e.dir[0] * t + e.n[0] * off, pz = e.a[1] + e.dir[1] * t + e.n[1] * off;
+    obj.position.set(px, groundY(px, pz), pz);   // on the ground in front of the wall (the wall's own base may be lower)
     obj.rotation.y = Math.atan2(e.n[0], e.n[1]);  // model +Z -> the wall's outward normal
     obj.updateMatrixWorld(true);
     group.add(obj);

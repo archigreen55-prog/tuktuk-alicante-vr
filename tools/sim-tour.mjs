@@ -6,8 +6,10 @@ import { CollisionWorld } from '../src/vehicle/collision.js';
 import { TukTukPhysics } from '../src/vehicle/physics.js';
 import { RoadGraph, polylineDistance } from '../src/game/route.js';
 import { Tour } from '../src/game/tour.js';
+import { Terrain } from '../src/city/terrain.js';
 
 const city = JSON.parse(await readFile('data/city.json', 'utf8'));
+const terrain = city.meta.terrain && !process.env.FLAT ? Terrain.fromBin(city.meta.terrain, (await readFile(city.meta.terrain.file)).buffer.slice(0)) : null;
 const spec = JSON.parse(await readFile('data/tour.json', 'utf8'));
 const DT = 1 / 72;
 
@@ -21,7 +23,7 @@ function buildWorld() {
   const R = city.meta.rect;
   const world = new CollisionWorld(R);
   for (const b of city.buildings) { world.addPolygon(b.p); for (const h of b.holes || []) world.addPolygon(h); }
-  world.addPolygon(city.mount.foot);
+  for (const w of city.walls || []) world.addPolygon(w.p, !!w.closed);
   world.addPolygon(city.sea);
   const M = 5;
   const bounds = { minX: R.minX + M, maxX: R.maxX - M, minZ: R.minZ + M, maxZ: R.maxZ - M };
@@ -49,7 +51,7 @@ function pursue(pts, x, z, ahead) {
 
 export function simulate(tourId, style, { log = false } = {}) {
   const { world, bounds } = buildWorld();
-  const phys = new TukTukPhysics(world, city.start, bounds);
+  const phys = new TukTukPhysics(world, city.start, bounds, terrain);
   const graph = new RoadGraph(city.tour.graph);
   const tour = new Tour(spec, city.tour, graph, tourId);
   const spawn = tour.spawnCandidates().find((c) => phys.fits(c.x, c.z, c.heading));
@@ -57,11 +59,11 @@ export function simulate(tourId, style, { log = false } = {}) {
   phys.teleport(spawn.x, spawn.z, spawn.heading);
   const D = DRIVERS[style];
   const input = { throttle: 0, brake: 0, steer: 0, handbrake: false, horn: false };
-  let t = 0, pickupRoute = null, hits = 0, lastState = '';
+  let t = 0, pickupRoute = null, hits = 0, lastState = '', stallT = 0;
   const eventsLog = [];
   while (t < 3600) {
     t += DT;
-    tour.update({ dt: DT, x: phys.x, z: phys.z, speed: phys.forwardSpeed, accel: phys.accel, yawRate: phys.yawRate, brake: input.brake, reversing: phys.reversing, impact: phys.lastImpact, contact: phys.contactTimer > 0, handbrake: input.handbrake });
+    tour.update({ dt: DT, x: phys.x, z: phys.z, speed: phys.forwardSpeed, accel: phys.accel, yawRate: phys.yawRate, brake: input.brake, reversing: phys.reversing, impact: phys.lastImpact, contact: phys.contactTimer > 0, handbrake: input.handbrake, grade: phys.grade });
     for (const ev of tour.events) {
       if (ev.type === 'comfort' || ev.type === 'pass' || ev.type === 'stop' || ev.type === 'summary' || ev.type === 'seated' || ev.type === 'dropoff') eventsLog.push(`${t.toFixed(1).padStart(6)}s ${ev.type}${ev.kind ? ' ' + ev.kind + ' ' + ev.delta : ''}${ev.id ? ' ' + ev.id : ''}`);
     }
@@ -99,11 +101,15 @@ export function simulate(tourId, style, { log = false } = {}) {
       if (stopping || tour.state === 'waiting') vt = Math.min(vt, Math.sqrt(2 * D.aDec * Math.max(0, endDist - 1.5)));
       vt = Math.min(vt, Math.max(1.5, 11 - Math.abs(alpha) * 8));
       if (v < vt - 0.3) input.throttle = Math.min(D.maxThrottle, Math.max(0.15, (vt - v) * 0.4));
+      // stalled on a slope: floor it (a person would)
+      stallT = v < 0.3 && input.throttle > 0 ? stallT + DT : 0;
+      if (stallT > 1.5) input.throttle = 1;
       else if (v > vt + 0.3) input.brake = Math.min(D.maxBrake, Math.max(0.1, (v - vt) * 0.35));
       if (endDist < 1.5 && (stopping || tour.state === 'waiting')) input.brake = Math.max(input.brake, v > 0.05 ? D.maxBrake : 0);
     }
     phys.step(DT, input);
     if (phys.lastImpact > 0.5) hits++;
+    if (process.env.SIM_TRACE && Math.round(t / DT) % Math.round(20 / DT) === 0) console.log(`  trace ${t.toFixed(0).padStart(5)}s ${tour.state} next ${tour.next} pos ${phys.x.toFixed(0)},${phys.z.toFixed(0)} h ${phys.y.toFixed(1)} v ${(v * 3.6).toFixed(0)} km/h grade ${(phys.grade * 100).toFixed(0)}% path ${path ? path.length : '-'} slopeHit ${phys.slopeHit.toFixed(1)} reverts ${phys.reverts || 0}`);
   }
   const r = tour.result;
   return { tour, r, t, eventsLog, hits, reverts: phys.reverts || 0 };

@@ -57,12 +57,13 @@ export class StopMarker {
     scene.add(this.zone, this.pillar);
   }
 
-  // zone: { x, z, d: [dx, dz], len, w, kind } or null; ready: the tuk-tuk stands in it
+  // zone: { x, z, d: [dx, dz], len, w, kind, y (ground) } or null; ready: the tuk-tuk stands in it
   update(dt, zone, camPos, ready) {
     const on = !!zone;
     this.zone.visible = this.pillar.visible = on;
     if (!on) return;
-    this.zone.position.set(zone.x, 0.06, zone.z);
+    const gy = zone.y || 0;
+    this.zone.position.set(zone.x, gy + 0.09, zone.z);
     this.zone.rotation.y = Math.atan2(zone.d[0], zone.d[1]);
     this.zone.scale.set(zone.w, 1, zone.len);
     this.zoneU.uSize.value.set(zone.w, zone.len);
@@ -70,7 +71,7 @@ export class StopMarker {
     const col = ready ? COLORS.ready : COLORS[zone.kind] || COLORS.stop;
     this.zoneU.uColor.value.setHex(col);
     this.pillarU.uColor.value.setHex(col);
-    this.pillar.position.set(zone.x, 0, zone.z);
+    this.pillar.position.set(zone.x, gy, zone.z);
     const d = Math.hypot(camPos.x - zone.x, camPos.z - zone.z);
     this.pillarU.uFade.value = Math.min(1, Math.max(0, (d - 12) / 18));
     this.pillar.visible = this.pillarU.uFade.value > 0.01;

@@ -26,7 +26,6 @@ export function drawCityMap(city) {
   poly(city.sea, COL.sea);
   for (const p of city.parks) poly(p, COL.park);
   for (const pl of city.plazas) poly(Array.isArray(pl) ? pl : pl.p, COL.plaza);
-  poly(city.mount.foot, COL.mount);
   for (const b of city.buildings) poly(b.p, COL.building);
   g.lineCap = 'round'; g.lineJoin = 'round';
   const road = (r, extra, col) => {

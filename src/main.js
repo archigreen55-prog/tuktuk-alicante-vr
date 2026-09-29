@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { VERSION } from './version.js';
 import { buildCity } from './city/buildCity.js';
+import { Terrain } from './city/terrain.js';
 import { buildTiles, showTilesPage } from './city/tiles.js';
 import { loadPhotoFacades, creditLine } from './city/landmarks.js';
 import { loadModels, modelCreditLine } from './city/models.js';
@@ -36,6 +37,11 @@ const texMode = ['0', 'off', 'no'].includes(params.get('tex')) ? 'off' : params.
 const photoMode = !['0', 'off', 'no'].includes(params.get('photo'));
 // ?model=0: without the 3D models (scans) of landmarks, for A/B FPS checks
 const modelMode = !['0', 'off', 'no'].includes(params.get('model'));
+// ?terrain=0: flat city (every height 0), for A/B comparison of FPS and driving
+const terrainMode = !['0', 'off', 'no'].includes(params.get('terrain'));
+// cab tilt with the road (plan-terrain.md 6): full / half / off, remembered
+const TILT_LEVELS = [{ id: 'full', label: 'повний', k: 1 }, { id: 'half', label: 'половина', k: 0.5 }, { id: 'off', label: 'вимкнено', k: 0 }];
+let tilt = TILT_LEVELS.find((l) => l.id === loadSetting('tilt', 'full')) || TILT_LEVELS[0];
 
 const $ = (id) => document.getElementById(id);
 const status = (t) => { $('status').textContent = t; };
@@ -53,7 +59,8 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(SKY);
-scene.fog = new THREE.Fog(SKY, 250, 1500);
+scene.fog = new THREE.Fog(SKY, 300, 1150);
+const CULL_DIST = 1150;          // m: city chunks farther than this from the camera are not drawn (inside the fog)
 
 const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.1, 3000);
 
@@ -89,6 +96,17 @@ try {
 } catch (e) { tourError = `data/tour.json не завантажився: ${e.message}`; }
 if (!city.tour) tourError = tourError || 'city.json без даних туру (node tools/build-city.mjs)';
 if (tourError) console.warn(tourError);
+// terrain heights (data/terrain.bin, IGN MDT05): the ground, the roads and the physics read one grid
+let terrain = null;
+if (city.meta.terrain) {
+  status('Рельєф…');
+  try {
+    const buf = await (await fetch(`${city.meta.terrain.file}?v=${VERSION}`)).arrayBuffer();
+    terrain = Terrain.fromBin(city.meta.terrain, buf);
+    if (!terrainMode) terrain = Terrain.flat(terrain);
+  } catch (e) { console.warn(`terrain: ${e.message}`); }
+}
+const groundY = (x, z) => (terrain ? terrain.height(x, z) : 0);
 // photo facades and 3D models of landmarks (data/facades.json is edited by hand: always fresh, never fatal)
 let photos = null, models = null, facadeSpec = null;
 if (photoMode || modelMode) {
@@ -104,7 +122,7 @@ if (photoMode && facadeSpec) {
 if (modelMode && facadeSpec) {
   status('3D-моделі пам\'яток…');
   try {
-    models = await loadModels(city, facadeSpec, { renderer, version: VERSION });
+    models = await loadModels(city, facadeSpec, { renderer, version: VERSION, groundY });
     if (models) console.log(`Landmark models: ${models.stats.models} models, ${models.stats.tris} triangles, ${models.stats.ms} ms`);
   } catch (e) { console.warn(`landmark models: ${e.message}`); }
 }
@@ -113,8 +131,10 @@ if (city.tour) for (const pl of Object.values(city.tour.places)) pl.credit = [cr
 status(`Будую ${city.buildings.length} будинків…`);
 await new Promise((r) => setTimeout(r, 0));
 const t0 = performance.now();
-const { group: cityGroup, stats: cityStats } = buildCity(city, { texMode, tiles, sky: SKY, photos, cuts: models && models.cuts });
+const { group: cityGroup, stats: cityStats } = buildCity(city, { texMode, tiles, sky: SKY, photos, cuts: models && models.cuts, terrain });
 scene.add(cityGroup);
+// distance culling of the chunked meshes (buildings, ground): from the castle the whole city is in view
+const cullable = cityGroup.children.filter((m) => /^(buildings|ground) /.test(m.name)).map((m) => ({ m, c: m.geometry.boundingSphere.center, r: m.geometry.boundingSphere.radius }));
 if (models) { scene.add(models.group); Object.assign(cityStats, { models: models.stats.models, modelTris: models.stats.tris }); }
 
 // ---------- collision world ----------
@@ -125,7 +145,7 @@ for (const b of city.buildings) {
   for (const h of b.holes || []) world.addPolygon(h);
 }
 for (const f of models ? models.footprints : []) world.addPolygon(f); // parts of 3D models standing out of a wall
-world.addPolygon(city.mount.foot);
+for (const w of city.walls || []) world.addPolygon(w.p, !!w.closed); // castle and city walls
 world.addPolygon(city.sea);
 const M = 5; // play-area bounds, a few metres inside the data bbox
 const bounds = { minX: R.minX + M, maxX: R.maxX - M, minZ: R.minZ + M, maxZ: R.maxZ - M };
@@ -136,7 +156,7 @@ world.finalize();
 // ---------- tuk-tuk ----------
 const tuk = createTukTuk({ version: VERSION });
 scene.add(tuk.group);
-const phys = new TukTukPhysics(world, city.start, bounds);
+const phys = new TukTukPhysics(world, city.start, bounds, terrain);
 if (!phys.fits(phys.x, phys.z, phys.heading)) resetToRoad();
 
 const cameraHolder = new THREE.Group(); // mouse-look yaw/pitch inside the cab
@@ -163,7 +183,7 @@ minimap.mesh.position.set(-0.375, 1.134, -0.875);
 minimap.mesh.rotation.x = -0.45;
 tuk.group.add(minimap.mesh);
 const marker = new StopMarker(scene);
-const tourists = new Tourists(scene, tuk.group, SEATS);
+const tourists = new Tourists(scene, tuk.group, SEATS, groundY);
 const hud = new DesktopHud(minimap);
 let mapOn = loadSetting('minimap', true) !== false;
 let gameMode = params.get('mode') === 'free' || params.get('mode') === 'tour' ? params.get('mode') : loadSetting('mode', 'tour');
@@ -378,6 +398,9 @@ if (stress > 1) showStats = tuk.dashboard.showFps = true;
 let acc = 0, last = performance.now(), mapTimer = 0;
 const clock = { t: 0 };
 const chasePos = new THREE.Vector3(), chaseLook = new THREE.Vector3(), tmpV = new THREE.Vector3();
+const cab = { pitch: 0, roll: 0, pitchRate: 0 }; // smoothed cab attitude
+function setTilt(level) { tilt = level; saveSetting('tilt', level.id); $('tilt').value = level.id; }
+function cycleTilt() { setTilt(TILT_LEVELS[(TILT_LEVELS.indexOf(tilt) + 1) % TILT_LEVELS.length]); flash(`Нахил кабіни: ${tilt.label}`); }
 let chaseInit = false;
 
 function toggleStats() { showStats = !showStats; tuk.dashboard.showFps = showStats; dashTimer = 0; }
@@ -428,6 +451,7 @@ function frame(now, xrFrame) {
   if (keys.take('KeyG')) nextStress();
   if (keys.take('KeyT')) tourButton();
   if (keys.take('KeyM')) { mapOn = !mapOn; saveSetting('minimap', mapOn); }
+  if (keys.take('KeyK')) cycleTilt();
   input.reverseDelay = undefined;
   keys.read(frameDt, input);
 
@@ -468,13 +492,15 @@ function frame(now, xrFrame) {
 
   acc += frameDt;
   let steps = 0, impact = 0;
+  let verge = 0;
   while (acc >= DT && steps < 8) {
     phys.step(DT, input);
     impact = Math.max(impact, phys.lastImpact);
+    verge = Math.max(verge, phys.slopeHit);
     acc -= DT; steps++;
   }
   if (steps === 8) acc = 0;
-  if (inVR && impact > 1.5) {
+  if (inVR && Math.max(impact, verge) > 1.5) {
     xrIn.pulse('both', Math.min(1, impact / 6), 40 + Math.min(80, impact * 15));
     bars.quietUntil = now + 150;
   }
@@ -485,19 +511,29 @@ function frame(now, xrFrame) {
   const z = phys.prev.z + (phys.z - phys.prev.z) * a;
   let dh = phys.heading - phys.prev.heading;
   dh = Math.atan2(Math.sin(dh), Math.cos(dh));
-  tuk.group.position.set(x, 0, z);
-  tuk.group.rotation.y = phys.prev.heading + dh * a;
+  // the cab follows the ground: height under the centre, pitch and roll from the wheels (smoothed,
+  // roll limited: the cab as a stable frame matters more than a faithful lean)
+  const pitchT = THREE.MathUtils.clamp(phys.pitch, -0.21, 0.21) * tilt.k, rollT = THREE.MathUtils.clamp(phys.roll, -0.087, 0.087) * tilt.k;
+  const pitchPrev = cab.pitch;
+  cab.pitch += (pitchT - cab.pitch) * (1 - Math.exp(-frameDt / 0.25));
+  cab.roll += (rollT - cab.roll) * (1 - Math.exp(-frameDt / 0.35));
+  cab.pitchRate = frameDt > 0 ? Math.abs(cab.pitch - pitchPrev) / frameDt : 0;
+  tuk.group.position.set(x, groundY(x, z), z);
+  tuk.group.rotation.set(cab.pitch, phys.prev.heading + dh * a, -cab.roll, 'YXZ');
   tuk.group.updateMatrixWorld();
 
   // ---------- tour ----------
   if (tour) {
     tour.update({ dt: frameDt, x: phys.x, z: phys.z, speed: phys.forwardSpeed, accel: phys.accel, yawRate: phys.yawRate,
-      brake: input.brake, reversing: phys.reversing, impact, contact: phys.contactTimer > 0, handbrake: input.handbrake });
+      brake: input.brake, reversing: phys.reversing, impact, contact: phys.contactTimer > 0, handbrake: input.handbrake, grade: phys.grade });
     handleTourEvents();
   }
   tourists.update(frameDt);
   camera.getWorldPosition(tmpV);
-  marker.update(frameDt, tour ? tour.zone : null, tmpV, !!(tour && tour.holdBrake));
+  for (const { m, c: cc, r } of cullable) m.visible = Math.hypot(cc.x - tmpV.x, cc.z - tmpV.z) - r < CULL_DIST;
+  const zone = tour ? tour.zone : null;
+  if (zone) zone.y = groundY(zone.x, zone.z);
+  marker.update(frameDt, zone, tmpV, !!(tour && tour.holdBrake));
   const target = tour ? tour.target : null;
   const h = tuk.group.rotation.y;
   minimap.mesh.visible = mapOn || inVR;
@@ -518,14 +554,16 @@ function frame(now, xrFrame) {
     cameraHolder.rotation.set(lookPitch, lookYaw, 0, 'YXZ');
   } else if (camMode === 'chase') {
     const h = tuk.group.rotation.y;
-    tmpV.set(Math.sin(h) * 7 + x, 3.2, Math.cos(h) * 7 + z);
+    const gy = groundY(x, z);
+    tmpV.set(Math.sin(h) * 7 + x, gy + 3.2, Math.cos(h) * 7 + z);
+    tmpV.y = Math.max(tmpV.y, groundY(tmpV.x, tmpV.z) + 1.5);
     if (!chaseInit) { chasePos.copy(tmpV); chaseInit = true; }
     chasePos.lerp(tmpV, 1 - Math.exp(-frameDt * 4));
     camera.position.copy(chasePos);
-    chaseLook.set(x, 1.2, z);
+    chaseLook.set(x, gy + 1.2, z);
     camera.lookAt(chaseLook);
   }
-  comfort.update(frameDt, phys, impact, (inVR || vignetteOnDesktop) && camMode === 'cockpit');
+  comfort.update(frameDt, phys, Math.max(impact, verge), (inVR || vignetteOnDesktop) && camMode === 'cockpit', cab.pitchRate);
 
   gpu.poll();
   gpu.begin();
@@ -560,7 +598,7 @@ function frame(now, xrFrame) {
     debugEl.style.display = showStats && !inVR ? 'block' : 'none';
     if (showStats) {
       debugEl.textContent = `${perf.fps.toFixed(0)} FPS\ncalls ${perf.calls}  tris ${perf.tris}\n` +
-        `speed ${(phys.forwardSpeed * 3.6).toFixed(1)} km/h  pos ${phys.x.toFixed(0)}, ${phys.z.toFixed(0)}`;
+        `speed ${(phys.forwardSpeed * 3.6).toFixed(1)} km/h  pos ${phys.x.toFixed(0)}, ${phys.z.toFixed(0)}  h ${phys.y.toFixed(1)} m  grade ${(phys.grade * 100).toFixed(0)}%  roll ${(phys.roll * 57.3).toFixed(1)}°`;
     }
   }
   keys.endFrame();
@@ -587,6 +625,9 @@ select.value = comfort.level.id;
 select.addEventListener('change', () => comfort.setLevel(VIGNETTE_LEVELS.find((l) => l.id === select.value)));
 $('steering').value = steeringMode;
 $('steering').addEventListener('change', () => setSteeringMode($('steering').value));
+for (const l of TILT_LEVELS) $('tilt').add(new Option(l.label, l.id));
+$('tilt').value = tilt.id;
+$('tilt').addEventListener('change', () => setTilt(TILT_LEVELS.find((l) => l.id === $('tilt').value) || TILT_LEVELS[0]));
 // game mode and tour (stage 6)
 const modeSel = $('mode'), tourSel = $('tourSel');
 for (const t of tourSpec?.tours || []) tourSel.add(new Option(t.title || t.id, t.id));
@@ -602,4 +643,4 @@ $('vibration').checked = bars.engineVibration;
 $('vibration').addEventListener('change', () => { bars.engineVibration = $('vibration').checked; saveSetting('engineVibration', bars.engineVibration); });
 
 // test / debugging hook
-window.__game = { photos, models, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };

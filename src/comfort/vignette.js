@@ -67,8 +67,9 @@ export class ComfortOverlay {
   blackout() { this.fade = 1; this.fadeRate = 0; }                // hold black until fadeIn()
   fadeIn(seconds) { this.fade = 1; this.fadeRate = 1 / seconds; }
 
-  // phys: TukTukPhysics; impact: strongest wall hit this frame (m/s); enabled: vignette on at all
-  update(dt, phys, impact, enabled) {
+  // phys: TukTukPhysics; impact: strongest wall hit this frame (m/s); enabled: vignette on at all;
+  // tiltRate: rad/s the cab pitch is changing (terrain: a crest or a dip)
+  update(dt, phys, impact, enabled, tiltRate = 0) {
     if (impact > TUNING.impactSlow) this.impactT = 0.35;
     this.impactT = Math.max(0, this.impactT - dt);
 
@@ -77,7 +78,8 @@ export class ComfortOverlay {
       const turn = Math.min(1, Math.abs(phys.yawRate) / TUNING.maxYawRate) * 0.5;  // ~0.35 in a normal turn
       const acc = Math.min(1, Math.max(0, Math.abs(phys.accel) - 1.2) / 4.8) * 0.6; // hard braking ≈ 0.6
       const hit = this.impactT > 0 ? 0.7 : 0;
-      target = Math.min(1, Math.max(turn, acc, hit) * this.level.k);
+      const tiltV = Math.min(1, tiltRate / 0.44) * 0.5;                              // 25°/s ≈ hard braking
+      target = Math.min(1, Math.max(turn, acc, hit, tiltV) * this.level.k);
     }
     // rise in ~0.15 s, fall in ~0.4 s
     const tau = target > this.intensity ? 0.05 : 0.13;

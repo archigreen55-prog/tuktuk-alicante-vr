@@ -108,7 +108,7 @@ export class Tour {
   get passCount() { return this.items.filter((i) => i.kind === 'pass').length; }
   get passesDone() { return this.items.filter((i, k) => i.kind === 'pass' && this.done[k] === 'done').length; }
 
-  // ctx: { dt, x, z, speed (forward m/s), accel, yawRate, brake, reversing, impact, contact, handbrake }
+  // ctx: { dt, x, z, speed (forward m/s), accel, yawRate, brake, reversing, impact, contact, handbrake, grade }
   update(ctx) {
     const dt = ctx.dt, v = Math.abs(ctx.speed);
     this.t += dt; this.stateT += dt;

@@ -11,6 +11,29 @@ vignette, code-drawn textures (facades, roads, sidewalks, the Explanada mosaic),
 the first **photo landmark** (Mercado Central).
 The build version is shown small on the dashboard and on the start screen.
 
+## Terrain (plan-terrain.md, T1)
+
+The city stands on real ground: the 5 m digital terrain model of the Spanish IGN (MDT05, PNOA LiDAR,
+© Instituto Geográfico Nacional (CNIG), CC BY 4.0) fetched once through the INSPIRE WCS service. The
+Benacantil is real terrain with the castle's walls from OSM, the road up to the castle gate is drivable,
+the old town climbs its slope, the Mercado stands 15 m and the Luceros 21 m above the Explanada.
+
+- `node tools/fetch-dem.mjs` downloads `data/raw/dem5.asc` for the area in `tools/area.mjs` (the bbox of
+  `fetch-osm.mjs` and `build-city.mjs` too; the local origin never moves, so hand-tuned coordinates keep
+  their meaning). `build-city` carves the streets into the grid (profile along the axis, smoothed, agreed
+  at junctions, flat across the carriageway and sidewalk), flattens the sea and writes `data/terrain.bin`
+  (Int16 cm, header in `city.json` → `meta.terrain`); every building gets its base height `y`.
+- In the game one grid (`src/city/terrain.js`) serves the ground mesh (`src/city/ground.js`: RTIN with an
+  error bound, 16 chunks + a skirt), the draped roads / plazas / parks, the buildings, the photo facades and
+  scans, the tourists, the markers and the physics.
+- Physics on slopes (`src/vehicle/physics.js`): gravity along the heading, a power-limited motor
+  (~20 km/h on the 14 % castle road), electric braking and a speed cap on descents, a parking hold at
+  standstill, and steep ground (> 33 %) acts as a wall. Collisions are unchanged (2D, plus the walls).
+- VR comfort: the cab tilts with the road (pitch up to 12°, roll limited to 5°, smoothed); the start
+  screen and the K key switch the tilt between full / half / off; the vignette also reacts to crests and dips.
+- `?terrain=0` — flat city (every height 0) for A/B comparison. The tour graph leaves out lanes steeper
+  than 20 %; steeper edges slow the target time (`route.js` classes).
+
 ## Tour mission (stage 6a)
 
 Pick up 2–4 tourists at the Meliá hotel, drive them along a real guide's route and bring them back. Photo stops
@@ -143,9 +166,12 @@ Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright
 Downloaded once and stored in `data/`; the game makes no API calls at runtime.
 
     node tools/fetch-osm.mjs    # one-time Overpass download -> data/raw/alicante.osm.json
+    node tools/fetch-dem.mjs    # one-time IGN terrain download -> data/raw/dem5.asc
     node tools/build-city.mjs   # -> data/city.json (levels, facade styles, shared walls, street classes,
                                 #    lanes / oneway / junctions, plaza kinds; merges style / h from data/facades.json;
                                 #    tour places from data/tour.json + the drivable street graph)
+
+Terrain: MDT05 © Instituto Geográfico Nacional (CNIG), CC BY 4.0 (see data/LICENSE).
 
 Code: MIT. Data: ODbL (see data/LICENSE). Facade photos: their authors' licences (CC BY-SA / CC BY / public
 domain, see assets/facades/CREDITS.md).

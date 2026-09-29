@@ -81,8 +81,9 @@ function figureBones(s) {
 
 export class Tourists {
   // world: Object3D for standing figures (the scene); vehicle: the tuk-tuk group; seats: SEATS (tuk-tuk frame)
-  constructor(world, vehicle, seats) {
-    this.world = world; this.vehicle = vehicle; this.seats = seats;
+  // groundY(x, z): ground height for standing / walking figures
+  constructor(world, vehicle, seats, groundY = () => 0) {
+    this.world = world; this.vehicle = vehicle; this.seats = seats; this.groundY = groundY;
     this.mat = new THREE.MeshLambertMaterial({ vertexColors: true });
     this.mesh = null; this.figs = [];
     this.tmpV = new THREE.Vector3(); this.tmpQ = new THREE.Quaternion();
@@ -130,7 +131,7 @@ export class Tourists {
 
   standAt(f) {
     this.world.add(f.root);
-    f.root.position.set(f.stand[0], 0, f.stand[1]);
+    f.root.position.set(f.stand[0], this.groundY(f.stand[0], f.stand[1]), f.stand[1]);
     f.root.rotation.set(0, Math.atan2(-this.facing[0], -this.facing[1]), 0);
     f.state = 'stand';
     pose(f, 'stand', 0);
@@ -156,7 +157,7 @@ export class Tourists {
       const d = this.doorLocal(f);
       const door = this.vehicle.localToWorld(this.tmpV.set(d.x, 0, d.z)).clone();
       this.world.add(f.root);
-      f.root.position.copy(door);
+      f.root.position.set(door.x, this.groundY(door.x, door.z), door.z);
       const dx = goal[0] - door.x, dz = goal[1] - door.z, L = Math.hypot(dx, dz) || 1;
       const walk = Math.min(8, L);
       f.path = { from: [door.x, door.z], to: [door.x + dx / L * walk + (Math.random() - 0.5), door.z + dz / L * walk + (Math.random() - 0.5)] };
@@ -184,7 +185,8 @@ export class Tourists {
         const [x0, z0] = f.path.from, [x1, z1] = f.path.to;
         const L = Math.hypot(x1 - x0, z1 - z0), T = Math.max(0.3, L / WALK_SPEED);
         const k = Math.min(1, f.t / T);
-        f.root.position.set(x0 + (x1 - x0) * k, 0, z0 + (z1 - z0) * k);
+        const wx = x0 + (x1 - x0) * k, wz = z0 + (z1 - z0) * k;
+        f.root.position.set(wx, this.groundY(wx, wz), wz);
         if (L > 0.05) f.root.rotation.set(0, Math.atan2(-(x1 - x0), -(z1 - z0)), 0);
         pose(f, 'walk', f.t * 7);
         if (k >= 1) {

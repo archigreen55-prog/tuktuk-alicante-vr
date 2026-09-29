@@ -9,6 +9,7 @@ import { GeoBuilder, pairs, orient, rand } from './geo.js';
 import { ZEBRA_DEPTH, BAY_W } from './tiles.js';
 import { facadeMaterial, roadMaterial, plazaMaterial, buildBuildingTable, buildingLayout, TPL, MARK_TEMPLATES, SHUTTER_COLORS } from './facades.js';
 import { PhotoBuilder, addPhotoBuilding, photoMaterial } from './landmarks.js';
+import { buildGround } from './ground.js';
 
 const COLORS = {
   ground: 0xd9ccb0,
@@ -17,7 +18,7 @@ const COLORS = {
   plaza: 0xe4d6bc,
   sidewalk: 0xd8d2c4,
   road: { primary: 0x55585d, primary_link: 0x55585d, secondary: 0x5c5f64, tertiary: 0x63666b, residential: 0x6c6f74, unclassified: 0x6c6f74, living_street: 0x8a8580, service: 0x77797d, busway: 0x6a4a44, pedestrian: 0xcdbd9f },
-  mountLow: 0x9a9a5c, mountHigh: 0xc8a878, castle: 0xd8c29a,
+  wall: 0xcbb896,
   trunk: 0x8a6a45, frond: 0x3f8f3a,
   balconyRail: 0x596068,
 };
@@ -30,27 +31,42 @@ const RUN_TURN = 25 * Math.PI / 180;   // adjacent edges turning less than this 
 const MIN_FACADE = 2.0;                // m, shorter facades are plain plaster
 const BALCONY_CAP = 4500;              // instances (18 triangles each)
 
-function flatMesh(geo, order, name, material) {
-  const mesh = new THREE.Mesh(geo, material || new THREE.MeshLambertMaterial({ vertexColors: true, depthWrite: false }));
+// Flat layers lie on the ground mesh: depth-tested with a polygon offset per layer (later layers win
+// where they overlap), no depth write, drawn in renderOrder after the ground.
+const LAYER_OFFSET = { parks: 1, plazas: 2, roads: 3 };
+function flatMesh(geo, order, name, material, layer) {
+  const mat = material || new THREE.MeshLambertMaterial({ vertexColors: true, depthWrite: false });
+  if (layer) { mat.polygonOffset = true; mat.polygonOffsetFactor = -LAYER_OFFSET[layer]; mat.polygonOffsetUnits = -LAYER_OFFSET[layer] * 2; }
+  const mesh = new THREE.Mesh(geo, mat);
   mesh.renderOrder = order;
   mesh.name = name;
   mesh.matrixAutoUpdate = false;
   return mesh;
 }
+// heights of the flat layers above the ground grid (the polygon offset does the rest)
+const LIFT = { parks: 0.03, plazas: 0.04, sidewalk: 0.05, road: 0.06, zebra: 0.07 };
+const DRAPE_CELL = 8; // m, polygons are cut into cells of this size so they follow the ground
 
 // options: { texMode: 'full' | 'low' | 'off', tiles (from buildTiles), sky, photos (from loadPhotoFacades),
-//   cuts (Map osmId -> niches behind 3D models, from loadModels) }
+//   cuts (Map osmId -> niches behind 3D models, from loadModels), terrain (Terrain, src/city/terrain.js) }
 export function buildCity(city, options = {}) {
-  const { texMode = 'off', tiles = null, sky = 0xbfe3f5, photos = null, cuts = null } = options;
+  const { texMode = 'off', tiles = null, sky = 0xbfe3f5, photos = null, cuts = null, terrain = null } = options;
   const texFacades = texMode !== 'off' && tiles;
   const texGround = texMode === 'full' && tiles;
   const group = new THREE.Group();
   group.name = 'city';
   const c = (hex) => new THREE.Color(hex);
   const stats = { texMode };
+  const H = terrain ? (x, z) => terrain.height(x, z) : () => 0;
 
   // ---------- ground ----------
-  {
+  if (terrain) {
+    const g = buildGround(terrain);
+    g.group.renderOrder = -21;
+    for (const m of g.group.children) m.renderOrder = -21;
+    group.add(g.group);
+    Object.assign(stats, g.stats);
+  } else {
     const gb = new GeoBuilder();
     const S = 6000;
     gb.polygon([[-S, -S], [S, -S], [S, S], [-S, S]], null, 0, c(COLORS.ground));
@@ -60,13 +76,15 @@ export function buildCity(city, options = {}) {
   {
     const gb = new GeoBuilder();
     gb.polygon(pairs(city.sea), null, 0, c(COLORS.sea));
-    group.add(flatMesh(gb.build(), -19, 'sea'));
+    const sea = flatMesh(gb.build(), -19, 'sea');
+    sea.material.depthWrite = true;
+    group.add(sea);
   }
   // ---------- parks & plazas ----------
   {
     const gb = new GeoBuilder();
-    for (const p of city.parks) gb.polygon(pairs(p), null, 0, c(COLORS.park));
-    group.add(flatMesh(gb.build(), -18, 'parks'));
+    for (const p of city.parks) drapePolygon(gb, pairs(p), H, LIFT.parks, c(COLORS.park));
+    group.add(flatMesh(gb.build(), -18, 'parks', null, 'parks'));
     const gp = new GeoBuilder({ aKind: 1 });
     const plazaCol = c(COLORS.plaza), mosaicCol = c(0xb8a48e);
     let explanada = null;
@@ -74,9 +92,10 @@ export function buildCity(city, options = {}) {
       const ring = pairs(Array.isArray(pl) ? pl : pl.p);
       const isExpl = pl.k === 'explanada';
       if (isExpl) explanada = pl;
-      gp.polygon(ring, null, 0, isExpl && !texGround ? mosaicCol : plazaCol, { aKind: [isExpl ? 1 : 0] });
+      drapePolygon(gp, ring, H, LIFT.plazas, isExpl && !texGround ? mosaicCol : plazaCol, { aKind: [isExpl ? 1 : 0] });
     }
-    group.add(flatMesh(gp.build(), -17, 'plazas', texGround ? plazaMaterial(tiles, explanada) : null));
+    group.add(flatMesh(gp.build(), -17, 'plazas', texGround ? plazaMaterial(tiles, explanada) : null, 'plazas'));
+    stats.plazaTris = gp.triangles + gb.triangles;
   }
   // ---------- roads: sidewalks, ribbons with markings, zebras (one mesh, draw order inside) ----------
   {
@@ -87,7 +106,7 @@ export function buildCity(city, options = {}) {
     let zebras = 0;
     for (const r of sorted) {
       const sw = SIDEWALK[r.k];
-      if (sw) addRibbon(gb, pairs(r.p), r.w + 2 * sw, sidewalkCol, { tpl: TPL.SIDEWALK, roadHalf: r.w / 2 });
+      if (sw) addRibbon(gb, pairs(r.p), r.w + 2 * sw, sidewalkCol, { tpl: TPL.SIDEWALK, roadHalf: r.w / 2, H, lift: LIFT.sidewalk });
     }
     const zebraJobs = [];
     for (const r of sorted) {
@@ -95,11 +114,11 @@ export function buildCity(city, options = {}) {
       const pts = pairs(r.p);
       const tpl = templateOf(r);
       const junctions = (r.j || []).map((j) => (Array.isArray(j) ? j : [j, r.w]));
-      addRibbon(gb, pts, r.w, col, { tpl, roadHalf: r.w / 2, junctions: tpl >= 1 && tpl <= 6 ? junctions : null });
-      if (MARKED.test(r.k)) for (const [ji, ow] of junctions) zebraJobs.push({ pts, i: ji, hw: r.w / 2, D: fadeDistance(ow), col });
+      addRibbon(gb, pts, r.w, col, { tpl, roadHalf: r.w / 2, junctions: tpl >= 1 && tpl <= 6 ? junctions : null, H, lift: LIFT.road });
+      if (MARKED.test(r.k)) for (const [ji, ow] of junctions) zebraJobs.push({ pts, i: ji, hw: r.w / 2, D: fadeDistance(ow), col, H });
     }
     for (const z of zebraJobs) zebras += addZebras(gb, z);
-    group.add(flatMesh(gb.build(), -16, 'roads', texGround ? roadMaterial(tiles) : null));
+    group.add(flatMesh(gb.build(), -16, 'roads', texGround ? roadMaterial(tiles) : null, 'roads'));
     stats.roadTris = gb.triangles;
     stats.zebras = zebras;
   }
@@ -124,7 +143,7 @@ export function buildCity(city, options = {}) {
       cx /= ring.length; cz /= ring.length;
       const key = Math.floor(cx / CH) + ',' + Math.floor(cz / CH);
       let gb = chunks.get(key);
-      if (!gb) chunks.set(key, (gb = new GeoBuilder({ aBld: 1, aWall: 4 })));
+      if (!gb) chunks.set(key, (gb = new GeoBuilder({ aBld: 1, aWall: 4, aBase: 1 })));
       const styleName = styles[b.s || 0];
       const L = buildingLayout(b, styleName);
       L.shutter = Math.floor(rand(idx * 13 + 5) * SHUTTER_COLORS.length);
@@ -142,12 +161,13 @@ export function buildCity(city, options = {}) {
       const holes = (b.holes || []).map(pairs);
       const runs = facadeRuns(ring);
       const codes = b.e || '';
-      const info = { idx, b, L, runs, ring, top, bottom, codes, styleName };
+      const baseY = b.y || 0;
+      const info = { idx, b, L, runs, ring, top, bottom, codes, styleName, base: baseY };
       facades += runs.length;
       for (const run of runs) if (run.L < MIN_FACADE) plainFacades++;
       // photo facade: its walls go to the photo mesh, the procedural builder skips them
       const photoItems = photos && photos.byBuilding.get(b.id);
-      if (photoItems) { info.skip = addPhotoBuilding(pb, b, photoItems); photoBuildings++; }
+      if (photoItems) { info.skip = addPhotoBuilding(pb, b, photoItems, baseY); photoBuildings++; }
       if (cuts && cuts.has(b.id)) info.cuts = cuts.get(b.id);
       // 3D balcony candidates: ensanche / classic along main streets
       if (!photoItems && !info.cuts && texFacades && (styleName === 'ensanche' || styleName === 'classic') && L.floors >= 2) {
@@ -161,7 +181,7 @@ export function buildCity(city, options = {}) {
       }
       addWalls(gb, ring, b.h, false, top, bottom, info);
       for (const h of holes) addWalls(gb, h, b.h, true, top, bottom, info);
-      gb.polygon(ring, holes, b.h, roof, { aBld: [idx], aWall: [0, 0, -1, b.h] });
+      gb.polygon(ring, holes, baseY + b.h, roof, { aBld: [idx], aWall: [0, 0, -1, b.h], aBase: [baseY] });
     });
     // choose balcony facades nearest to the Rambla / Explanada until the cap; flag their runs
     // (aWall.z += 8 on main-street edges: the shader then draws door tiles without a painted rail)
@@ -201,10 +221,10 @@ export function buildCity(city, options = {}) {
     stats.balconies = balconies;
     stats.balconyFacades = chosen.length;
   }
-  // ---------- Benacantil + castle (decor) ----------
-  group.add(buildMount(city.mount));
+  // ---------- walls (castle, city walls, the San Fernando fort) on the ground ----------
+  if (city.walls && city.walls.length) { const w = buildWalls(city.walls, H); group.add(w); stats.wallTris = w.geometry.attributes.position.count / 3; }
   // ---------- palms ----------
-  group.add(...buildPalms(city.palms));
+  group.add(...buildPalms(city.palms, H));
 
   group.updateMatrixWorld(true);
   return { group, stats };
@@ -278,11 +298,12 @@ function addWalls(gb, ring, h, isHole, top, bottom, info) {
       const nn = [(sgn * dz) / len, 0, (-sgn * dx) / len];
       const kind = plain ? 0 : isHole ? 1 : kindOf(info.codes, i);
       const u0 = run.u0[k], u1 = u0 + len;
-      const a0 = [a[0], 0, a[1]], b0 = [b[0], 0, b[1]], b1 = [b[0], h, b[1]], a1 = [a[0], h, a[1]];
+      const y0 = info.base, y1 = info.base + h;
+      const a0 = [a[0], y0, a[1]], b0 = [b[0], y0, b[1]], b1 = [b[0], y1, b[1]], a1 = [a[0], y1, a[1]];
       const wa = [u0, run.bw, kind, h], wb = [u1, run.bw, kind, h];
-      const aux = { aBld: [info.idx] };
+      const aux = { aBld: [info.idx], aBase: [info.base] };
       const cut = !isHole && info.cuts && info.cuts.find((c) => c.edge === i);
-      if (cut) { addNicheWall(gb, a, [dx / len, dz / len], len, nn, h, u0, run.bw, kind, botT, topT, info.idx, cut); return; }
+      if (cut) { addNicheWall(gb, a, [dx / len, dz / len], len, nn, h, u0, run.bw, kind, botT, topT, info.idx, cut, info.base); return; }
       gb.tri(a0, b0, b1, nn, botT, botT, topT, { ...aux, aWall: [wa, wb, wb] });
       gb.tri(a0, b1, a1, nn, botT, topT, topT, { ...aux, aWall: [wa, wb, wa] });
       // remember where this run's wall vertices went (for the balcony flag patch)
@@ -293,11 +314,11 @@ function addWalls(gb, ring, h, isHole, top, bottom, info) {
 // A wall with a 3D model in front of it (models.js): the wall around the cut [t0, t1] x [0, top] as usual,
 // the cut itself a plain niche `depth` deep (back, two sides, ceiling), so the model's doors and recesses
 // show instead of the wall. aWall keeps the wall's u so windows around the niche stay in place.
-function addNicheWall(gb, a, d, len, nn, h, u0, bw, kind, bot, top, idx, cut) {
+function addNicheWall(gb, a, d, len, nn, h, u0, bw, kind, bot, top, idx, cut, base = 0) {
   const col = (y) => bot.clone().lerp(top, Math.min(1, y / h));
-  const P = (t, y, depth = 0) => [a[0] + d[0] * t - nn[0] * depth, y, a[1] + d[1] * t - nn[2] * depth];
+  const P = (t, y, depth = 0) => [a[0] + d[0] * t - nn[0] * depth, base + y, a[1] + d[1] * t - nn[2] * depth];
   const W = (t, k) => [u0 + t, bw, k, h];
-  const aux = (w) => ({ aBld: [idx], aWall: w });
+  const aux = (w) => ({ aBld: [idx], aWall: w, aBase: [base] });
   const face = (t0, t1, y0, y1, k, depth = 0) => { // a piece of wall parallel to the facade
     if (t1 - t0 < 0.01 || y1 - y0 < 0.01) return;
     const p00 = P(t0, y0, depth), p10 = P(t1, y0, depth), p11 = P(t1, y1, depth), p01 = P(t0, y1, depth);
@@ -370,7 +391,7 @@ function buildBalconies(chosen, palette) {
       rot.makeBasis(x, y, z);
       const q = new THREE.Quaternion().setFromRotationMatrix(rot);
       for (let f = 0; f < L.floors; f++) {
-        const p = new THREE.Vector3(a[0] + d[0] * t, L.gH + f * L.fH, a[1] + d[1] * t).addScaledVector(z, 0.02);
+        const p = new THREE.Vector3(a[0] + d[0] * t, (info.base || 0) + L.gH + f * L.fH, a[1] + d[1] * t).addScaledVector(z, 0.02);
         place.push({ p, q, width, colour });
       }
     }
@@ -401,9 +422,10 @@ const fadeDistance = (otherW) => otherW / 2 + 3.5;
 // Road polyline -> ribbon with mitred joints and round-ish end caps.
 // opts: { tpl, roadHalf, junctions: [[index, otherWidth]] } -> aRoad = (along m, across m, road half width, marking fade)
 function addRibbon(gb, ptsIn, w, col, opts = {}) {
-  const { tpl = 0, roadHalf = w / 2, junctions = null } = opts;
-  const { pts, fade } = junctions && junctions.length ? insertFades(ptsIn, junctions) : { pts: ptsIn, fade: ptsIn.map(() => 1) };
-  const hw = w / 2, n = pts.length, up = [0, 1, 0], y = 0;
+  const { tpl = 0, roadHalf = w / 2, junctions = null, H = () => 0, lift = 0 } = opts;
+  const faded = junctions && junctions.length ? insertFades(ptsIn, junctions) : { pts: ptsIn, fade: ptsIn.map(() => 1) };
+  const { pts, fade } = subdivide(faded.pts, faded.fade, RIBBON_STEP, H);
+  const hw = w / 2, n = pts.length, up = [0, 1, 0];
   const L = [], R = [], along = [];
   let s = 0;
   for (let i = 0; i < n; i++) {
@@ -417,8 +439,9 @@ function addRibbon(gb, ptsIn, w, col, opts = {}) {
     nx = m[0] / ml; nz = m[1] / ml;
     const ref = n1 || n0;
     const scale = hw / Math.max(0.5, nx * ref[0] + nz * ref[1]);
-    L.push([pts[i][0] + nx * scale, y, pts[i][1] + nz * scale]);
-    R.push([pts[i][0] - nx * scale, y, pts[i][1] - nz * scale]);
+    const lx = pts[i][0] + nx * scale, lz = pts[i][1] + nz * scale, rx = pts[i][0] - nx * scale, rz = pts[i][1] - nz * scale;
+    L.push([lx, H(lx, lz) + lift, lz]);
+    R.push([rx, H(rx, rz) + lift, rz]);
     along.push(s);
   }
   const A = (i, side) => [along[i], side * hw, roadHalf, fade[i]];
@@ -430,11 +453,78 @@ function addRibbon(gb, ptsIn, w, col, opts = {}) {
   const capTpl = [tpl >= 1 && tpl <= 6 ? TPL.ASPHALT : tpl];
   for (const p of [pts[0], pts[n - 1]]) {
     const seg = 8;
+    const y = H(p[0], p[1]) + lift;
     for (let k = 0; k < seg; k++) {
       const a0 = (k / seg) * Math.PI * 2, a1 = ((k + 1) / seg) * Math.PI * 2;
-      gb.tri([p[0], y, p[1]], [p[0] + Math.cos(a0) * hw, y, p[1] + Math.sin(a0) * hw], [p[0] + Math.cos(a1) * hw, y, p[1] + Math.sin(a1) * hw], up, col, col, col, { aRoad: [0, 0, roadHalf, 0], aTpl: capTpl });
+      const q0 = [p[0] + Math.cos(a0) * hw, p[1] + Math.sin(a0) * hw], q1 = [p[0] + Math.cos(a1) * hw, p[1] + Math.sin(a1) * hw];
+      gb.tri([p[0], y, p[1]], [q0[0], H(q0[0], q0[1]) + lift, q0[1]], [q1[0], H(q1[0], q1[1]) + lift, q1[1]], up, col, col, col, { aRoad: [0, 0, roadHalf, 0], aTpl: capTpl });
     }
   }
+}
+const RIBBON_STEP = 6;    // m between ribbon vertices where the ground is not straight along the segment
+const RIBBON_FLAT = 0.05; // m: a segment whose ground stays this close to a straight line is not subdivided
+// Extra vertices along segments where the ground bends; the marking fade is interpolated
+function subdivide(pts, fade, step, H) {
+  const out = [pts[0]], f = [fade[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    let n = Math.max(1, Math.round(L / step));
+    if (n > 1) { // straight ground along the segment? then one piece is enough
+      const ya = H(a[0], a[1]), yb = H(b[0], b[1]);
+      let dev = 0;
+      for (let k = 1; k < n; k++) { const t = k / n; dev = Math.max(dev, Math.abs(H(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t) - (ya + (yb - ya) * t))); }
+      if (dev < RIBBON_FLAT) n = 1;
+    }
+    for (let k = 1; k < n; k++) { const t = k / n; out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); f.push(fade[i - 1] + (fade[i] - fade[i - 1]) * t); }
+    out.push(b); f.push(fade[i]);
+  }
+  return { pts: out, fade: f };
+}
+// A polygon cut into DRAPE_CELL squares, each piece triangulated with its vertices on the ground
+export function drapePolygon(gb, ring, H, lift, col, aux = null) {
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const [x, z] of ring) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z); }
+  const up = [0, 1, 0];
+  const put = (piece) => {
+    if (piece.length < 3) return;
+    const contour = piece.map(([x, z]) => new THREE.Vector2(x, z));
+    const faces = THREE.ShapeUtils.triangulateShape(contour, []);
+    for (const [i, j, k] of faces) {
+      const P = (m) => [piece[m][0], H(piece[m][0], piece[m][1]) + lift, piece[m][1]];
+      gb.tri(P(i), P(j), P(k), up, col, col, col, aux);
+    }
+  };
+  if (maxX - minX < DRAPE_CELL * 1.5 && maxZ - minZ < DRAPE_CELL * 1.5) { put(ring); return; }
+  const i0 = Math.floor(minX / DRAPE_CELL), i1 = Math.floor(maxX / DRAPE_CELL), j0 = Math.floor(minZ / DRAPE_CELL), j1 = Math.floor(maxZ / DRAPE_CELL);
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+    const R = { minX: i * DRAPE_CELL, maxX: (i + 1) * DRAPE_CELL, minZ: j * DRAPE_CELL, maxZ: (j + 1) * DRAPE_CELL };
+    put(clipRect(ring, R));
+  }
+}
+// Sutherland–Hodgman clip of a polygon against an axis-aligned rectangle
+function clipRect(poly, R) {
+  const edges = [(p) => p[0] >= R.minX, (p) => p[0] <= R.maxX, (p) => p[1] >= R.minZ, (p) => p[1] <= R.maxZ];
+  const inter = [
+    (a, b) => { const t = (R.minX - a[0]) / (b[0] - a[0]); return [R.minX, a[1] + t * (b[1] - a[1])]; },
+    (a, b) => { const t = (R.maxX - a[0]) / (b[0] - a[0]); return [R.maxX, a[1] + t * (b[1] - a[1])]; },
+    (a, b) => { const t = (R.minZ - a[1]) / (b[1] - a[1]); return [a[0] + t * (b[0] - a[0]), R.minZ]; },
+    (a, b) => { const t = (R.maxZ - a[1]) / (b[1] - a[1]); return [a[0] + t * (b[0] - a[0]), R.maxZ]; },
+  ];
+  let out = poly;
+  for (let k = 0; k < 4 && out.length; k++) {
+    const inp = out; out = [];
+    for (let i = 0; i < inp.length; i++) {
+      const a = inp[(i + inp.length - 1) % inp.length], b = inp[i];
+      const ia = edges[k](a), ib = edges[k](b);
+      if (ib) { if (!ia) out.push(inter[k](a, b)); out.push(b); } else if (ia) out.push(inter[k](a, b));
+    }
+  }
+  // drop duplicate points (clipping can leave a repeated vertex, which earcut dislikes)
+  const clean = [];
+  for (const p of out) { const q = clean[clean.length - 1]; if (!q || Math.hypot(p[0] - q[0], p[1] - q[1]) > 0.02) clean.push(p); }
+  if (clean.length > 1 && Math.hypot(clean[0][0] - clean[clean.length - 1][0], clean[0][1] - clean[clean.length - 1][1]) <= 0.02) clean.pop();
+  return clean;
 }
 // Inserts vertices at the fade distance from junction vertices: markings are 0 at the junction and
 // 1 from the inserted vertex on, so centre lines never cross a junction.
@@ -458,7 +548,7 @@ function insertFades(pts, junctions) {
   return { pts: out, fade };
 }
 // Zebra crossings on both arms next to a junction vertex, just outside the marking fade zone.
-function addZebras(gb, { pts, i, hw, D, col }) {
+function addZebras(gb, { pts, i, hw, D, col, H = () => 0 }) {
   let count = 0;
   const up = [0, 1, 0];
   for (const j of [i - 1, i + 1]) {
@@ -468,7 +558,7 @@ function addZebras(gb, { pts, i, hw, D, col }) {
     if (len < D + ZEBRA_DEPTH + 4) continue;
     const ux = dx / len, uz = dz / len, nx = -uz, nz = ux;
     const s0 = D + 1.0, s1 = s0 + ZEBRA_DEPTH;
-    const P = (s, side) => [a[0] + ux * s + nx * side * hw, 0.0, a[1] + uz * s + nz * side * hw];
+    const P = (s, side) => { const x = a[0] + ux * s + nx * side * hw, z = a[1] + uz * s + nz * side * hw; return [x, H(x, z) + LIFT.zebra, z]; };
     const A = (t, side) => [t, side * hw, hw, 1];
     const T = [TPL.ZEBRA];
     gb.tri(P(s0, 1), P(s0, -1), P(s1, -1), up, col, col, col, { aRoad: [A(0, 1), A(0, -1), A(1, -1)], aTpl: T });
@@ -478,102 +568,38 @@ function addZebras(gb, { pts, i, hw, D, col }) {
   return count;
 }
 
-// Low-poly hill built from rings between the foot outline and the castle outline.
-function buildMount(m) {
-  const foot = pairs(m.foot), castle = pairs(m.castle);
-  let cx = 0, cz = 0;
-  for (const [x, z] of castle) { cx += x; cz += z; }
-  cx /= castle.length; cz /= castle.length;
-  const H = m.height - 16; // plateau under the castle walls
-  const rayHit = (poly, ang) => {
-    const dx = Math.cos(ang), dz = Math.sin(ang);
-    let best = 0;
-    for (let i = 0; i < poly.length; i++) {
-      const a = poly[i], b = poly[(i + 1) % poly.length];
-      const ex = b[0] - a[0], ez = b[1] - a[1];
-      const den = dx * ez - dz * ex;
-      if (Math.abs(den) < 1e-9) continue;
-      const t = ((a[0] - cx) * ez - (a[1] - cz) * ex) / den;
-      const u = ((a[0] - cx) * dz - (a[1] - cz) * dx) / den;
-      if (t > 0 && u >= 0 && u <= 1) best = Math.max(best, t);
-    }
-    return best;
-  };
-  const SEG = 40;
-  const S = [1, 0.8, 0.6, 0.4, 0.2, 0]; // 1 = foot, 0 = plateau edge
-  const HY = [0, 0.2, 0.45, 0.7, 0.9, 1];
-  const low = new THREE.Color(COLORS.mountLow), high = new THREE.Color(COLORS.mountHigh);
-  const rings = S.map((s, k) => {
-    const out = [];
-    for (let i = 0; i < SEG; i++) {
-      const ang = (i / SEG) * Math.PI * 2;
-      const rf = rayHit(foot, ang), rc = rayHit(castle, ang) * 0.95;
-      const jitter = k > 0 && k < S.length - 1 ? (rand(i * 31 + k) - 0.5) * 0.12 : 0;
-      const r = rc + (rf - rc) * s * (1 + jitter);
-      const y = H * HY[k] * (k > 0 && k < S.length - 1 ? 1 + (rand(i * 17 + k * 5) - 0.5) * 0.12 : 1);
-      out.push([cx + Math.cos(ang) * r, y, cz + Math.sin(ang) * r]);
-    }
-    return out;
-  });
+// Walls (barrier=* and the forts from OSM): vertical bands `h` above the ground along a polyline,
+// one double-sided mesh; a little into the ground so slopes never show a gap under them.
+function buildWalls(walls, H) {
   const gb = new GeoBuilder();
-  const colAt = (y) => low.clone().lerp(high, Math.min(1, y / H));
-  for (let k = 0; k < rings.length - 1; k++) {
-    const A = rings[k], B = rings[k + 1];
-    for (let i = 0; i < SEG; i++) {
-      const j = (i + 1) % SEG;
-      const a = A[i], b = A[j], c2 = B[j], d = B[i];
-      for (const [p, q, r] of [[a, b, c2], [a, c2, d]]) {
-        // outward normal = cross product, oriented away from the hill centre
-        const ux = q[0] - p[0], uy = q[1] - p[1], uz = q[2] - p[2];
-        const vx = r[0] - p[0], vy = r[1] - p[1], vz = r[2] - p[2];
-        let n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
-        const l = Math.hypot(...n) || 1; n = n.map((v) => v / l);
-        if (n[1] < 0) n = n.map((v) => -v);
-        gb.tri(p, q, r, n, colAt((p[1] + q[1] + r[1]) / 3));
-      }
+  const stone = new THREE.Color(COLORS.wall), dark = stone.clone().multiplyScalar(0.78), top = stone.clone().multiplyScalar(0.9);
+  for (const w of walls) {
+    const pts = pairs(w.p);
+    const n = pts.length, last = w.closed ? n : n - 1;
+    for (let i = 0; i < last; i++) {
+      const a = pts[i], b = pts[(i + 1) % n];
+      const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1;
+      if (l < 0.3) continue;
+      const nn = [dz / l, 0, -dx / l];
+      const ya = H(a[0], a[1]), yb = H(b[0], b[1]);
+      const a0 = [a[0], ya - 1.5, a[1]], b0 = [b[0], yb - 1.5, b[1]], b1 = [b[0], yb + w.h, b[1]], a1 = [a[0], ya + w.h, a[1]];
+      gb.tri(a0, b0, b1, nn, dark, dark, stone);
+      gb.tri(a0, b1, a1, nn, dark, stone, stone);
+      // a thin cap so the wall has a top edge when seen from above
+      const t = 0.35;
+      const c0 = [a[0] + nn[0] * t, ya + w.h, a[1] + nn[2] * t], c1 = [b[0] + nn[0] * t, yb + w.h, b[1] + nn[2] * t];
+      const d0 = [a[0] - nn[0] * t, ya + w.h, a[1] - nn[2] * t], d1 = [b[0] - nn[0] * t, yb + w.h, b[1] - nn[2] * t];
+      gb.tri(d0, d1, c1, [0, 1, 0], top, top, top);
+      gb.tri(d0, c1, c0, [0, 1, 0], top, top, top);
     }
   }
-  // plateau
-  const top = rings[rings.length - 1];
-  for (let i = 0; i < SEG; i++) gb.tri([cx, H, cz], top[i], top[(i + 1) % SEG], [0, 1, 0], high);
-  // castle: wall band along its outline + a few towers
-  const stone = new THREE.Color(COLORS.castle), stoneDark = stone.clone().multiplyScalar(0.8);
-  const wall = castle.map(([x, z]) => [cx + (x - cx) * 0.85, cz + (z - cz) * 0.85]);
-  const WH = 12;
-  const sgn = orient(wall) > 0 ? 1 : -1;
-  for (let i = 0; i < wall.length; i++) {
-    const a = wall[i], b = wall[(i + 1) % wall.length];
-    const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1;
-    const n = [(sgn * dz) / l, 0, (-sgn * dx) / l];
-    gb.tri([a[0], H - 2, a[1]], [b[0], H - 2, b[1]], [b[0], H + WH, b[1]], n, stoneDark, stoneDark, stone);
-    gb.tri([a[0], H - 2, a[1]], [b[0], H + WH, b[1]], [a[0], H + WH, a[1]], n, stoneDark, stone, stone);
-  }
-  gb.polygon(wall, null, H + WH, stone.clone().multiplyScalar(0.9));
-  // towers
-  for (let t = 0; t < wall.length; t += Math.max(1, Math.floor(wall.length / 5))) {
-    const [x, z] = wall[t];
-    addBox(gb, x, z, 7, H + WH + 8, stone);
-  }
-  const mesh = new THREE.Mesh(gb.build(), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
-  mesh.name = 'mount';
+  const mesh = new THREE.Mesh(gb.build(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+  mesh.name = 'walls';
   mesh.matrixAutoUpdate = false;
   return mesh;
 }
 
-function addBox(gb, x, z, s, h, col) {
-  const r = s / 2;
-  const q = [[x - r, z - r], [x + r, z - r], [x + r, z + r], [x - r, z + r]];
-  for (let i = 0; i < 4; i++) {
-    const a = q[i], b = q[(i + 1) % 4];
-    const mx = (a[0] + b[0]) / 2 - x, mz = (a[1] + b[1]) / 2 - z, l = Math.hypot(mx, mz);
-    const n = [mx / l, 0, mz / l];
-    gb.tri([a[0], 0 + h * 0.6, a[1]], [b[0], h * 0.6, b[1]], [b[0], h, b[1]], n, col);
-    gb.tri([a[0], h * 0.6, a[1]], [b[0], h, b[1]], [a[0], h, a[1]], n, col);
-  }
-  gb.polygon(q, null, h, col);
-}
-
-function buildPalms(flat) {
+function buildPalms(flat, H = () => 0) {
   const count = flat.length / 2;
   // trunk: slim open cylinder, 5 sides
   const trunkGeo = new THREE.CylinderGeometry(0.16, 0.26, 7, 5, 1, true).translate(0, 3.5, 0);
@@ -595,7 +621,7 @@ function buildPalms(flat) {
     const sc = 0.8 + rand(i) * 0.55;
     e.set((rand(i + 7) - 0.5) * 0.08, rand(i + 3) * Math.PI * 2, (rand(i + 11) - 0.5) * 0.08);
     q.setFromEuler(e);
-    m.compose(p.set(flat[i * 2], 0, flat[i * 2 + 1]), q, s.set(sc, sc, sc));
+    m.compose(p.set(flat[i * 2], H(flat[i * 2], flat[i * 2 + 1]), flat[i * 2 + 1]), q, s.set(sc, sc, sc));
     trunk.setMatrixAt(i, m);
     crown.setMatrixAt(i, m);
   }

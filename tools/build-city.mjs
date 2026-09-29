@@ -4,20 +4,13 @@
 // Data © OpenStreetMap contributors, ODbL.
 import { readFile, writeFile } from 'node:fs/promises';
 import { RoadGraph } from '../src/game/route.js';
+import { Terrain } from '../src/city/terrain.js';
+import { BBOX, ORIGIN, M_LAT, M_LON, proj, unproj, rectOf } from './area.mjs';
+import { roadProfile, pinJunctions, carveRoad, shapeInside } from './terrain-ops.mjs';
 
-const BBOX = { south: 38.3400, west: -0.4950, north: 38.3515, east: -0.4770 };
-const LAT0 = (BBOX.south + BBOX.north) / 2;
-const LON0 = (BBOX.west + BBOX.east) / 2;
-const phi = LAT0 * Math.PI / 180;
-const M_LAT = 111132.92 - 559.82 * Math.cos(2 * phi) + 1.175 * Math.cos(4 * phi);
-const M_LON = 111412.84 * Math.cos(phi) - 93.5 * Math.cos(3 * phi);
+const LAT0 = ORIGIN.lat, LON0 = ORIGIN.lon;
 const r1 = (v) => Math.round(v * 10) / 10;
-const proj = (lat, lon) => [(lon - LON0) * M_LON, -(lat - LAT0) * M_LAT];
-const unproj = (x, z) => [LAT0 - z / M_LAT, LON0 + x / M_LON];
-
-const [bx0, bz1] = proj(BBOX.south, BBOX.west);
-const [bx1, bz0] = proj(BBOX.north, BBOX.east);
-const RECT = { minX: bx0, maxX: bx1, minZ: bz0, maxZ: bz1 };
+const RECT = rectOf(BBOX);
 
 // ---------- geometry helpers ----------
 const signedArea = (p) => { let a = 0; for (let i = 0, j = p.length - 1; i < p.length; j = i++) a += (p[j][0] - p[i][0]) * (p[j][1] + p[i][1]); return a / 2; };
@@ -108,18 +101,14 @@ const raw = JSON.parse(await readFile('data/raw/alicante.osm.json', 'utf8'));
 const E = raw.elements;
 const nameOf = (t) => [t.name, t['name:es'], t['name:ca'], t['name:en'], t.official_name, t.alt_name].filter(Boolean).join(' | ');
 
-// ---------- Benacantil (mount) ----------
-// Foot outline drawn by hand in local metres, checked against OSM: stairs (highway=steps),
-// hillside paths, Parc de l'Ereta and the castle walls lie inside; Plaça de Santa Maria (Basílica,
-// MACA), Ajuntament and the Postiguet promenade stay outside on the flat.
-const MOUNT_FOOT = [
-  [235, -760], [232, -330], [245, -190], [290, -120], [380, -100], [470, -95], [540, -100],
-  [650, -105], [760, -110], [900, -150], [1000, -300], [990, -600], [820, -780], [500, -800],
-];
+// ---------- terrain (plan-terrain.md) ----------
+// The Benacantil is real terrain now (data/raw/dem5.asc, IGN MDT05): nothing is excluded any more.
+// The old hand-drawn foot outline is gone; the castle comes from OSM buildings and walls.
+const terrain = Terrain.fromAsc(await readFile('data/raw/dem5.asc', 'utf8'), proj);
+const demStats = terrain.stats();
 const peakNode = E.find((e) => e.type === 'node' && e.tags?.natural === 'peak');
 const castleWay = E.find((e) => e.tags?.historic === 'castle' && /Santa B/i.test(nameOf(e.tags)));
-const castleHull = convexHull(geomToPts(castleWay.geometry));
-const inMount = (p) => pip(p, MOUNT_FOOT);
+const inMount = () => false;
 
 // ---------- buildings ----------
 const PALETTE = [0xf3e6cf, 0xe9d3b0, 0xdcb78f, 0xf5efe6, 0xe8c3a8, 0xd9a47e, 0xefdcc0, 0xc98f6b, 0xf1d9d0, 0xe3cfa3];
@@ -206,6 +195,7 @@ for (const e of E) {
 // ---------- roads ----------
 const ROAD_W = { primary: 12, primary_link: 7, secondary: 10, secondary_link: 7, tertiary: 8, tertiary_link: 6, residential: 6.5, unclassified: 6, living_street: 5, service: 4, pedestrian: 5, busway: 7 };
 const roads = [], plazas = [];
+const roadNodes = []; // OSM node ids per road vertex (junction heights)
 const roadCount = {};
 // junction nodes: shared by >= 3 road ways, or by 2 where one passes through (not an end-to-end chain)
 const nodeUse = new Map();
@@ -246,8 +236,8 @@ for (const e of E) {
   }
   const lanes = t.lanes ? parseInt(t.lanes) : null;
   const oneway = t.oneway === 'yes' || t.oneway === '-1' || t.oneway === '1';
-  // split polyline where it enters the mount
-  let run = [], runJ = [];
+  // split polyline where it leaves the area (nothing else cuts it now)
+  let run = [], runJ = [], runN = [];
   const flush = () => {
     if (run.length >= 2) {
       const r = { p: flat(run), w: ROAD_W[t.highway], k: t.highway };
@@ -256,13 +246,14 @@ for (const e of E) {
       if (oneway) r.o = 1;
       if (runJ.length) { r.j = runJ; junctionCount += runJ.length; }
       roads.push(r);
+      roadNodes.push(runN);
       roadCount[t.highway] = (roadCount[t.highway] || 0) + 1;
     }
-    run = []; runJ = [];
+    run = []; runJ = []; runN = [];
   };
   pts.forEach((p, i) => {
     if (inMount(p)) flush();
-    else { if (e.nodes && isJunction(e.nodes[i])) runJ.push([run.length, otherWidth(e.nodes[i], ROAD_W[t.highway])]); run.push(p); }
+    else { if (e.nodes && isJunction(e.nodes[i])) runJ.push([run.length, otherWidth(e.nodes[i], ROAD_W[t.highway])]); run.push(p); runN.push(e.nodes ? e.nodes[i] : null); }
   });
   flush();
 }
@@ -438,6 +429,95 @@ try {
   sea = MANUAL_SEA;
 }
 
+// ---------- terrain shaping: roads carved, sea flat, castle car park flat, building bases ----------
+const SIDEWALK_W = { primary: 3.5, primary_link: 2, secondary: 3, secondary_link: 2, tertiary: 2.5, tertiary_link: 2, residential: 2, unclassified: 2, busway: 2.5 };
+const CARVE_RANK = ['pedestrian', 'service', 'living_street', 'busway', 'residential', 'unclassified', 'tertiary', 'secondary', 'primary_link', 'primary'];
+const terrainStats = {};
+const nodeHeight = new Map(); // OSM node id -> smoothed road height (the tour graph reads grades from it)
+{
+  const order = roads.map((r, i) => i).sort((a, b) => CARVE_RANK.indexOf(roads[a].k) - CARVE_RANK.indexOf(roads[b].k));
+  const profiles = roads.map((r, i) => ({ P: roadProfile(terrain, ringPts(r.p)), nodes: roadNodes[i], rank: CARVE_RANK.indexOf(r.k) }));
+  terrainStats.pinnedJunctions = pinJunctions(profiles);
+  for (const pr of profiles) for (const p of pr.P) if (p.v >= 0 && pr.nodes[p.v] != null) nodeHeight.set(pr.nodes[p.v], p.y);
+  const owner = new Float32Array(terrain.h.length).fill(Infinity);
+  for (const i of order) carveRoad(terrain, profiles[i].P, roads[i].w / 2 + (SIDEWALK_W[roads[i].k] || 0) + 1.0, owner, roads[i].k !== 'pedestrian');
+  // road grades after carving (for the report and the graph)
+  let steep = 0, maxG = 0, maxName = '';
+  for (const [i, pr] of profiles.entries()) {
+    for (let k = 1; k < pr.P.length; k++) {
+      const g = Math.abs(pr.P[k].y - pr.P[k - 1].y) / (pr.P[k].s - pr.P[k - 1].s || 1);
+      if (g > 0.08) steep++;
+      if (g > maxG) { maxG = g; maxName = roads[i].n || roads[i].k; }
+    }
+  }
+  terrainStats.steepSamples = steep; terrainStats.maxGrade = `${(maxG * 100).toFixed(0)}% (${maxName})`;
+  // the sea: a little below 0, so the water plane at 0 covers the ground
+  terrainStats.seaCells = shapeInside(terrain, sea, (h) => Math.min(h, -0.4));
+  // buildings stand on the lowest point of their outline (plan-terrain.md 4.4)
+  let onSlope = 0;
+  for (const b of buildings) {
+    let mn = Infinity, mx = -Infinity;
+    for (let i = 0; i < b.p.length; i += 2) { const h = terrain.height(b.p[i], b.p[i + 1]); mn = Math.min(mn, h); mx = Math.max(mx, h); }
+    b.y = r1(mn - 0.2);
+    if (mx - mn > 2) onSlope++;
+  }
+  terrainStats.buildingsOnSlope = onSlope;
+}
+function ringPts(flatArr) { const out = []; for (let i = 0; i < flatArr.length; i += 2) out.push([flatArr[i], flatArr[i + 1]]); return out; }
+function inRectPts(pts) { return pts.some((p) => p[0] >= RECT.minX && p[0] <= RECT.maxX && p[1] >= RECT.minZ && p[1] <= RECT.maxZ); }
+
+// ---------- walls: castle and city walls (barrier=*), the San Fernando fort ----------
+const WALL_H = { city_wall: 6, wall: 3, retaining_wall: 2.5, fort: 4 };
+const walls = [];
+for (const e of E) {
+  const t = e.tags || {};
+  if (e.type === 'way' && e.geometry && (WALL_H[t.barrier] || t.historic === 'citywalls')) {
+    const pts = geomToPts(e.geometry).filter((p) => inRectPts([p]));
+    if (pts.length < 2) continue;
+    let h = WALL_H[t.barrier] || 4;
+    if (t.historic === 'castle' || t.historic === 'citywalls') h = 5;
+    if (t.height && num(t.height)) h = Math.min(12, num(t.height));
+    walls.push({ p: flat(pts), h, closed: e.geometry[0].lat === e.geometry[e.geometry.length - 1].lat && e.geometry[0].lon === e.geometry[e.geometry.length - 1].lon ? 1 : 0 });
+  }
+  if (e.type === 'relation' && t.historic === 'fort') {
+    for (const m of e.members) {
+      if (m.type !== 'way' || !m.geometry) continue;
+      const pts = geomToPts(m.geometry);
+      walls.push({ p: flat(pts), h: WALL_H.fort, closed: 1, n: t.name });
+    }
+  }
+}
+
+// gates: a wall segment that a drivable street passes through is left out (the castle gate, city gates)
+{
+  const drivableSegs = [];
+  for (const r of roads) if (r.k !== 'pedestrian') for (let i = 2; i < r.p.length; i += 2) drivableSegs.push([r.p[i - 2], r.p[i - 1], r.p[i], r.p[i + 1], r.w / 2 + 1]);
+  const segDist2 = (px, pz, ax, az, bx, bz) => { const ex = bx - ax, ez = bz - az, l2 = ex * ex + ez * ez || 1; const t = Math.max(0, Math.min(1, ((px - ax) * ex + (pz - az) * ez) / l2)); return Math.hypot(px - ax - ex * t, pz - az - ez * t); };
+  const crosses = (ax, az, bx, bz) => drivableSegs.some(([cx, cz, dx, dz, r]) => {
+    const d1 = (bx - ax) * (cz - az) - (bz - az) * (cx - ax), d2 = (bx - ax) * (dz - az) - (bz - az) * (dx - ax);
+    const d3 = (dx - cx) * (az - cz) - (dz - cz) * (ax - cx), d4 = (dx - cx) * (bz - cz) - (dz - cz) * (bx - cx);
+    if (d1 * d2 < 0 && d3 * d4 < 0) return true;
+    return Math.min(segDist2(ax, az, cx, cz, dx, dz), segDist2(bx, bz, cx, cz, dx, dz)) < r;
+  });
+  let gates = 0;
+  const split = [];
+  for (const w of walls) {
+    const pts = ringPts(w.p);
+    const n = pts.length, last = w.closed ? n : n - 1;
+    let run = [];
+    const flush = () => { if (run.length >= 2) split.push({ ...w, p: flat(run), closed: 0 }); run = []; };
+    for (let i = 0; i < last; i++) {
+      const a = pts[i], b = pts[(i + 1) % n];
+      if (crosses(a[0], a[1], b[0], b[1])) { gates++; run.push(a); flush(); continue; }
+      if (!run.length) run.push(a);
+      run.push(b);
+    }
+    flush();
+  }
+  walls.length = 0; walls.push(...split);
+  terrainStats.wallGates = gates;
+}
+
 // ---------- landmarks by OSM name ----------
 const nm = (re) => (e) => re.test(nameOf(e.tags || {}));
 function center(e) {
@@ -483,6 +563,7 @@ try { tourSpec = JSON.parse(await readFile('data/tour.json', 'utf8')); } catch (
 
 // drivable street graph (OSM nodes, cut like the rendered roads: no mount, inside the play area)
 const graphIdx = new Map(), graphN = [], graphE = [];
+let graphSteep = 0;
 const driveRoads = [];
 for (const e of E) {
   const t = e.tags || {};
@@ -491,6 +572,11 @@ for (const e of E) {
   const ow = t.oneway === 'yes' || t.oneway === '1' || t.oneway === 'true' || t.junction === 'roundabout' ? 1 : t.oneway === '-1' ? -1 : 0;
   driveRoads.push({ osm: 'way/' + e.id, names: searchNames(t), k: t.highway, w: ROAD_W[t.highway] || 6, ow, pts });
   const ok = pts.map((p) => !inMount(p) && inPlay(p, 5));
+  // heights of this way's vertices along the smoothed road profile, and the distance along the way
+  const wy = pts.map((p, i) => nodeHeight.get(e.nodes[i]) ?? terrain.height(p[0], p[1]));
+  const ws = [0];
+  for (let i = 1; i < pts.length; i++) ws.push(ws[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const yAt = (sv) => { let i = 1; while (i < ws.length - 1 && ws[i] < sv) i++; const t = (sv - ws[i - 1]) / (ws[i] - ws[i - 1] || 1); return wy[i - 1] + (wy[i] - wy[i - 1]) * t; };
   const idx = (i) => {
     const id = e.nodes[i];
     if (!graphIdx.has(id)) { graphIdx.set(id, graphN.length / 2); graphN.push(r1(pts[i][0]), r1(pts[i][1])); }
@@ -498,9 +584,17 @@ for (const e of E) {
   };
   for (let i = 1; i < pts.length; i++) {
     if (!ok[i - 1] || !ok[i]) continue;
+    const L = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]) || 1;
+    // grade along the smoothed road profile over a window of the edge ± 12 m along the way: the old
+    // town's stairs-steep lanes (> 20 %) stay out of the tour route, the castle road (8–14 %) stays in
+    const sa = Math.max(0, ws[i - 1] - 12), sb = Math.min(ws[ws.length - 1], ws[i] + 12);
+    const grade = Math.abs(yAt(sb) - yAt(sa)) / Math.max(1, sb - sa);
+    if (grade > 0.2) { graphSteep++; continue; }
+    let cls = TOUR_CLASS[t.highway];
+    if (grade > 0.12) cls = 4; else if (grade > 0.06) cls = Math.max(cls, 3);
     let a = idx(i - 1), b = idx(i);
     if (ow < 0) [a, b] = [b, a];
-    graphE.push(a, b, (ow ? 1 : 0) | (TOUR_CLASS[t.highway] << 1));
+    graphE.push(a, b, (ow ? 1 : 0) | (cls << 1));
   }
 }
 function resolveOsm(q) {
@@ -642,23 +736,28 @@ const out = {
   palms: flat(palms),
   sea: flat(sea),
   tour: { places: tourPlaces, graph: { n: graphN, e: graphE } },
-  mount: { foot: flat(MOUNT_FOOT), peak: flat([proj(peakNode.lat, peakNode.lon)]), peakName: peakNode.tags.name, height: 166, castle: flat(castleHull), castleName: castleWay.tags['name:es'] || castleWay.tags.name },
+  walls,
+  hill: { peak: flat([proj(peakNode.lat, peakNode.lon)]), peakName: peakNode.tags.name, peakEle: +peakNode.tags.ele || null, castleName: castleWay ? castleWay.tags['name:es'] || castleWay.tags.name : '' },
 };
+const tstats = terrain.stats();
+out.meta.terrain = { ...terrain.meta(), min: r1(tstats.min), max: r1(tstats.max), file: 'data/terrain.bin', source: 'IGN MDT05 (PNOA LiDAR), WCS servicios.idee.es', attribution: '© Instituto Geográfico Nacional (CNIG), CC BY 4.0' };
 const json = JSON.stringify(out);
 await writeFile('data/city.json', json);
+await writeFile('data/terrain.bin', terrain.toBin());
 
 console.log(`buildings: ${buildings.length}  (height sources ${JSON.stringify(stats.heightSrc)}; styles ${JSON.stringify(stats.styles)}; facades.json overrides: ${overridesUsed.join(', ') || 'none'})`);
 console.log(`facade edges: ${JSON.stringify(stats.edges)} (shared walls, [none, residential, main] street class)`);
 console.log(`skipped: ${JSON.stringify(stats.skipped)}  excluded names: ${stats.excludedNames.filter(Boolean).join('; ')}`);
 console.log(`roads: ${roads.length} polylines ${JSON.stringify(roadCount)}; junction vertices: ${junctionCount}; lanes tagged: ${roads.filter((r) => r.l).length}; oneway: ${roads.filter((r) => r.o).length}; plazas: ${plazas.length} (${plazas.map((p) => p.k).filter((k, i, a) => a.indexOf(k) === i).join(', ')}); parks: ${parks.length}; palms: ${palms.length}`);
 console.log(`sea: ${seaSource} (${sea.length} vertices) — ${seaNote}`);
+console.log(`terrain: ${terrain.cols}x${terrain.rows} cells (${terrain.dx.toFixed(2)} x ${terrain.dz.toFixed(2)} m), DEM ${demStats.min.toFixed(1)}..${demStats.max.toFixed(1)} m, carved ${JSON.stringify(terrainStats)}; walls: ${walls.length}; terrain.bin ${(terrain.cols * terrain.rows * 2 / 1024).toFixed(0)} KB`);
 for (const [k, v] of Object.entries(landmarks)) console.log(`landmark ${k}: ${v.lat}, ${v.lon}  local (${v.x}, ${v.z})  ${v.osm.slice(0, 3).join(' ')}`);
 console.log(`start: ${JSON.stringify(start)}`);
 
 // tour report: places and route lengths (the same A* as the game, src/game/route.js)
 {
   const g = tourGraph;
-  console.log(`tour graph: ${g.nodeCount} nodes, ${g.edgeCount} edges`);
+  console.log(`tour graph: ${g.nodeCount} nodes, ${g.edgeCount} edges (${graphSteep} edges steeper than 20 % left out)`);
   for (const [id, p] of Object.entries(tourPlaces)) {
     const [lat, lon] = unproj(p.p[0], p.p[1]);
     console.log(`place ${id.padEnd(13)} ${(p.osm[0] || '(at)').padEnd(18)} ${(p.name || '').slice(0, 34).padEnd(34)} road point ${p.p.join(', ').padEnd(14)} (${lat.toFixed(5)}, ${lon.toFixed(5)}) ${p.dist} m from target, ${p.road}${p.ow ? ' (one-way)' : ''}`);

@@ -156,7 +156,7 @@ export class PhotoBuilder {
 
 // Adds the photo walls (and domes) of one building; returns the set of outer-ring edges it covered, which
 // the procedural wall builder then skips. items: this building's entries from loadPhotoFacades().
-export function addPhotoBuilding(pb, b, items) {
+export function addPhotoBuilding(pb, b, items, base = 0) {
   const ring = ringOf(b.p);
   const n = ring.length;
   const handled = new Set();
@@ -171,7 +171,7 @@ export function addPhotoBuilding(pb, b, items) {
     if (!wall) return false;
     const p0 = at(e, t0), p1 = at(e, t1);
     const u0 = (S[e.i] + t0) / tileW, u1 = (S[e.i] + t1) / tileW, v = wallTop / tileH;
-    pb.quad([p0[0], 0, p0[1]], [p1[0], 0, p1[1]], [p1[0], wallTop, p1[1]], [p0[0], wallTop, p0[1]], [e.n[0], 0, e.n[1]],
+    pb.quad([p0[0], base, p0[1]], [p1[0], base, p1[1]], [p1[0], base + wallTop, p1[1]], [p0[0], base + wallTop, p0[1]], [e.n[0], 0, e.n[1]],
       [u0, 0], [u1, 0], [u1, v], [u0, v], wall.rect, MODE.TILE);
     return true;
   };
@@ -195,7 +195,7 @@ export function addPhotoBuilding(pb, b, items) {
         const fOuter = pl.frac(clampU(uc - s * JOG_INSET)), fInner = pl.frac(clampU(uc - s * (JOG_INSET + Math.min(e.len, JOG_WRAP))));
         const toCam = (p) => -(p[0] * pl.view[0] + p[1] * pl.view[1]);
         const [fa, fb] = toCam(e.a) >= toCam(e.b) ? [fOuter, fInner] : [fInner, fOuter];
-        pb.quad([e.a[0], 0, e.a[1]], [e.b[0], 0, e.b[1]], [e.b[0], h, e.b[1]], [e.a[0], h, e.a[1]], [e.n[0], 0, e.n[1]],
+        pb.quad([e.a[0], base, e.a[1]], [e.b[0], base, e.b[1]], [e.b[0], base + h, e.b[1]], [e.a[0], base + h, e.a[1]], [e.n[0], 0, e.n[1]],
           [fa, 0], [fb, 0], [fb, vTop], [fa, vTop], it.rect, MODE.PHOTO);
         continue;
       }
@@ -213,11 +213,11 @@ export function addPhotoBuilding(pb, b, items) {
         const u0 = ua + ((ub - ua) * t0) / e.len, u1 = ua + ((ub - ua) * t1) / e.len, um = (u0 + u1) / 2;
         if ((um < pl.s0 || um > pl.s1) && tilePiece(e, t0, t1)) continue;
         const p0 = at(e, t0), p1 = at(e, t1), f0 = pl.frac(clampU(u0)), f1 = pl.frac(clampU(u1));
-        pb.quad([p0[0], 0, p0[1]], [p1[0], 0, p1[1]], [p1[0], h, p1[1]], [p0[0], h, p0[1]], [e.n[0], 0, e.n[1]],
+        pb.quad([p0[0], base, p0[1]], [p1[0], base, p1[1]], [p1[0], base + h, p1[1]], [p0[0], base + h, p0[1]], [e.n[0], 0, e.n[1]],
           [f0, 0], [f1, 0], [f1, vTop], [f0, vTop], it.rect, MODE.PHOTO);
       }
     }
-    if (lathe) addLathe(pb, pl, lathe, top, it.rect, it.entry.mirror);
+    if (lathe) addLathe(pb, pl, lathe, top, it.rect, it.entry.mirror, base);
   }
   if (wall) for (let i = 0; i < n; i++) if (!handled.has(i)) { const e = edgeOf(ring, i); tilePiece(e, 0, e.len); handled.add(i); }
   return handled;
@@ -227,18 +227,18 @@ const at = (e, t) => [e.a[0] + e.dir[0] * t, e.a[1] + e.dir[1] * t];
 // A dome: the profile [[y, r], ...] turned around the walls' circle, textured by the same photo projected
 // along the camera's view (like the walls below it). No sky mask: the geometry is the shape. With
 // "mirror": x (0..1, the dome's axis in the photo) only the photo's left half is used, mirrored.
-function addLathe(pb, pl, profile, top, rect, mirror) {
+function addLathe(pb, pl, profile, top, rect, mirror, base = 0) {
   const { c, r } = pl.circle;
   const s = r / profile[0][1];
   const P = profile.map(([y, pr]) => [y, pr * s]);
   const ring = (k, j) => {
     const a = (j / LATHE_SEG) * Math.PI * 2, [y, pr] = P[k];
-    return [c[0] + Math.cos(a) * pr, y, c[1] + Math.sin(a) * pr];
+    return [c[0] + Math.cos(a) * pr, base + y, c[1] + Math.sin(a) * pr];
   };
   const axis = mirror ?? pl.frac((pl.u(c[0] + r * pl.right[0], c[1] + r * pl.right[1]) + pl.u(c[0] - r * pl.right[0], c[1] - r * pl.right[1])) / 2);
   const uv = (p) => {
     const f = axis + (pl.frac(pl.u(p[0], p[2])) - axis) * LATHE_INSET; // a little inside the silhouette: no sky
-    return [mirror ? mirror - Math.abs(f - mirror) : f, p[1] / top];
+    return [mirror ? mirror - Math.abs(f - mirror) : f, (p[1] - base) / top];
   };
   for (let k = 0; k < P.length - 1; k++) {
     const dy = P[k + 1][0] - P[k][0], dr = P[k + 1][1] - P[k][1], l = Math.hypot(dy, dr) || 1;
