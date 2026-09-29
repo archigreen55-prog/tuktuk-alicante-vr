@@ -25,6 +25,7 @@ export class KeyboardInput {
     this.brakeT = this.any('KeyS', 'ArrowDown') ? this.brakeT + dt : 0;
     out.brake = this.brakeT > 0 ? Math.min(1, BRAKE_START + (1 - BRAKE_START) * this.brakeT / BRAKE_RAMP) : 0;
     out.handbrake = this.any('Space');
+    out.nitro = this.any('ShiftLeft', 'ShiftRight');   // nitro (hold)
     out.horn = this.any('KeyH');
     // keys are digital: ramp the steering so the wheel does not snap
     const target = (this.any('KeyD', 'ArrowRight') ? 1 : 0) - (this.any('KeyA', 'ArrowLeft') ? 1 : 0);

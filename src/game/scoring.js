@@ -1,7 +1,6 @@
 // Ride comfort of the tourists (stage 6 plan, section 4): events from the physics each frame, the
 // group mood 0..100, and at the end tips and a 1-5 star review. No three.js: runs in Node tools too.
 // All thresholds live here, in one place.
-import { downhillCap } from '../vehicle/physics.js';
 export const COMFORT = {
   tauBrake: 0.15, tauLat: 0.2,           // s, smoothing of the braking and sideways acceleration
   brakeHard: 3.5, brakeHardFor: 0.3,     // m/s², s
@@ -14,21 +13,22 @@ export const COMFORT = {
   cooldown: 1.5,                         // s between two events of one kind
   softStop: 2.5, softStopWindow: 5,      // m/s², s: gentle braking before a stop earns a bonus
   calmEvery: 30,                         // s without events -> +1 mood
-  fastDownGrade: 0.08, fastDownOver: 1.5,  // m/s above the physics' descent cap on a descent steeper than this (terrain)
+  fastDownGrade: 0.04, fastDownSpeed: 35 / 3.6, // on a descent steeper than this, faster than this (terrain; the
+                                                // motor never goes above 30 downhill, so it takes nitro or a crest)
 };
 export const MOOD_DELTA = {
   brake: -6, emergency: -12, turn: -5, danger: -10,
-  touch: -4, hit: -12, hitHard: -25, scrape: -2, fastDown: -5,
+  touch: -4, hit: -12, hitHard: -25, scrape: -2, fastDown: -5, nitro: -10,
   nearPeople: -5, reset: -10, leftEarly: -5,
   softStop: 3, calm: 1,
 };
 export const LABEL = {
   brake: 'Різке гальмування', emergency: 'Екстрене гальмування', turn: 'Швидкий поворот', danger: 'Небезпечний поворот',
   touch: 'Дотик до стіни', hit: 'Удар!', hitHard: 'Сильний удар!', scrape: 'Шкрябаємо стіну',
-  nearPeople: 'Повільніше біля людей!', fastDown: 'Надто швидко на спуску!', reset: 'Повернення на дорогу', leftEarly: 'Ще фотографуємо!', softStop: "М'яка зупинка",
+  nearPeople: 'Повільніше біля людей!', fastDown: 'Надто швидко на спуску!', nitro: 'Ой! Нітро!', reset: 'Повернення на дорогу', leftEarly: 'Ще фотографуємо!', softStop: "М'яка зупинка",
 };
 // which review line a penalty feeds (tour.json "reviews")
-const GROUP = { brake: 'brakes', emergency: 'brakes', fastDown: 'brakes', turn: 'turns', danger: 'turns', touch: 'hits', hit: 'hits', hitHard: 'hits', scrape: 'hits', nearPeople: 'hits', reset: 'hits', leftEarly: 'brakes' };
+const GROUP = { brake: 'brakes', emergency: 'brakes', fastDown: 'brakes', nitro: 'nitro', turn: 'turns', danger: 'turns', touch: 'hits', hit: 'hits', hitHard: 'hits', scrape: 'hits', nearPeople: 'hits', reset: 'hits', leftEarly: 'brakes' };
 // the event that a stronger one replaces within one braking / turning episode
 const UPGRADE = { emergency: 'brake', danger: 'turn' };
 
@@ -76,7 +76,7 @@ export class ComfortScore {
     this.fastT = this.aLat >= C.turnFast ? this.fastT + dt : 0;
     this.dangerT = this.aLat >= C.turnDanger ? this.dangerT + dt : 0;
     // downhill too fast (terrain): the descent cap in the physics keeps most drivers under it
-    if ((s.grade || 0) < -C.fastDownGrade && s.speed > downhillCap(-s.grade) + C.fastDownOver && this.ready('fastDown')) { this.last.fastDown = this.t; out.push(this.add('fastDown')); }
+    if ((s.grade || 0) < -C.fastDownGrade && s.speed > C.fastDownSpeed && this.ready('fastDown')) { this.last.fastDown = this.t; out.push(this.add('fastDown')); }
     const skid = s.handbrake && Math.abs(s.speed) > C.handbrakeSpeed;
     if (this.aLat < 1.5 && !skid) this.turnEpisode = null;
     if (this.dangerT >= C.turnDangerFor || skid) this.episodeEvent('turnEpisode', 'danger', out);

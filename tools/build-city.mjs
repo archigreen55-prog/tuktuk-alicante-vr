@@ -591,7 +591,7 @@ for (const e of E) {
     const grade = Math.abs(yAt(sb) - yAt(sa)) / Math.max(1, sb - sa);
     if (grade > 0.2) { graphSteep++; continue; }
     let cls = TOUR_CLASS[t.highway];
-    if (grade > 0.12) cls = 4; else if (grade > 0.06) cls = Math.max(cls, 3);
+    if (grade > 0.06) cls = Math.max(cls, 3); // climbs: ~25–30 km/h (residential class) whatever the street (report-terrain-1b)
     let a = idx(i - 1), b = idx(i);
     if (ow < 0) [a, b] = [b, a];
     graphE.push(a, b, (ow ? 1 : 0) | (cls << 1));

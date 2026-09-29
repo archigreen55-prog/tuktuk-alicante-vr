@@ -47,36 +47,36 @@
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
-    "./src/city/buildCity.js": "./src/city/buildCity.js?v=0.10.0",
-    "./src/city/facades.js": "./src/city/facades.js?v=0.10.0",
-    "./src/city/geo.js": "./src/city/geo.js?v=0.10.0",
-    "./src/city/ground.js": "./src/city/ground.js?v=0.10.0",
-    "./src/city/landmarks.js": "./src/city/landmarks.js?v=0.10.0",
-    "./src/city/models.js": "./src/city/models.js?v=0.10.0",
-    "./src/city/photoFacades.js": "./src/city/photoFacades.js?v=0.10.0",
-    "./src/city/terrain.js": "./src/city/terrain.js?v=0.10.0",
-    "./src/city/tiles.js": "./src/city/tiles.js?v=0.10.0",
-    "./src/comfort/vignette.js": "./src/comfort/vignette.js?v=0.10.0",
-    "./src/game/markers.js": "./src/game/markers.js?v=0.10.0",
-    "./src/game/route.js": "./src/game/route.js?v=0.10.0",
-    "./src/game/scoring.js": "./src/game/scoring.js?v=0.10.0",
-    "./src/game/tour.js": "./src/game/tour.js?v=0.10.0",
-    "./src/game/tourists.js": "./src/game/tourists.js?v=0.10.0",
-    "./src/input/handlebarInput.js": "./src/input/handlebarInput.js?v=0.10.0",
-    "./src/input/keyboard.js": "./src/input/keyboard.js?v=0.10.0",
-    "./src/input/xrInput.js": "./src/input/xrInput.js?v=0.10.0",
-    "./src/main.js": "./src/main.js?v=0.10.0",
-    "./src/perf/gpuTimer.js": "./src/perf/gpuTimer.js?v=0.10.0",
-    "./src/settings.js": "./src/settings.js?v=0.10.0",
-    "./src/ui/dashboard.js": "./src/ui/dashboard.js?v=0.10.0",
-    "./src/ui/hud.js": "./src/ui/hud.js?v=0.10.0",
-    "./src/ui/minimap.js": "./src/ui/minimap.js?v=0.10.0",
-    "./src/vehicle/collision.js": "./src/vehicle/collision.js?v=0.10.0",
-    "./src/vehicle/horn.js": "./src/vehicle/horn.js?v=0.10.0",
-    "./src/vehicle/physics.js": "./src/vehicle/physics.js?v=0.10.0",
-    "./src/vehicle/tuktuk.js": "./src/vehicle/tuktuk.js?v=0.10.0",
-    "./src/version.js": "./src/version.js?v=0.10.0",
-    "./src/xr/xrRig.js": "./src/xr/xrRig.js?v=0.10.0"
+    "./src/city/buildCity.js": "./src/city/buildCity.js?v=0.10.1",
+    "./src/city/facades.js": "./src/city/facades.js?v=0.10.1",
+    "./src/city/geo.js": "./src/city/geo.js?v=0.10.1",
+    "./src/city/ground.js": "./src/city/ground.js?v=0.10.1",
+    "./src/city/landmarks.js": "./src/city/landmarks.js?v=0.10.1",
+    "./src/city/models.js": "./src/city/models.js?v=0.10.1",
+    "./src/city/photoFacades.js": "./src/city/photoFacades.js?v=0.10.1",
+    "./src/city/terrain.js": "./src/city/terrain.js?v=0.10.1",
+    "./src/city/tiles.js": "./src/city/tiles.js?v=0.10.1",
+    "./src/comfort/vignette.js": "./src/comfort/vignette.js?v=0.10.1",
+    "./src/game/markers.js": "./src/game/markers.js?v=0.10.1",
+    "./src/game/route.js": "./src/game/route.js?v=0.10.1",
+    "./src/game/scoring.js": "./src/game/scoring.js?v=0.10.1",
+    "./src/game/tour.js": "./src/game/tour.js?v=0.10.1",
+    "./src/game/tourists.js": "./src/game/tourists.js?v=0.10.1",
+    "./src/input/handlebarInput.js": "./src/input/handlebarInput.js?v=0.10.1",
+    "./src/input/keyboard.js": "./src/input/keyboard.js?v=0.10.1",
+    "./src/input/xrInput.js": "./src/input/xrInput.js?v=0.10.1",
+    "./src/main.js": "./src/main.js?v=0.10.1",
+    "./src/perf/gpuTimer.js": "./src/perf/gpuTimer.js?v=0.10.1",
+    "./src/settings.js": "./src/settings.js?v=0.10.1",
+    "./src/ui/dashboard.js": "./src/ui/dashboard.js?v=0.10.1",
+    "./src/ui/hud.js": "./src/ui/hud.js?v=0.10.1",
+    "./src/ui/minimap.js": "./src/ui/minimap.js?v=0.10.1",
+    "./src/vehicle/collision.js": "./src/vehicle/collision.js?v=0.10.1",
+    "./src/vehicle/horn.js": "./src/vehicle/horn.js?v=0.10.1",
+    "./src/vehicle/physics.js": "./src/vehicle/physics.js?v=0.10.1",
+    "./src/vehicle/tuktuk.js": "./src/vehicle/tuktuk.js?v=0.10.1",
+    "./src/version.js": "./src/version.js?v=0.10.1",
+    "./src/xr/xrRig.js": "./src/xr/xrRig.js?v=0.10.1"
   }
 }
 </script>
@@ -85,7 +85,7 @@
   // cached) page, reload once with ?v=<new>, a URL no cache has seen. Every module and data URL
   // carries ?v=<version> too (import map above). Versions are set by tools/bump-version.mjs.
   {
-    const PAGE_VERSION = '0.10.0';
+    const PAGE_VERSION = '0.10.1';
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then(({ version }) => {
       const url = new URL(location.href);
       if (version && version !== PAGE_VERSION && url.searchParams.get('v') !== version) {
@@ -118,6 +118,8 @@
     <tr><td>S / ↓</td><td>гальмо (коротко — м'яко, довше — сильніше); утримуй на місці — задній хід</td></tr>
     <tr><td>A D / ← →</td><td>поворот</td></tr>
     <tr><td>Пробіл</td><td>ручник (занос)</td></tr>
+    <tr><td>Shift (утримувати)</td><td>нітро: ривок до 60 км/год до 4 с, потім 10 с перезарядка; у турі туристи кричать «ой», −10 настрою</td></tr>
+    <tr><td>K</td><td>нахил кабіни: повний / половина / вимкнено</td></tr>
     <tr><td>R</td><td>повернутися на найближчу дорогу</td></tr>
     <tr><td>C</td><td>камера: кабіна / ззаду</td></tr>
     <tr><td>F</td><td>лічильник FPS на панелі</td></tr>
@@ -136,7 +138,8 @@
     <tr><td>Лівий тригер</td><td>гальмо; утримуй на місці — задній хід</td></tr>
     <tr><td>Лівий стік ← →</td><td>поворот (у режимі рук — коли кермо відпущене)</td></tr>
     <tr><td>A</td><td>ручник (занос)</td></tr>
-    <tr><td>B</td><td>гудок</td></tr>
+    <tr><td>B (утримувати)</td><td>нітро (ривок до 4 с, перезарядка 10 с; у турі — «ой», −10 настрою)</td></tr>
+    <tr><td>Правий стік уперед</td><td>гудок</td></tr>
     <tr><td>Натиск правого стіка</td><td>режим керування: стік / руки</td></tr>
     <tr><td>X / утримати X 1 с</td><td>лічильник FPS / тест навантаження</td></tr>
     <tr><td>Натиск лівого стіка</td><td>сила віньєтки</td></tr>
@@ -152,6 +155,6 @@
 <div id="tourCard"></div>
 <canvas id="miniMap" width="180" height="180"></canvas>
 <div id="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · рельєф: <a href="https://www.ign.es/" target="_blank" rel="noopener">© IGN (CNIG)</a> · фото фасадів: <a href="assets/facades/CREDITS.md" target="_blank" rel="noopener">Wikimedia Commons</a> · 3D-скани: <a href="assets/models/CREDITS.md" target="_blank" rel="noopener">Sketchfab</a></div>
-<script type="module" src="src/main.js?v=0.10.0"></script>
+<script type="module" src="src/main.js?v=0.10.1"></script>
 </body>
 </html>

@@ -259,6 +259,14 @@ export class Tour {
     return false;
   }
 
+  // a nitro burst with the tourists on board: they shout, −10 mood (free ride and before boarding: nothing)
+  onNitro() {
+    if (this.state !== 'driving' && this.state !== 'afterPhoto') return false;
+    this.emitScore(this.score.add('nitro'));
+    this.events.push({ type: 'oy' });
+    return true;
+  }
+
   // teleport back onto a road during the tour
   onReset() {
     if (this.state === 'driving' || this.state === 'afterPhoto') this.emitScore(this.score.add('reset'));

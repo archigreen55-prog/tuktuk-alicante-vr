@@ -9,7 +9,7 @@ import { loadModels, modelCreditLine } from './city/models.js';
 import { CollisionWorld } from './vehicle/collision.js';
 import { TukTukPhysics, TUNING } from './vehicle/physics.js';
 import { createTukTuk, SEATS } from './vehicle/tuktuk.js';
-import { Horn } from './vehicle/horn.js';
+import { Horn, shout } from './vehicle/horn.js';
 import { KeyboardInput } from './input/keyboard.js';
 import { XRInput } from './input/xrInput.js';
 import { HandlebarControl } from './input/handlebarInput.js';
@@ -42,6 +42,10 @@ const terrainMode = !['0', 'off', 'no'].includes(params.get('terrain'));
 // cab tilt with the road (plan-terrain.md 6): full / half / off, remembered
 const TILT_LEVELS = [{ id: 'full', label: 'повний', k: 1 }, { id: 'half', label: 'половина', k: 0.5 }, { id: 'off', label: 'вимкнено', k: 0 }];
 let tilt = TILT_LEVELS.find((l) => l.id === loadSetting('tilt', 'full')) || TILT_LEVELS[0];
+const cab = { pitch: 0, roll: 0, pitchRate: 0, snap: false }; // smoothed cab attitude (snap: jump to the ground after a teleport)
+let chaseInit = false;  // chase camera placed (reset after teleports)
+// ?nitro=80: nitro top speed in km/h for tests (TUNING.nitroMaxKmh, default 60)
+if (+params.get('nitro') > 0) TUNING.nitroMaxKmh = Math.min(160, +params.get('nitro'));
 
 const $ = (id) => document.getElementById(id);
 const status = (t) => { $('status').textContent = t; };
@@ -203,7 +207,8 @@ console.log(`Shaders compiled in ${(performance.now() - tc0).toFixed(0)} ms`);
 // ---------- input & camera modes ----------
 const keys = new KeyboardInput();
 const xrIn = new XRInput();
-const input = { throttle: 0, brake: 0, steer: 0, handbrake: false, horn: false, reverseDelay: undefined };
+const input = { throttle: 0, brake: 0, steer: 0, handbrake: false, horn: false, nitro: false, reverseDelay: undefined };
+let nitroUses = 0, nitroHeld = false; // nitro bursts already handled, the button's last state
 let camMode = params.get('cam') === 'chase' ? 'chase' : 'cockpit';
 let lookYaw = 0, lookPitch = 0, dragging = false;
 renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -244,11 +249,14 @@ function resetToRoad() {
       const j = i < p.length / 2 - 1 ? i + 1 : i - 1;
       let dx = p[j * 2] - x, dz = p[j * 2 + 1] - z;
       if (j < i) { dx = -dx; dz = -dz; }
-      const h = Math.atan2(-dx, -dz);
+      let h = Math.atan2(-dx, -dz);
+      // a two-way street: face the way the tuk-tuk was going (a crash reset keeps the direction of travel)
+      if (!r.o && Math.cos(h - phys.heading) < 0) h += Math.PI;
       if (phys.fits(x, z, h)) { best = { x, z, h }; bestD = d; }
     }
   }
   if (best) phys.teleport(best.x, best.z, best.h);
+  cab.snap = true; chaseInit = false; // no swing of the cab or the chase camera after the jump
   if (tour) tour.onReset();
 }
 
@@ -300,6 +308,7 @@ function handleTourEvents() {
     else if (ev.type === 'seated') tourists.seatAll();
     else if (ev.type === 'dropoff') tourists.dropOff(tour.start.look);
     else if (ev.type === 'summary') saveBest(tour.result);
+    else if (ev.type === 'oy') shout(horn, tour.group);
   }
   tour.events = [];
 }
@@ -398,10 +407,8 @@ if (stress > 1) showStats = tuk.dashboard.showFps = true;
 let acc = 0, last = performance.now(), mapTimer = 0;
 const clock = { t: 0 };
 const chasePos = new THREE.Vector3(), chaseLook = new THREE.Vector3(), tmpV = new THREE.Vector3();
-const cab = { pitch: 0, roll: 0, pitchRate: 0 }; // smoothed cab attitude
 function setTilt(level) { tilt = level; saveSetting('tilt', level.id); $('tilt').value = level.id; }
 function cycleTilt() { setTilt(TILT_LEVELS[(TILT_LEVELS.indexOf(tilt) + 1) % TILT_LEVELS.length]); flash(`Нахил кабіни: ${tilt.label}`); }
-let chaseInit = false;
 
 function toggleStats() { showStats = !showStats; tuk.dashboard.showFps = showStats; dashTimer = 0; }
 function nextStress() {
@@ -500,6 +507,26 @@ function frame(now, xrFrame) {
     acc -= DT; steps++;
   }
   if (steps === 8) acc = 0;
+  // nitro: a new burst (tour: the tourists shout, −10), or why the button did nothing
+  const nitroPress = input.nitro && !nitroHeld;
+  nitroHeld = input.nitro;
+  let nitroStarted = false;
+  if (phys.nitro.uses > nitroUses) {
+    nitroUses = phys.nitro.uses; nitroStarted = true;
+    if (!tour) flash(`НІТРО! до ${TUNING.nitroMaxKmh} км/год`, 1.5, '#ff9f43');
+    if (inVR) xrIn.pulse('right', 0.5, 120);
+  } else if (nitroPress && !phys.nitro.active) {
+    if (phys.nitro.charge < 1) flash(`Нітро заряджається: ${Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge)} с`, 1.5, '#9fb3c8');
+    else if (phys.forwardSpeed < TUNING.nitroMinSpeed) flash('Нітро — лише коли їдеш уперед', 1.5, '#9fb3c8');
+  }
+  // a hard wall hit at speed: a short blackout and back onto the road, no camera jolt
+  if (phys.crash) {
+    phys.crash = false;
+    comfort.flashBlack(0.3);
+    resetToRoad();
+    flash('Удар! Назад на дорогу', 2.5, '#ff7a5c');
+    if (inVR) xrIn.pulse('both', 1, 160);
+  }
   if (inVR && Math.max(impact, verge) > 1.5) {
     xrIn.pulse('both', Math.min(1, impact / 6), 40 + Math.min(80, impact * 15));
     bars.quietUntil = now + 150;
@@ -514,7 +541,8 @@ function frame(now, xrFrame) {
   // the cab follows the ground: height under the centre, pitch and roll from the wheels (smoothed,
   // roll limited: the cab as a stable frame matters more than a faithful lean)
   const pitchT = THREE.MathUtils.clamp(phys.pitch, -0.21, 0.21) * tilt.k, rollT = THREE.MathUtils.clamp(phys.roll, -0.087, 0.087) * tilt.k;
-  const pitchPrev = cab.pitch;
+  const pitchPrev = cab.snap ? pitchT : cab.pitch;
+  if (cab.snap) { cab.pitch = pitchT; cab.roll = rollT; cab.snap = false; }
   cab.pitch += (pitchT - cab.pitch) * (1 - Math.exp(-frameDt / 0.25));
   cab.roll += (rollT - cab.roll) * (1 - Math.exp(-frameDt / 0.35));
   cab.pitchRate = frameDt > 0 ? Math.abs(cab.pitch - pitchPrev) / frameDt : 0;
@@ -526,6 +554,7 @@ function frame(now, xrFrame) {
   if (tour) {
     tour.update({ dt: frameDt, x: phys.x, z: phys.z, speed: phys.forwardSpeed, accel: phys.accel, yawRate: phys.yawRate,
       brake: input.brake, reversing: phys.reversing, impact, contact: phys.contactTimer > 0, handbrake: input.handbrake, grade: phys.grade });
+    if (nitroStarted && !tour.onNitro()) flash(`НІТРО! до ${TUNING.nitroMaxKmh} км/год`, 1.5, '#ff9f43');
     handleTourEvents();
   }
   tourists.update(frameDt);
@@ -563,7 +592,7 @@ function frame(now, xrFrame) {
     chaseLook.set(x, gy + 1.2, z);
     camera.lookAt(chaseLook);
   }
-  comfort.update(frameDt, phys, Math.max(impact, verge), (inVR || vignetteOnDesktop) && camMode === 'cockpit', cab.pitchRate);
+  comfort.update(frameDt, phys, Math.max(impact, verge), (inVR || vignetteOnDesktop) && camMode === 'cockpit', cab.pitchRate, phys.nitro.active);
 
   gpu.poll();
   gpu.begin();
@@ -591,6 +620,7 @@ function frame(now, xrFrame) {
     const panel = tourPanel();
     tuk.dashboard.draw({
       speed: phys.forwardSpeed, msg, msgColor, tour: panel,
+      nitro: { state: phys.nitro.active ? 'active' : phys.nitro.charge < 1 ? 'charge' : 'ready', level: phys.nitro.active ? 1 - phys.nitro.t / TUNING.nitroTime : phys.nitro.charge, left: Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge) },
       stats: showStats ? { fps: Math.round(perf.fps), calls: perf.calls, tris: perf.tris, hz: session && session.frameRate ? Math.round(session.frameRate) : 0,
         gpuMs: gpuMs == null ? null : Math.round(gpuMs * 10) / 10, cpuMs: cpuMs == null ? null : Math.round(cpuMs * 10) / 10, stress } : null,
     });

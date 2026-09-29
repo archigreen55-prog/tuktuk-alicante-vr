@@ -1,4 +1,5 @@
 // Quest 3 controllers -> the common input state (plan 6.1, stage 5 plan 1.4) + one-shot actions.
+// Right B (hold) = nitro; the horn moved from B to the right stick pushed forward (report-terrain-1b.md).
 // WebXR 'xr-standard' gamepad: buttons[0] trigger, [1] grip, [3] stick press, [4] A/X, [5] B/Y;
 // axes[2], [3] thumbstick.
 const STICK_DEAD = 0.12;
@@ -6,6 +7,7 @@ const TRIGGER_DEAD = 0.05;
 const HOLD = 1.0;          // s, for Y (recentre), X (stress level), A+B / both grips (reset)
 const TAP = 0.5;           // s, X / Y released before this = FPS counter / tour button
 const REVERSE_DELAY = 0.4; // s of left trigger at standstill before reversing
+const HORN_STICK = 0.6;    // right stick pushed forward past this = horn
 
 const pressed = (gp, i) => !!(gp && gp.buttons[i] && gp.buttons[i].pressed);
 const value = (gp, i) => (gp && gp.buttons[i] ? gp.buttons[i].value : 0);
@@ -64,7 +66,9 @@ export class XRInput {
     }
     const btnA = pressed(R, 4), btnB = pressed(R, 5);
     out.handbrake = out.handbrake || btnA;          // A
-    out.horn = out.horn || (btnB && !btnA);         // B (silent while A+B resets)
+    out.nitro = out.nitro || (btnB && !btnA);       // B held (not while A+B resets)
+    const ry = R ? (R.axes.length >= 4 ? R.axes[3] : R.axes[1] || 0) : 0;
+    out.horn = out.horn || ry < -HORN_STICK;        // right stick forward
     this.gripLeft = pressed(L, 1);
     this.gripRight = pressed(R, 1);
 

@@ -46,7 +46,8 @@ export class Dashboard {
   // s: { speed, msg, msgColor, stats: { fps, hz, calls, tris, gpuMs, cpuMs, stress } (when shown),
   //      tour: null | { mode: 'drive' | 'card' | 'summary', ... } } (see main.js tourPanel())
   draw(s) {
-    const sig = JSON.stringify([Math.round(Math.abs(s.speed || 0) * 3.6), (s.speed || 0) < -0.1, s.msg, s.msgColor, this.showFps && s.stats, s.tour]);
+    const nz = s.nitro ? [s.nitro.state, Math.round(s.nitro.level * 20), s.nitro.left] : null;
+    const sig = JSON.stringify([Math.round(Math.abs(s.speed || 0) * 3.6), (s.speed || 0) < -0.1, s.msg, s.msgColor, this.showFps && s.stats, s.tour, nz]);
     if (sig === this.sig) return false;
     this.sig = sig;
     const g = this.ctx;
@@ -72,6 +73,16 @@ export class Dashboard {
     g.fillText(String(Math.round(Math.abs(s.speed || 0) * 3.6)), 190, 112);
     g.textAlign = 'left'; g.font = `bold 28px ${FONT}`; g.fillStyle = '#f2c230'; g.fillText('km/h', 198, 110);
     if ((s.speed || 0) < -0.1) { g.fillStyle = '#ff8a5c'; g.fillText('R', 272, 110); }
+    // nitro charge under the speed: green = ready, orange = burning (what is left), blue-grey = recharging
+    if (s.nitro) {
+      const N = s.nitro, x = 20, y = 126, w = 180, h = 16;
+      const col = N.state === 'active' ? '#ff9f43' : N.state === 'ready' ? '#6fe06f' : '#5d7a99';
+      g.fillStyle = '#26323d'; g.fillRect(x, y, w, h);
+      g.fillStyle = col; g.fillRect(x, y, w * Math.max(0, Math.min(1, N.level)), h);
+      g.strokeStyle = '#7f93a6'; g.lineWidth = 2; g.strokeRect(x, y, w, h);
+      g.font = `bold 17px ${FONT}`; g.textAlign = 'left'; g.fillStyle = col;
+      g.fillText(N.state === 'active' ? 'НІТРО!' : N.state === 'ready' ? 'НІТРО' : `НІТРО ${N.left} с`, x + w + 10, y + 15);
+    }
     if (t) {
       // status: stop i/N or the next point, distance, clock
       g.fillStyle = '#9fb3c8'; g.font = `22px ${FONT}`;

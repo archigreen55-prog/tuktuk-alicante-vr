@@ -26,9 +26,12 @@ the old town climbs its slope, the Mercado stands 15 m and the Luceros 21 m abov
 - In the game one grid (`src/city/terrain.js`) serves the ground mesh (`src/city/ground.js`: RTIN with an
   error bound, 16 chunks + a skirt), the draped roads / plazas / parks, the buildings, the photo facades and
   scans, the tourists, the markers and the physics.
-- Physics on slopes (`src/vehicle/physics.js`): gravity along the heading, a power-limited motor
-  (~20 km/h on the 14 % castle road), electric braking and a speed cap on descents, a parking hold at
-  standstill, and steep ground (> 33 %) acts as a wall. Collisions are unchanged (2D, plus the walls).
+- Physics on slopes (`src/vehicle/physics.js`): gravity along the heading; on climbs the motor holds at most
+  the owner's real speeds (`TUNING.climbSpeed`: ~30 km/h on 8–10 %, 25 on 14 %), power-limited when pulling
+  away; downhill electric braking and a 30 km/h governor on every descent from 4 %; a parking hold at
+  standstill; steep ground (> 33 %) acts as a wall. Collisions are unchanged (2D, plus the walls), the move
+  is sub-stepped (≤ 0.2 m) for nitro speeds; a wall hit above 50 km/h fades out for 0.3 s and puts the
+  tuk-tuk back on the road.
 - VR comfort: the cab tilts with the road (pitch up to 12°, roll limited to 5°, smoothed); the start
   screen and the K key switch the tilt between full / half / off; the vignette also reacts to crests and dips.
 - `?terrain=0` — flat city (every height 0) for A/B comparison. The tour graph leaves out lanes steeper
@@ -110,7 +113,8 @@ Two steering modes, switched with the right stick press or on the start screen (
 | Left trigger | Brake, hold at standstill 0.4 s to reverse |
 | Left stick ← → | Steer (hands mode: when the bar is released) |
 | A | Handbrake (drift) |
-| B | Horn |
+| B (hold) | Nitro: a burst up to 60 km/h (`TUNING.nitroMaxKmh`, `?nitro=80`) for up to 4 s, then a 10 s recharge; in a tour the tourists shout "ой", −10 mood per use |
+| Right stick forward | Horn (moved from B in 0.10.1) |
 | Right stick press | Steering mode: stick / hands |
 | X / hold X 1 s | FPS counter / stress test level (×1…×8) |
 | Left stick press | Vignette strength (off / weak / standard / strong) |
@@ -126,6 +130,8 @@ Two steering modes, switched with the right stick press or on the start screen (
 | S / ↓ | Brake (builds up: a tap brakes gently, holding brakes hard), hold at standstill to reverse |
 | A D / ← → | Steer |
 | Space | Handbrake (drift) |
+| Shift (hold) | Nitro (as B in VR) |
+| K | Cab tilt with the road: full / half / off |
 | R | Reset onto nearest road |
 | C | Cockpit / chase camera |
 | F | FPS counter on the dashboard |
@@ -142,7 +148,8 @@ per frame to find the GPU headroom), `?hz=72` (force the headset refresh rate; o
 `?fov=0.5` (XR foveation 0..1, default 1), `?vignette` (show the VR vignette on desktop too),
 `?tex=0` (no textures, the 0.5.0 look, for A/B comparison), `?tex=low` (facades only, plain roads),
 `?tiles` (shows every generated tile on the page), `?photo=0` (landmarks without photo facades),
-`?model=0` (without the 3D models of landmarks).
+`?model=0` (without the 3D models of landmarks), `?terrain=0` (flat city), `?nitro=80` (nitro top speed, km/h).
+`node tools/test-collisions.mjs` throws the tuk-tuk at walls at 60–130 km/h and fails if it ever goes through one.
 
 ## Run locally
 

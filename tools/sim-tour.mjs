@@ -17,6 +17,8 @@ const DT = 1 / 72;
 const DRIVERS = {
   careful: { aLat: 0.9, aDec: 1.8, maxBrake: 0.4, maxThrottle: 0.8, lookBase: 4, lookGain: 0.6 },
   rough: { aLat: 6, aDec: 5.5, maxBrake: 1, maxThrottle: 1, lookBase: 3, lookGain: 0.5 },
+  // a real guide: brisk but smooth (only when asked for: node tools/sim-tour.mjs castle guide)
+  guide: { aLat: 2.2, aDec: 2.5, maxBrake: 0.55, maxThrottle: 1, lookBase: 4, lookGain: 0.6, onlyAsked: true },
 };
 
 function buildWorld() {
@@ -49,7 +51,7 @@ function pursue(pts, x, z, ahead) {
   return { target: pointAt(at + ahead), at, total, pointAt };
 }
 
-export function simulate(tourId, style, { log = false } = {}) {
+export function simulate(tourId, style, { log = false, onStep = null } = {}) {
   const { world, bounds } = buildWorld();
   const phys = new TukTukPhysics(world, city.start, bounds, terrain);
   const graph = new RoadGraph(city.tour.graph);
@@ -108,6 +110,7 @@ export function simulate(tourId, style, { log = false } = {}) {
       if (endDist < 1.5 && (stopping || tour.state === 'waiting')) input.brake = Math.max(input.brake, v > 0.05 ? D.maxBrake : 0);
     }
     phys.step(DT, input);
+    if (onStep) onStep(t, phys, tour);
     if (phys.lastImpact > 0.5) hits++;
     if (process.env.SIM_TRACE && Math.round(t / DT) % Math.round(20 / DT) === 0) console.log(`  trace ${t.toFixed(0).padStart(5)}s ${tour.state} next ${tour.next} pos ${phys.x.toFixed(0)},${phys.z.toFixed(0)} h ${phys.y.toFixed(1)} v ${(v * 3.6).toFixed(0)} km/h grade ${(phys.grade * 100).toFixed(0)}% path ${path ? path.length : '-'} slopeHit ${phys.slopeHit.toFixed(1)} reverts ${phys.reverts || 0}`);
   }
@@ -120,7 +123,7 @@ if (process.argv[1] && process.argv[1].endsWith('sim-tour.mjs')) {
   for (const t of spec.tours) {
     if (argTour && t.id !== argTour) continue;
     for (const style of Object.keys(DRIVERS)) {
-      if (argStyle && style !== argStyle) continue;
+      if (argStyle ? style !== argStyle : DRIVERS[style].onlyAsked) continue;
       const { tour, r, t: simT, eventsLog, hits, reverts } = simulate(t.id, style);
       console.log(`\n=== tour ${t.id}, ${style} driver: ${tour.state} after ${(simT / 60).toFixed(1)} min sim time ===`);
       if (!r) { console.log(`NOT FINISHED: state ${tour.state}, next item ${tour.next}/${tour.items.length}, clock ${tour.clock.toFixed(0)} s`); console.log(eventsLog.slice(-15).join('\n')); continue; }
