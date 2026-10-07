@@ -151,6 +151,32 @@ per frame to find the GPU headroom), `?hz=72` (force the headset refresh rate; o
 `?model=0` (without the 3D models of landmarks), `?terrain=0` (flat city), `?nitro=80` (nitro top speed, km/h).
 `node tools/test-collisions.mjs` throws the tuk-tuk at walls at 60–130 km/h and fails if it ever goes through one.
 
+## Phone diagnostics and the FPS measurement (0.10.2, stage F0 of [docs/plan-phone.md](docs/plan-phone.md))
+
+The game already runs in Chrome on a phone; this stage only adds what is needed to *measure* it. VR and the
+desktop view are unchanged (the phone parts switch on by themselves on a touch screen without hover; `?ui=phone`
+/ `?ui=desktop` force one or the other).
+
+- **Errors on screen.** Any script error (also a failed module / CDN load) shows a red line at the top; a tap
+  opens the report. The early script in `index.html` does this even when the modules never start.
+- **FPS button (top left).** On a phone: a widget with FPS, frame time, p95, "1 % lows", draw calls, triangles,
+  JS time and a 10-minute graph (5 s per bar), plus **Діагностика** and **Замір**. On other devices: `?diag`.
+- **Діагностика → Копіювати звіт.** One text with the version, URL, browser, screen, pixel ratio, GPU model,
+  WebGL limits, sensors (it listens to `devicemotion` for 1 s), battery, FPS history, errors and the last
+  console lines. The button copies it; if the browser refuses, the text stays selectable in the box.
+- **`?bench` (or `?bench=N`).** The tuk-tuk drives / stands through 7 heavy places (start at Meliá, Rambla,
+  Santa María, Mercado, half-way up to the castle, the castle gate looking at the city, 90 m above the gate):
+  2.5 s warm-up + 8 s measured each. A table (FPS, 1 % lows, p95, worst frame, hitches, calls, triangles, CPU,
+  GPU) and a verdict are shown at the end and are part of the report. `N` repeats the round: a fall of FPS from
+  round to round is overheating. `?benchTime=0.5,2` shortens the times (tests).
+- **Frame limiter.** On a phone 60 frames per second (a 120 Hz screen would double the heat for nothing);
+  `?cap=N` changes it (`?cap=0` off, also available on desktop). Not used in VR.
+- **`?dpr=N`** sets the pixel ratio (default `min(devicePixelRatio, 1.5)`), e.g. `?dpr=1` to see what a lower
+  resolution gives.
+- **Upright phone** → a "turn the phone" card and the game waits.
+
+Files: `src/diag/` (`frameStats.js`, `report.js`, `ui.js`, `bench.js`, `device.js`), `src/perf/frameCap.js`.
+
 ## Run locally
 
 Any static server works, e.g.

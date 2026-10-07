@@ -5,6 +5,61 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tuk-Tuk Alicante VR</title>
 <link rel="icon" href="data:,">
+<script>
+  // Early diagnostics (phone stage F0, docs/plan-phone.md): a classic script, so it also works when
+  // the modules fail to load (blocked CDN, syntax error). Always on: window errors -> a red line at the
+  // top ("tap for details"). Only on a phone, or with ?diag / ?bench: console lines are kept for the
+  // report. ?ui=phone / ?ui=desktop force the interface; by default a touch screen without hover is a phone.
+  (() => {
+    const q = new URLSearchParams(location.search);
+    const forced = q.get('ui');
+    const coarse = matchMedia('(pointer: coarse)').matches && matchMedia('(hover: none)').matches;
+    const ui = forced === 'phone' || forced === 'desktop' ? forced : coarse ? 'phone' : 'desktop';
+    const diagOn = ui === 'phone' || q.has('diag') || q.has('bench');
+    const D = window.__diag = { ui, diagOn, errors: [], log: [], t0: performance.now(), openPanel: null, banner: null };
+    const stamp = () => ((performance.now() - D.t0) / 1000).toFixed(1) + 's';
+    const text = (v) => (v && (v.stack || v.message)) || String(v);
+    function showBanner() {
+      if (!D.banner) {
+        const b = D.banner = document.createElement('div');
+        b.style.cssText = 'position:fixed;left:50%;top:6px;transform:translateX(-50%);max-width:min(92vw,720px);z-index:200;padding:6px 12px;border-radius:8px;background:#b3261e;color:#fff;font:13px/1.35 system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer;touch-action:manipulation;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+        b.addEventListener('click', () => (D.openPanel ? D.openPanel() : fallbackPanel()));
+        (document.body || document.documentElement).appendChild(b);
+      }
+      const last = D.errors[D.errors.length - 1];
+      D.banner.textContent = `⚠ Помилка${D.errors.length > 1 ? ` (${D.errors.length})` : ''}: ${last.msg.split('\n')[0].slice(0, 160)} — торкнись, щоб побачити`;
+    }
+    // before the modules are up: a bare text box with the errors to copy
+    function fallbackPanel() {
+      const t = document.createElement('textarea');
+      t.readOnly = true;
+      t.value = `Tuk-Tuk Alicante, помилки (модулі не запустились)\n${location.href}\n${navigator.userAgent}\n\n` + D.errors.map((e) => `[${e.t}] ${e.msg}`).join('\n\n');
+      t.style.cssText = 'position:fixed;inset:8px;z-index:300;font:12px/1.35 ui-monospace,monospace;background:#111;color:#eee;border:2px solid #b3261e;border-radius:8px;padding:8px';
+      t.addEventListener('dblclick', () => t.remove());
+      document.body.appendChild(t); t.focus(); t.select();
+    }
+    D.addError = (msg) => { D.errors.push({ t: stamp(), msg: String(msg) }); if (D.errors.length > 50) D.errors.shift(); showBanner(); };
+    window.addEventListener('error', (e) => {
+      const el = e.target;
+      if (el && el !== window && (el.src || el.href)) D.addError(`не завантажився ресурс: ${el.src || el.href}`);
+      else D.addError(`${e.message || 'помилка'}${e.filename ? ` (${e.filename.split('/').slice(-2).join('/')}:${e.lineno})` : ''}`);
+    }, true);
+    window.addEventListener('unhandledrejection', (e) => D.addError(`необроблений промис: ${text(e.reason)}`));
+    if (diagOn) {
+      for (const level of ['log', 'info', 'warn', 'error']) {
+        const orig = console[level];
+        console[level] = function (...args) {
+          try {
+            D.log.push({ t: stamp(), level, text: args.map((a) => (typeof a === 'string' ? a : (a instanceof Error ? text(a) : JSON.stringify(a)))).join(' ').slice(0, 300) });
+            if (D.log.length > 80) D.log.shift();
+            if (level === 'error') D.addError(`console.error: ${D.log[D.log.length - 1].text}`);
+          } catch { /* never break logging */ }
+          return orig.apply(this, args);
+        };
+      }
+    }
+  })();
+</script>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #bfe3f5; font-family: system-ui, sans-serif; }
   canvas { display: block; }
@@ -47,36 +102,42 @@
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
-    "./src/city/buildCity.js": "./src/city/buildCity.js?v=0.10.1",
-    "./src/city/facades.js": "./src/city/facades.js?v=0.10.1",
-    "./src/city/geo.js": "./src/city/geo.js?v=0.10.1",
-    "./src/city/ground.js": "./src/city/ground.js?v=0.10.1",
-    "./src/city/landmarks.js": "./src/city/landmarks.js?v=0.10.1",
-    "./src/city/models.js": "./src/city/models.js?v=0.10.1",
-    "./src/city/photoFacades.js": "./src/city/photoFacades.js?v=0.10.1",
-    "./src/city/terrain.js": "./src/city/terrain.js?v=0.10.1",
-    "./src/city/tiles.js": "./src/city/tiles.js?v=0.10.1",
-    "./src/comfort/vignette.js": "./src/comfort/vignette.js?v=0.10.1",
-    "./src/game/markers.js": "./src/game/markers.js?v=0.10.1",
-    "./src/game/route.js": "./src/game/route.js?v=0.10.1",
-    "./src/game/scoring.js": "./src/game/scoring.js?v=0.10.1",
-    "./src/game/tour.js": "./src/game/tour.js?v=0.10.1",
-    "./src/game/tourists.js": "./src/game/tourists.js?v=0.10.1",
-    "./src/input/handlebarInput.js": "./src/input/handlebarInput.js?v=0.10.1",
-    "./src/input/keyboard.js": "./src/input/keyboard.js?v=0.10.1",
-    "./src/input/xrInput.js": "./src/input/xrInput.js?v=0.10.1",
-    "./src/main.js": "./src/main.js?v=0.10.1",
-    "./src/perf/gpuTimer.js": "./src/perf/gpuTimer.js?v=0.10.1",
-    "./src/settings.js": "./src/settings.js?v=0.10.1",
-    "./src/ui/dashboard.js": "./src/ui/dashboard.js?v=0.10.1",
-    "./src/ui/hud.js": "./src/ui/hud.js?v=0.10.1",
-    "./src/ui/minimap.js": "./src/ui/minimap.js?v=0.10.1",
-    "./src/vehicle/collision.js": "./src/vehicle/collision.js?v=0.10.1",
-    "./src/vehicle/horn.js": "./src/vehicle/horn.js?v=0.10.1",
-    "./src/vehicle/physics.js": "./src/vehicle/physics.js?v=0.10.1",
-    "./src/vehicle/tuktuk.js": "./src/vehicle/tuktuk.js?v=0.10.1",
-    "./src/version.js": "./src/version.js?v=0.10.1",
-    "./src/xr/xrRig.js": "./src/xr/xrRig.js?v=0.10.1"
+    "./src/city/buildCity.js": "./src/city/buildCity.js?v=0.10.2",
+    "./src/city/facades.js": "./src/city/facades.js?v=0.10.2",
+    "./src/city/geo.js": "./src/city/geo.js?v=0.10.2",
+    "./src/city/ground.js": "./src/city/ground.js?v=0.10.2",
+    "./src/city/landmarks.js": "./src/city/landmarks.js?v=0.10.2",
+    "./src/city/models.js": "./src/city/models.js?v=0.10.2",
+    "./src/city/photoFacades.js": "./src/city/photoFacades.js?v=0.10.2",
+    "./src/city/terrain.js": "./src/city/terrain.js?v=0.10.2",
+    "./src/city/tiles.js": "./src/city/tiles.js?v=0.10.2",
+    "./src/comfort/vignette.js": "./src/comfort/vignette.js?v=0.10.2",
+    "./src/diag/bench.js": "./src/diag/bench.js?v=0.10.2",
+    "./src/diag/device.js": "./src/diag/device.js?v=0.10.2",
+    "./src/diag/frameStats.js": "./src/diag/frameStats.js?v=0.10.2",
+    "./src/diag/report.js": "./src/diag/report.js?v=0.10.2",
+    "./src/diag/ui.js": "./src/diag/ui.js?v=0.10.2",
+    "./src/game/markers.js": "./src/game/markers.js?v=0.10.2",
+    "./src/game/route.js": "./src/game/route.js?v=0.10.2",
+    "./src/game/scoring.js": "./src/game/scoring.js?v=0.10.2",
+    "./src/game/tour.js": "./src/game/tour.js?v=0.10.2",
+    "./src/game/tourists.js": "./src/game/tourists.js?v=0.10.2",
+    "./src/input/handlebarInput.js": "./src/input/handlebarInput.js?v=0.10.2",
+    "./src/input/keyboard.js": "./src/input/keyboard.js?v=0.10.2",
+    "./src/input/xrInput.js": "./src/input/xrInput.js?v=0.10.2",
+    "./src/main.js": "./src/main.js?v=0.10.2",
+    "./src/perf/frameCap.js": "./src/perf/frameCap.js?v=0.10.2",
+    "./src/perf/gpuTimer.js": "./src/perf/gpuTimer.js?v=0.10.2",
+    "./src/settings.js": "./src/settings.js?v=0.10.2",
+    "./src/ui/dashboard.js": "./src/ui/dashboard.js?v=0.10.2",
+    "./src/ui/hud.js": "./src/ui/hud.js?v=0.10.2",
+    "./src/ui/minimap.js": "./src/ui/minimap.js?v=0.10.2",
+    "./src/vehicle/collision.js": "./src/vehicle/collision.js?v=0.10.2",
+    "./src/vehicle/horn.js": "./src/vehicle/horn.js?v=0.10.2",
+    "./src/vehicle/physics.js": "./src/vehicle/physics.js?v=0.10.2",
+    "./src/vehicle/tuktuk.js": "./src/vehicle/tuktuk.js?v=0.10.2",
+    "./src/version.js": "./src/version.js?v=0.10.2",
+    "./src/xr/xrRig.js": "./src/xr/xrRig.js?v=0.10.2"
   }
 }
 </script>
@@ -85,7 +146,7 @@
   // cached) page, reload once with ?v=<new>, a URL no cache has seen. Every module and data URL
   // carries ?v=<version> too (import map above). Versions are set by tools/bump-version.mjs.
   {
-    const PAGE_VERSION = '0.10.1';
+    const PAGE_VERSION = '0.10.2';
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then(({ version }) => {
       const url = new URL(location.href);
       if (version && version !== PAGE_VERSION && url.searchParams.get('v') !== version) {
@@ -155,6 +216,6 @@
 <div id="tourCard"></div>
 <canvas id="miniMap" width="180" height="180"></canvas>
 <div id="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · рельєф: <a href="https://www.ign.es/" target="_blank" rel="noopener">© IGN (CNIG)</a> · фото фасадів: <a href="assets/facades/CREDITS.md" target="_blank" rel="noopener">Wikimedia Commons</a> · 3D-скани: <a href="assets/models/CREDITS.md" target="_blank" rel="noopener">Sketchfab</a></div>
-<script type="module" src="src/main.js?v=0.10.1"></script>
+<script type="module" src="src/main.js?v=0.10.2"></script>
 </body>
 </html>

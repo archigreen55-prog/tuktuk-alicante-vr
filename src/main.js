@@ -24,6 +24,12 @@ import { Tourists } from './game/tourists.js';
 import { Minimap } from './ui/minimap.js';
 import { DesktopHud } from './ui/hud.js';
 import { clock as fmtClock, euro } from './ui/dashboard.js';
+import { IS_PHONE, UI, installRotateGuard } from './diag/device.js';
+import { FrameCap } from './perf/frameCap.js';
+import { FrameStats } from './diag/frameStats.js';
+import { Bench, buildStations } from './diag/bench.js';
+import { buildReport } from './diag/report.js';
+import { createDiagUI } from './diag/ui.js';
 
 const DT = 1 / 72;                 // fixed physics step
 const EYE_HEIGHT = 1.42;           // eye height above the cab floor (desktop camera, VR recentre target)
@@ -44,6 +50,15 @@ const TILT_LEVELS = [{ id: 'full', label: 'повний', k: 1 }, { id: 'half', 
 let tilt = TILT_LEVELS.find((l) => l.id === loadSetting('tilt', 'full')) || TILT_LEVELS[0];
 const cab = { pitch: 0, roll: 0, pitchRate: 0, snap: false }; // smoothed cab attitude (snap: jump to the ground after a teleport)
 let chaseInit = false;  // chase camera placed (reset after teleports)
+// phone stage F0 (docs/plan-phone.md): ?bench[=N] runs the automatic FPS measurement (N rounds), ?diag shows
+// the FPS widget on any device, ?cap=N limits the frame rate (default 60 on a phone, none elsewhere; not in VR),
+// ?dpr=N sets the pixel ratio (default min(devicePixelRatio, 1.5)); ?ui=phone|desktop is handled in index.html
+const benchOn = params.has('bench');
+const benchPasses = Math.max(1, Math.min(20, Math.round(+params.get('bench') || 1)));
+const capFps = params.has('cap') ? Math.max(0, +params.get('cap') || 0) : IS_PHONE ? 60 : 0;
+const benchTime = (() => { const [w, m] = String(params.get('benchTime') || '').split(',').map(Number); return w >= 0 && m > 0 ? { warmup: w, measure: m } : {}; })(); // tests only: ?benchTime=0.5,2
+const frameCap = new FrameCap(capFps);
+const frameStats = new FrameStats();
 // ?nitro=80: nitro top speed in km/h for tests (TUNING.nitroMaxKmh, default 60)
 if (+params.get('nitro') > 0) TUNING.nitroMaxKmh = Math.min(160, +params.get('nitro'));
 
@@ -53,7 +68,7 @@ $('version').textContent = `версія ${VERSION}`;
 
 // ---------- renderer / scene ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); // antialias = MSAA 4x in XR too
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setPixelRatio(params.has('dpr') ? Math.min(3, Math.max(0.5, +params.get('dpr') || 1)) : Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.xr.enabled = true;
 renderer.xr.setReferenceSpaceType('local-floor');
@@ -190,7 +205,7 @@ const marker = new StopMarker(scene);
 const tourists = new Tourists(scene, tuk.group, SEATS, groundY);
 const hud = new DesktopHud(minimap);
 let mapOn = loadSetting('minimap', true) !== false;
-let gameMode = params.get('mode') === 'free' || params.get('mode') === 'tour' ? params.get('mode') : loadSetting('mode', 'tour');
+let gameMode = benchOn ? 'free' : params.get('mode') === 'free' || params.get('mode') === 'tour' ? params.get('mode') : loadSetting('mode', 'tour');
 let tourId = params.get('tour') || loadSetting('tourId', 'short');
 if (tourSpec && !tourSpec.tours.some((t) => t.id === tourId)) tourId = tourSpec.tours[0]?.id;
 let tour = null, freeConfirm = -1e9;
@@ -202,7 +217,8 @@ status('Компілюю шейдери…');
 await new Promise((r) => setTimeout(r, 0));
 const tc0 = performance.now();
 renderer.compile(scene, camera);
-console.log(`Shaders compiled in ${(performance.now() - tc0).toFixed(0)} ms`);
+const compileMs = performance.now() - tc0;
+console.log(`Shaders compiled in ${compileMs.toFixed(0)} ms`);
 
 // ---------- input & camera modes ----------
 const keys = new KeyboardInput();
@@ -404,7 +420,8 @@ const cpu = { sum: 0, n: 0, ms: null };
 if (stress > 1) showStats = tuk.dashboard.showFps = true;
 
 // ---------- loop ----------
-let acc = 0, last = performance.now(), mapTimer = 0;
+let acc = 0, last = performance.now(), mapTimer = 0, gpuLatest = null;
+const rotateGuard = IS_PHONE ? installRotateGuard() : null;
 const clock = { t: 0 };
 const chasePos = new THREE.Vector3(), chaseLook = new THREE.Vector3(), tmpV = new THREE.Vector3();
 function setTilt(level) { tilt = level; saveSetting('tilt', level.id); $('tilt').value = level.id; }
@@ -446,6 +463,12 @@ function cycleVignette() {
 }
 
 function frame(now, xrFrame) {
+  frameStats.raf(now);
+  if (!inVR) {
+    // phone held upright: the game waits (and the measuring clocks stop); frame limiter: skipped frames cost nothing
+    if (rotateGuard && rotateGuard.portrait) { last = now; frameStats.pause(); return; }
+    if (!frameCap.allow(now)) return;
+  }
   const cpuStart = performance.now();
   const frameDt = Math.min(0.1, Math.max(0, (now - last) / 1000));
   last = now;
@@ -490,6 +513,7 @@ function frame(now, xrFrame) {
     xrRig.showController('left', !bars.leftHeld);
     xrRig.showController('right', !bars.rightHeld);
   }
+  if (bench && bench.state === 'running') bench.update(frameDt, input, phys);   // ?bench drives the tuk-tuk itself
   pedal += (input.brake - pedal) * (1 - Math.exp(-frameDt / 0.06));
   tuk.setPedal(pedal);
   horn.set(input.horn);
@@ -617,6 +641,7 @@ function frame(now, xrFrame) {
     else if (steeringMode === 'hands' && inVR && bars.releasedFor > 1.5 && Math.abs(phys.forwardSpeed) > 1 && !xrIn.stickActive) msg = 'Візьмись за кермо (grip)';
     const session = inVR && renderer.xr.getSession();
     const gpuMs = gpu.take(), cpuMs = cpu.n ? (cpu.ms = cpu.sum / cpu.n, cpu.sum = cpu.n = 0, cpu.ms) : cpu.ms;
+    if (gpuMs != null) gpuLatest = gpuMs;
     const panel = tourPanel();
     tuk.dashboard.draw({
       speed: phys.forwardSpeed, msg, msgColor, tour: panel,
@@ -632,8 +657,11 @@ function frame(now, xrFrame) {
     }
   }
   keys.endFrame();
-  cpu.sum += performance.now() - cpuStart; cpu.n++;
+  const frameMs = performance.now() - cpuStart;
+  cpu.sum += frameMs; cpu.n++;
+  frameStats.frame(now, { calls: perf.calls, tris: perf.tris, cpuMs: frameMs, gpuMs: gpuLatest });
 }
+const loadedAt = performance.now();   // since the navigation start: how long the whole loading took
 renderer.setAnimationLoop(frame);
 
 // ---------- start overlay ----------
@@ -672,5 +700,57 @@ updateBestLabel();
 $('vibration').checked = bars.engineVibration;
 $('vibration').addEventListener('change', () => { bars.engineVibration = $('vibration').checked; saveSetting('engineVibration', bars.engineVibration); });
 
+// ---------- diagnostics UI and ?bench (phone stage F0, docs/plan-phone.md) ----------
+let bench = null;
+const benchStations = benchOn && graph ? buildStations(city, graph, groundY) : [];
+const benchApi = {
+  place(x, z, heading) { phys.teleport(x, z, heading); cab.snap = true; chaseInit = false; },
+  look(yaw, pitch) { lookYaw = yaw; lookPitch = pitch; },
+  air(x, y, z, tx, ty, tz) { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); },
+  cockpit() { if (camMode !== 'cockpit') setCamMode('cockpit'); lookYaw = 0; lookPitch = 0; },
+  groundY,
+};
+const reportCtx = {
+  renderer, stats: frameStats, cap: capFps,
+  get bench() { return bench; },
+  game: () => ({
+    version: VERSION,
+    info: {
+      'інтерфейс': `${UI}${IS_PHONE ? ' (телефон)' : ''}; ?bench ${benchOn ? benchPasses + ' пр.' : 'ні'}`,
+      'режим / камера': `${gameMode} / ${camMode}; нахил кабіни: ${tilt.label}`,
+      'місто': `${city.buildings.length} будинків, ${city.roads.length} вулиць; terrain=${terrainMode ? 'так' : 'ні'} tex=${texMode} photo=${photoMode} model=${modelMode}`,
+      'завантаження': `усього ${(loadedAt / 1000).toFixed(1)} с від відкриття; місто ${buildMs.toFixed(0)} мс, шейдери ${compileMs.toFixed(0)} мс${tiles ? `, плитки ${tiles.ms.toFixed(0)} мс (${(tiles.bytes / 1048576).toFixed(1)} МБ)` : ''}`,
+      'побудова міста': JSON.stringify(cityStats).slice(0, 400),
+      'позиція': `x ${phys.x.toFixed(0)}, z ${phys.z.toFixed(0)}, висота ${phys.y.toFixed(1)} м, швидкість ${(phys.forwardSpeed * 3.6).toFixed(0)} км/год`,
+      'відсікання / туман': `${CULL_DIST} м / 300–1150 м`,
+    },
+  }),
+};
+let diagUI = null;
+function runBench() {
+  if (!graph || benchStations.length < 3) { flash('Замір недоступний: немає графа доріг або місць', 5, '#ff7a5c'); return; }
+  bench = new Bench({ stations: benchStations, stats: frameStats, api: benchApi, passes: benchPasses, ...benchTime });
+  bench.onDone = () => { diagUI.setProgress(null); diagUI.open(); };
+  $('overlay').style.display = 'none';
+  diagUI.close();
+  if (IS_PHONE && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+  bench.start();
+}
+function benchUrl() {
+  const u = new URL(location.href);
+  for (const k of ['mode', 'tour', 'autostart']) u.searchParams.delete(k);
+  if (!u.searchParams.has('bench')) u.searchParams.set('bench', '1');
+  return u.href;
+}
+if (IS_PHONE || benchOn || params.has('diag')) {
+  diagUI = createDiagUI({ stats: frameStats, cap: capFps, visible: IS_PHONE || benchOn, getReport: () => buildReport(reportCtx), onBench: () => (benchOn ? runBench() : (location.href = benchUrl())) });
+  setInterval(() => { if (bench) diagUI.setProgress(bench.status()); }, 250);
+  if (benchOn) {
+    $('overlay').style.display = 'none';
+    if (benchStations.length < 3) diagUI.open();
+    else diagUI.showIntro({ passes: benchPasses, stations: benchStations.length, per: (benchTime.warmup ?? 2.5) + (benchTime.measure ?? 8), onStart: runBench });
+  }
+}
+
 // test / debugging hook
-window.__game = { photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
