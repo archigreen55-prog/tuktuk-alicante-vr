@@ -17,7 +17,7 @@ const COL = {
   high: new THREE.Color(0xc4b48c),
 };
 
-// terrain: Terrain (src/city/terrain.js). Returns { group, stats }
+// terrain: Terrain (src/city/terrain.js). Returns { group, heightAt(x, z) (height of the ground MESH, NaN outside), stats }
 // options.mask (from buildFootprintMask): the ground is not drawn where the flat layers lie
 export function buildGround(terrain, { chunks = 4, maxError = 0.55, farError = 1.4, far = 900, mask = null } = {}) {
   const t0 = performance.now();
@@ -31,7 +31,7 @@ export function buildGround(terrain, { chunks = 4, maxError = 0.55, farError = 1
   const group = new THREE.Group();
   group.name = 'ground';
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
-  if (mask) discardInFootprint(mat, mask);
+  if (mask) { mat.side = THREE.DoubleSide; discardInFootprint(mat, mask); }   // two-sided: rays that slip under a cut edge meet the underside, not the background
   let tris = 0;
   // two meshes per chunk would double the draw calls; instead one mesh at the fine error and the far
   // chunks (from the centre) at the coarse one — the player rarely sees far chunks up close
@@ -87,7 +87,8 @@ export function buildGround(terrain, { chunks = 4, maxError = 0.55, farError = 1
     group.add(mesh);
   }
   group.add(buildSkirt(terrain, mat));
-  return { group, stats: { groundTris: tris, groundChunks: buckets.size, fineTris: fine.triangles.length / 3, coarseTris: coarse.triangles.length / 3, groundMs: Math.round(performance.now() - t0) } };
+  const heightAt = triangleLookup(buckets);
+  return { group, heightAt, stats: { groundTris: tris, groundChunks: buckets.size, fineTris: fine.triangles.length / 3, coarseTris: coarse.triangles.length / 3, groundMs: Math.round(performance.now() - t0) } };
 }
 
 // Flat quads from the grid edge outwards, at the edge heights (the sea side is 0 anyway)
@@ -128,4 +129,33 @@ function buildSkirt(terrain, mat) {
   mesh.name = 'ground skirt';
   mesh.matrixAutoUpdate = false;
   return mesh;
+}
+
+// Height of the ground mesh at a point (not of the height grid: the mesh is simplified and differs from it by up to the
+// error bound). Triangles are bucketed on a 8 m grid; used to hang the curb skirts at the right height.
+function triangleLookup(buckets, cell = 8) {
+  const tris = [], map = new Map();
+  for (const g of buckets.values()) {
+    const p = g.pos;
+    for (let k = 0; k < p.length; k += 9) {
+      const id = tris.length / 9;
+      for (let q = 0; q < 9; q++) tris.push(p[k + q]);
+      const x0 = Math.min(p[k], p[k + 3], p[k + 6]), x1 = Math.max(p[k], p[k + 3], p[k + 6]), z0 = Math.min(p[k + 2], p[k + 5], p[k + 8]), z1 = Math.max(p[k + 2], p[k + 5], p[k + 8]);
+      for (let j = Math.floor(z0 / cell); j <= Math.floor(z1 / cell); j++) for (let i = Math.floor(x0 / cell); i <= Math.floor(x1 / cell); i++) {
+        const key = i + ',' + j; const list = map.get(key); if (list) list.push(id); else map.set(key, [id]);
+      }
+    }
+  }
+  return (x, z) => {
+    const list = map.get(Math.floor(x / cell) + ',' + Math.floor(z / cell));
+    if (!list) return NaN;
+    for (const id of list) {
+      const o = id * 9, ax = tris[o], ay = tris[o + 1], az = tris[o + 2], bx = tris[o + 3], by = tris[o + 4], bz = tris[o + 5], cx = tris[o + 6], cy = tris[o + 7], cz = tris[o + 8];
+      const d = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+      if (Math.abs(d) < 1e-9) continue;
+      const l1 = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / d, l2 = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / d, l3 = 1 - l1 - l2;
+      if (l1 >= -1e-6 && l2 >= -1e-6 && l3 >= -1e-6) return l1 * ay + l2 * by + l3 * cy;
+    }
+    return NaN;
+  };
 }

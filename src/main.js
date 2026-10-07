@@ -15,6 +15,7 @@ import { XRInput } from './input/xrInput.js';
 import { HandlebarControl } from './input/handlebarInput.js';
 import { GpuTimer } from './perf/gpuTimer.js';
 import { loadSetting, saveSetting } from './settings.js';
+import { createFullMap } from './ui/fullMap.js';
 import { XRRig } from './xr/xrRig.js';
 import { ComfortOverlay, VIGNETTE_LEVELS } from './comfort/vignette.js';
 import { RoadGraph } from './game/route.js';
@@ -72,8 +73,26 @@ $('version').textContent = `версія ${VERSION}`;
 
 // ---------- renderer / scene ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); // antialias = MSAA 4x in XR too
-renderer.setPixelRatio(params.has('dpr') ? Math.min(3, Math.max(0.5, +params.get('dpr') || 1)) : Math.min(window.devicePixelRatio, 1.5));
+// Pixel ratio. PC / VR: min(devicePixelRatio, 1.5) as before. Phone: also a budget of pixels per frame (the GPU is the
+// limit there: 0.82 Mp in full screen cost ~20 % of the FPS on the castle climb that 0.63 Mp did not), "стандартна" 0.65 Mp;
+// ?mp=N sets the budget in megapixels, ?dpr=N the ratio itself.
+const RES_BUDGET = { std: 0.65, high: 0.85, eco: 0.42 };   // Mp
+function wantedPixelRatio(w, h) {
+  if (params.has('dpr')) return Math.min(3, Math.max(0.5, +params.get('dpr') || 1));
+  let r = Math.min(window.devicePixelRatio, 1.5);
+  if (IS_PHONE) {
+    const mp = params.has('mp') ? Math.max(0.1, +params.get('mp') || 0.65) : RES_BUDGET[loadSetting('phone.res', 'std')] || 0.65;
+    r = Math.min(r, Math.sqrt(mp * 1e6 / (w * h)));
+  }
+  return Math.max(0.5, r);
+}
+renderer.setPixelRatio(wantedPixelRatio(window.innerWidth, window.innerHeight));
 renderer.setSize(window.innerWidth, window.innerHeight);
+function applyRes() {
+  if (renderer.xr.isPresenting) return;
+  renderer.setPixelRatio(wantedPixelRatio(innerWidth, innerHeight));
+  renderer.setSize(innerWidth, innerHeight);
+}
 renderer.xr.enabled = true;
 renderer.xr.setReferenceSpaceType('local-floor');
 renderer.xr.setFoveation(params.has('fov') ? +params.get('fov') : 1);           // three.js scale 0..1
@@ -103,7 +122,7 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   applyFov();
-  renderer.setSize(innerWidth, innerHeight);
+  applyRes();
 });
 applyFov();
 
@@ -163,7 +182,7 @@ status(`Будую ${city.buildings.length} будинків…`);
 await new Promise((r) => setTimeout(r, 0));
 const t0 = performance.now();
 // ?mask=0: ground drawn under the roads too (the 0.10.2 look), for A/B comparison
-const { group: cityGroup, stats: cityStats } = buildCity(city, { texMode, tiles, sky: SKY, photos, cuts: models && models.cuts, terrain, footprint: !['0', 'off', 'no'].includes(params.get('mask')) });
+const { group: cityGroup, stats: cityStats } = buildCity(city, { texMode, tiles, sky: SKY, photos, cuts: models && models.cuts, terrain, footprint: !['0', 'off', 'no'].includes(params.get('mask')), skin: !['0', 'off', 'no'].includes(params.get('skin')) });
 scene.add(cityGroup);
 // distance culling of the chunked meshes (buildings, ground): from the castle the whole city is in view
 const cullable = cityGroup.children.filter((m) => /^(buildings|ground) /.test(m.name)).map((m) => ({ m, c: m.geometry.boundingSphere.center, r: m.geometry.boundingSphere.radius }));
@@ -226,6 +245,7 @@ let gameMode = benchOn ? 'free' : params.get('mode') === 'free' || params.get('m
 let tourId = params.get('tour') || loadSetting('tourId', 'short');
 if (tourSpec && !tourSpec.tours.some((t) => t.id === tourId)) tourId = tourSpec.tours[0]?.id;
 let tour = null, freeConfirm = -1e9;
+const trail = []; let trailLast = null;   // where the tuk-tuk has been during the tour (grey line on the full map)
 
 const buildMs = performance.now() - t0;
 console.log(`City built in ${buildMs.toFixed(0)} ms`, cityStats, `collision edges: ${world.edgeCount}`);
@@ -327,6 +347,7 @@ function startTour() {
   const cands = tour.spawnCandidates();
   const spawn = cands.find((c) => phys.fits(c.x, c.z, c.heading)) || cands[0];
   phys.teleport(spawn.x, spawn.z, spawn.heading);
+  trail.length = 0; trailLast = null;
   tourists.setup(tour.group, tour.groupPos, tour.groupFacing);
   tourists.visible = true;
   lookYaw = 0; lookPitch = 0;
@@ -461,6 +482,14 @@ if (stress > 1) showStats = tuk.dashboard.showFps = true;
 
 // ---------- loop ----------
 let acc = 0, last = performance.now(), mapTimer = 0, gpuLatest = null;
+// the full-screen map: opened by a tap / click on the minimap (or M); the game stands still while it is open
+const fullMap = createFullMap({
+  city, graph, getTour: () => tour, getTrail: () => (tour ? trail : null),
+  getTuk: () => ({ x: phys.x, z: phys.z, heading: phys.heading }),
+  setPaused: (p) => { paused = p; if (p && touch) touch.releaseAll(); if (!p) last = performance.now(); },
+  canOpen: () => !renderer.xr.isPresenting && !(rotateGuard && rotateGuard.portrait),
+});
+{ const mm = $('miniMap'); if (mm) { mm.style.cursor = 'pointer'; mm.addEventListener('click', () => fullMap.open()); } }
 const rotateGuard = IS_PHONE ? installRotateGuard() : null;
 const clock = { t: 0 };
 const chasePos = new THREE.Vector3(), chaseLook = new THREE.Vector3(), tmpV = new THREE.Vector3();
@@ -521,7 +550,7 @@ function frame(now, xrFrame) {
   if (keys.take('KeyF')) toggleStats();
   if (keys.take('KeyG')) nextStress();
   if (keys.take('KeyT')) tourButton();
-  if (keys.take('KeyM')) { mapOn = !mapOn; saveSetting('minimap', mapOn); }
+  if (keys.take('KeyN')) { mapOn = !mapOn; saveSetting('minimap', mapOn); }   // M opens the full map (src/ui/fullMap.js)
   if (keys.take('KeyK')) cycleTilt();
   input.reverseDelay = undefined;
   keys.read(frameDt, input);
@@ -642,6 +671,12 @@ function frame(now, xrFrame) {
     const ang = Math.atan2(vx * Math.cos(h) - vz * Math.sin(h), -vx * Math.sin(h) - vz * Math.cos(h));
     if (hudIn3D) tuk.dashboard.setArrow(ang, Math.abs(ang) > 2.1 ? 0xff9f43 : dist < 50 ? 0x55ee77 : 0xffcc33);
   } else if (hudIn3D) tuk.dashboard.setArrow(null);
+  if (tour && !inVR && tour.state !== 'summary') {
+    if (!trailLast || Math.hypot(x - trailLast[0], z - trailLast[1]) > 6) {
+      trailLast = [x, z]; trail.push(trailLast);
+      if (trail.length > 4000) trail.splice(0, 1000);
+    }
+  }
   mapTimer -= frameDt;
   if (mapTimer <= 0) { mapTimer = 0.1; hud.drawMap(!inVR && mapOn, x, z, h, target, tour ? tour.route : null); }
 
@@ -821,9 +856,10 @@ if (touch) {
       toggleCamera: () => { setCamMode(camMode === 'cockpit' ? 'chase' : 'cockpit'); chaseInit = false; },
       camLabel: () => (camMode === 'cockpit' ? 'кабіна' : 'ззаду'),
       toggleMap: () => { mapOn = !mapOn; saveSetting('minimap', mapOn); },
+      openMap: () => fullMap.open(),
       mapOn: () => mapOn,
       openDiagnostics: () => { if (diagUI) diagUI.open(); },
-      applyFov, version: VERSION, onStarted: () => { if (diagUI) diagUI.setVisible(true); },
+      applyFov, applyRes, version: VERSION, onStarted: () => { if (diagUI) diagUI.setVisible(true); },
       credit: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · рельєф © IGN (CNIG) · фото фасадів: <a href="assets/facades/CREDITS.md" target="_blank" rel="noopener">Wikimedia Commons</a> · 3D-скани: <a href="assets/models/CREDITS.md" target="_blank" rel="noopener">Sketchfab</a>',
     },
   });
@@ -832,4 +868,4 @@ if (touch) {
 if (params.has('autostart')) start();   // after the phone interface exists (it hides the start screen's parts)
 
 // test / debugging hook
-window.__game = { touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };

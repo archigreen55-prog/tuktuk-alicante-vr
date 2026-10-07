@@ -78,6 +78,31 @@ export class GeoBuilder {
   }
 }
 
+// Splits a non-indexed geometry into cells of `cell` metres by triangle centroid (so each piece can be frustum-culled):
+// returns a Map "i,j" -> BufferGeometry with the same attributes.
+export function splitCells(geo, cell) {
+  const pos = geo.attributes.position.array, names = Object.keys(geo.attributes);
+  const parts = new Map();
+  for (let t = 0; t < pos.length; t += 9) {
+    const key = Math.floor((pos[t] + pos[t + 3] + pos[t + 6]) / 3 / cell) + ',' + Math.floor((pos[t + 2] + pos[t + 5] + pos[t + 8]) / 3 / cell);
+    let list = parts.get(key); if (!list) parts.set(key, (list = []));
+    list.push(t / 3);   // first vertex index of the triangle
+  }
+  const out = new Map();
+  for (const [key, list] of parts) {
+    const g = new THREE.BufferGeometry();
+    for (const name of names) {
+      const src = geo.attributes[name], size = src.itemSize, arr = new Float32Array(list.length * 3 * size);
+      let o = 0;
+      for (const v of list) { for (let k = 0; k < 3 * size; k++) arr[o++] = src.array[v * size + k]; }
+      g.setAttribute(name, new THREE.BufferAttribute(arr, size));
+    }
+    g.computeBoundingSphere(); g.computeBoundingBox();
+    out.set(key, g);
+  }
+  return out;
+}
+
 // Deterministic pseudo-random in [0, 1) from an integer.
 export function rand(i) {
   let h = Math.imul(i ^ 0x9e3779b9, 0x85ebca6b);

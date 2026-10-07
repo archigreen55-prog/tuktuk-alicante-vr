@@ -8,7 +8,7 @@ const CSS = /* css */ `
 .tc-root { position: fixed; inset: 0; z-index: 40; pointer-events: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
   font-family: system-ui, sans-serif; --k: 1; --edge: max(24px, calc(env(safe-area-inset-right) + 12px)); --edgeL: max(24px, calc(env(safe-area-inset-left) + 12px)); }
 .tc-root *, .tc-look { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: none; -webkit-user-select: none; user-select: none; }
-.tc-look { position: fixed; inset: 0; z-index: 38; pointer-events: auto; }
+.tc-look { position: fixed; inset: 0; z-index: 7; pointer-events: auto; }   /* under the minimap (8, tappable: opens the map) and the start screen (10) */
 .tc-btn, .tc-pedal, .tc-zone { position: absolute; pointer-events: auto; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; text-align: center; }
 .tc-btn, .tc-pedal { background: rgba(16, 22, 28, .5); border: 2px solid rgba(255, 255, 255, .5); border-radius: 16px; overflow: hidden; }
 .tc-btn.on, .tc-pedal.on { background: rgba(255, 209, 102, .5); border-color: #ffd166; }

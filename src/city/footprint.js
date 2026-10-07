@@ -9,7 +9,7 @@ import * as THREE from 'three';
 const SIDEWALK = { primary: 3.5, primary_link: 2, secondary: 3, secondary_link: 2, tertiary: 2.5, tertiary_link: 2, residential: 2, unclassified: 2, busway: 2.5 };
 
 // city: city.json; terrain: Terrain. Returns { texture, rect: Vector4(x0, z0, 1/width, 1/depth), stats }
-export function buildFootprintMask(city, terrain, { size = 2048, erode = 0.9 } = {}) {
+export function buildFootprintMask(city, terrain, { size = 2048, erode = 0.25 } = {}) {
   const t0 = performance.now();
   const x0 = terrain.x0, z0 = terrain.z0, w = terrain.x1 - x0, d = terrain.z1 - z0;
   const cv = document.createElement('canvas');
@@ -45,6 +45,9 @@ export function buildFootprintMask(city, terrain, { size = 2048, erode = 0.9 } =
   const rgba = g.getImageData(0, 0, size, size).data;
   const data = new Uint8Array(size * size);
   for (let i = 0; i < data.length; i++) data[i] = rgba[i * 4];
+  // a clear frame: the texture is clamped, so a road reaching the edge of the map would otherwise be smeared outwards
+  // over the whole skirt of the ground (long cut streaks to the horizon)
+  for (let i = 0; i < size; i++) { data[i] = 0; data[(size - 1) * size + i] = 0; data[i * size] = 0; data[i * size + size - 1] = 0; }
   const texture = new THREE.DataTexture(data, size, size, THREE.RedFormat, THREE.UnsignedByteType);
   texture.generateMipmaps = true;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
@@ -52,7 +55,12 @@ export function buildFootprintMask(city, terrain, { size = 2048, erode = 0.9 } =
   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.unpackAlignment = 1;
   texture.needsUpdate = true;
-  return { texture, rect: new THREE.Vector4(x0, z0, 1 / w, 1 / d), stats: { footRoads: roads, footPolys: polys, footMs: Math.round(performance.now() - t0) } };
+  // is the point under a road / plaza / park? (CPU side of the same mask)
+  const sample = (x, z) => {
+    const i = Math.floor((x - x0) / w * size), j = Math.floor((z - z0) / d * size);
+    return i >= 0 && j >= 0 && i < size && j < size && data[j * size + i] > 127;
+  };
+  return { texture, sample, rect: new THREE.Vector4(x0, z0, 1 / w, 1 / d), stats: { footRoads: roads, footPolys: polys, footMs: Math.round(performance.now() - t0) } };
 }
 
 // Makes a MeshLambertMaterial throw away its fragments inside the mask. Position attributes of the ground
@@ -63,12 +71,15 @@ export function discardInFootprint(material, mask) {
     if (prev) prev(sh, renderer);
     sh.uniforms.uFoot = { value: mask.texture };
     sh.uniforms.uFootRect = { value: mask.rect };
+    material.userData.footUniforms = sh.uniforms;   // debugging: tools can switch the cut off
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec2 vFoot;\nuniform vec4 uFootRect;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFoot = (position.xz - uFootRect.xy) * uFootRect.zw;');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nvarying vec2 vFoot;\nuniform sampler2D uFoot;')
-      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (texture2D(uFoot, vFoot).r > 0.5) discard;');
+      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nfloat footMask = texture2D(uFoot, vFoot).r;\nif (footMask > 0.5 && vFoot.x >= 0.0 && vFoot.x <= 1.0 && vFoot.y >= 0.0 && vFoot.y <= 1.0) discard;')
+      // the underside of the ground is lit like its top: it only shows through the thin gap under a road edge
+      .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\n#ifdef DOUBLE_SIDED\nnormal = normalize(vNormal);\n#endif');
   };
   material.customProgramCacheKey = () => 'ground-footprint';
   return material;

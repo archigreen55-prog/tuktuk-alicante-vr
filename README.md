@@ -138,7 +138,8 @@ Two steering modes, switched with the right stick press or on the start screen (
 | H | Horn |
 | G | Stress test level (×1…×8) |
 | T | Tour: new tour after the summary; twice within 2 s to restart / start a tour from free ride |
-| M | Minimap on / off |
+| M | Full-screen map (also a click / tap on the minimap); M or Esc closes it |
+| N | Minimap on / off |
 | Right mouse drag | Look around |
 
 URL parameters for testing: `?mode=free` / `?mode=tour` (free ride without the tour objects, e.g. for FPS
@@ -202,6 +203,26 @@ On a touch phone (`?ui=phone` forces it) the game is played with the thumbs in l
 
 Files: `src/input/touchControls.js`, `touchMath.js`, `src/ui/phoneUi.js`, `screenMode.js`, `src/city/rtin.js`,
 `footprint.js`, `manifest.webmanifest`, `sw.js`, `assets/icons/` (`tools/make-icons.mjs` regenerates them).
+
+## Phone: fixes and the full-screen map (0.11.1, stage F1b)
+
+- **Roads never show through.** The ground under roads / plazas / parks is cut away (footprint mask). Three parts keep
+  that cut clean: a *depth skin* (the layers' outer ribbons redrawn once without colour so buildings behind a hill
+  cannot be drawn over the road), *two-sided ground* with a clear mask frame and a mask that is only applied inside the
+  map, and *curb skirts* (short vertical aprons under the outer edge of every layer, fitted to the ground mesh).
+  `?mask=0` switches the cut off, `?skin=0` keeps the cut but drops skin + skirts (both for comparisons only).
+  The flat layers are now split into 800 m cells (frustum culling).
+- **Resolution on a phone.** A budget of pixels per frame: "стандартна" 0.65 Mp (default), "висока" 0.85, "економна" 0.4
+  (menu / start screen, "Роздільність картинки"); `?mp=N` sets it in megapixels, `?dpr=N` the ratio.
+- **Start screen and menu scroll** on the phone (the layer itself scrolls; a "↓ ще налаштування" button shows when
+  there is more below).
+- **Route is recomputed after a wrong turn** (more than 20 m off the route for 1 s; was 60 m / 3 s) and the HTML
+  minimap redraws it; "Маршрут перераховано" flashes. Test: `node tools/test-reroute.mjs [tour]`.
+- **Full-screen map.** Tap the minimap (phone, or the 🗺 button / menu item) or click it / press **M** (PC). The game
+  is paused. One finger drags, two fingers pinch (also wheel, + −, double tap), "До мене" goes back to the tuk-tuk,
+  ✕ / Back / Esc / M closes it. It shows the streets, the walked trail (grey), the planned rest of the tour with
+  direction arrows, the way to the next target (orange) and the named places (names from 0.4 px/m). **N** now toggles
+  the corner minimap (was M). Code: `src/ui/fullMap.js`; nothing runs while it is closed.
 
 ## Run locally
 

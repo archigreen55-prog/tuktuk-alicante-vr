@@ -16,7 +16,7 @@ export const TOUR = {
   passAnchor: 30, passShape: 25, passStreet: 20, // m, "on the way" triggers
   factMin: 8, factPerChar: 0.05,         // s a passing fact stays on the panel
   introTime: 10,
-  offRoute: 60, offRouteFor: 3, rerouteEvery: 5, // m, s, s
+  offRoute: 20, offRouteFor: 1, rerouteEvery: 2, // m, s, s: a wrong turn one block away must redraw the route (was 60 m / 3 s / 5 s)
   spawnBack: [45, 35, 25, 15],           // m before the pickup point, first that fits
   nearPeople: 8, nearPeopleSpeed: 15 / 3.6,
   confirm: 2,                            // s for the second press of the tour button
@@ -223,7 +223,7 @@ export class Tour {
     if (this.route) {
       const off = polylineDistance(this.route, ctx.x, ctx.z).d > TOUR.offRoute;
       this.offT = off ? this.offT + ctx.dt : 0;
-      if (this.offT > TOUR.offRouteFor && this.t - this.lastRoute > TOUR.rerouteEvery) this.newRoute(ctx);
+      if (this.offT > TOUR.offRouteFor && this.t - this.lastRoute > TOUR.rerouteEvery) { this.newRoute(ctx); this.flash('Маршрут перераховано', '#9fd3ff', 2); }
     }
   }
 

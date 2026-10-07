@@ -5,7 +5,7 @@
 // Textures (stage 5b): facades, roads/sidewalks and plazas get textured materials (facades.js) fed by
 // per-vertex attributes built here; ?tex=0 keeps the plain vertex-colour look.
 import * as THREE from 'three';
-import { GeoBuilder, pairs, orient, rand } from './geo.js';
+import { splitCells, GeoBuilder, pairs, orient, rand } from './geo.js';
 import { ZEBRA_DEPTH, BAY_W } from './tiles.js';
 import { facadeMaterial, roadMaterial, plazaMaterial, buildBuildingTable, buildingLayout, TPL, MARK_TEMPLATES, SHUTTER_COLORS } from './facades.js';
 import { PhotoBuilder, addPhotoBuilding, photoMaterial } from './landmarks.js';
@@ -44,15 +44,31 @@ function flatMesh(geo, order, name, material, layer) {
   mesh.matrixAutoUpdate = false;
   return mesh;
 }
+// A flat layer as cells of LAYER_CELL metres (frustum culling): one shared material, one mesh per cell.
+// The cell geometries are also collected in `bag` (key -> geometries) for the depth skin (parks and plazas only).
+const LAYER_CELL = 800;
+function flatChunks(group, geo, order, name, material, layer, bag) {
+  let mat = null;
+  for (const [key, g] of splitCells(geo, LAYER_CELL)) {
+    const mesh = flatMesh(g, order, name + ' ' + key, mat || material, layer);
+    mat = mesh.material;
+    group.add(mesh);
+    if (bag) { let l = bag.get(key); if (!l) bag.set(key, (l = [])); l.push(g); }
+  }
+}
 // heights of the flat layers above the ground grid (the polygon offset does the rest)
 const LIFT = { parks: 0.03, plazas: 0.04, sidewalk: 0.05, road: 0.06, zebra: 0.07 };
+const SKIRT_MIN = 0.08;   // m: no apron where the ground mesh is this close to the edge
+const SKIRT_DROP = 1.6;   // m, how far the curb skirts hang below the edge of a layer
+const SKIN_DROP = 0.07;   // m, the depth skin lies this far below the layers (about the height grid)
 const DRAPE_CELL = 8; // m, polygons are cut into cells of this size so they follow the ground
 
 // options: { texMode: 'full' | 'low' | 'off', tiles (from buildTiles), sky, photos (from loadPhotoFacades),
 //   cuts (Map osmId -> niches behind 3D models, from loadModels), terrain (Terrain, src/city/terrain.js),
-//   footprint (default true): the ground is not drawn under roads, plazas and parks (src/city/footprint.js) }
+//   footprint (default true): the ground is not drawn under roads, plazas and parks (src/city/footprint.js),
+//   skin (default true): the depth skin and curb skirts that go with the cut (tests: ?skin=0) }
 export function buildCity(city, options = {}) {
-  const { texMode = 'off', tiles = null, sky = 0xbfe3f5, photos = null, cuts = null, terrain = null, footprint = true } = options;
+  const { texMode = 'off', tiles = null, sky = 0xbfe3f5, photos = null, cuts = null, terrain = null, footprint = true, skin: useSkin = true } = options;
   const texFacades = texMode !== 'off' && tiles;
   const texGround = texMode === 'full' && tiles;
   const group = new THREE.Group();
@@ -62,10 +78,15 @@ export function buildCity(city, options = {}) {
   const H = terrain ? (x, z) => terrain.height(x, z) : () => 0;
 
   // ---------- ground ----------
+  let mask = null, groundHeightAt = null;
+  const layerBag = new Map();   // cell key -> geometries of the flat layers (for the depth skin)
+  const skinRoads = [];    // the outermost ribbon of every road (sidewalk, or the road itself): the depth skin needs nothing else
+  const skirtEdges = [];   // outer edges of the flat layers: pairs of points, hung as curb skirts (see below)
   if (terrain) {
-    const mask = footprint ? buildFootprintMask(city, terrain) : null;
+    mask = footprint ? buildFootprintMask(city, terrain) : null;
     const g = buildGround(terrain, { mask });
     if (mask) Object.assign(stats, mask.stats);
+    groundHeightAt = g.heightAt;
     g.group.renderOrder = -21;
     for (const m of g.group.children) m.renderOrder = -21;
     group.add(g.group);
@@ -87,8 +108,8 @@ export function buildCity(city, options = {}) {
   // ---------- parks & plazas ----------
   {
     const gb = new GeoBuilder();
-    for (const p of city.parks) drapePolygon(gb, pairs(p), H, LIFT.parks, c(COLORS.park));
-    group.add(flatMesh(gb.build(), -18, 'parks', null, 'parks'));
+    for (const p of city.parks) { drapePolygon(gb, pairs(p), H, LIFT.parks, c(COLORS.park)); ringEdges(skirtEdges, pairs(p), H, LIFT.parks); }
+    flatChunks(group, gb.build(), -18, 'parks', null, 'parks', layerBag);
     const gp = new GeoBuilder({ aKind: 1 });
     const plazaCol = c(COLORS.plaza), mosaicCol = c(0xb8a48e);
     let explanada = null;
@@ -97,8 +118,9 @@ export function buildCity(city, options = {}) {
       const isExpl = pl.k === 'explanada';
       if (isExpl) explanada = pl;
       drapePolygon(gp, ring, H, LIFT.plazas, isExpl && !texGround ? mosaicCol : plazaCol, { aKind: [isExpl ? 1 : 0] });
+      ringEdges(skirtEdges, ring, H, LIFT.plazas);
     }
-    group.add(flatMesh(gp.build(), -17, 'plazas', texGround ? plazaMaterial(tiles, explanada) : null, 'plazas'));
+    flatChunks(group, gp.build(), -17, 'plazas', texGround ? plazaMaterial(tiles, explanada) : null, 'plazas', layerBag);
     stats.plazaTris = gp.triangles + gb.triangles;
   }
   // ---------- roads: sidewalks, ribbons with markings, zebras (one mesh, draw order inside) ----------
@@ -110,7 +132,7 @@ export function buildCity(city, options = {}) {
     let zebras = 0;
     for (const r of sorted) {
       const sw = SIDEWALK[r.k];
-      if (sw) addRibbon(gb, pairs(r.p), r.w + 2 * sw, sidewalkCol, { tpl: TPL.SIDEWALK, roadHalf: r.w / 2, H, lift: LIFT.sidewalk });
+      if (sw) addRibbon(gb, pairs(r.p), r.w + 2 * sw, sidewalkCol, { tpl: TPL.SIDEWALK, roadHalf: r.w / 2, H, lift: LIFT.sidewalk, skirt: skirtEdges, skin: skinRoads });
     }
     const zebraJobs = [];
     for (const r of sorted) {
@@ -118,13 +140,108 @@ export function buildCity(city, options = {}) {
       const pts = pairs(r.p);
       const tpl = templateOf(r);
       const junctions = (r.j || []).map((j) => (Array.isArray(j) ? j : [j, r.w]));
-      addRibbon(gb, pts, r.w, col, { tpl, roadHalf: r.w / 2, junctions: tpl >= 1 && tpl <= 6 ? junctions : null, H, lift: LIFT.road });
+      addRibbon(gb, pts, r.w, col, { tpl, roadHalf: r.w / 2, junctions: tpl >= 1 && tpl <= 6 ? junctions : null, H, lift: LIFT.road, skirt: SIDEWALK[r.k] ? null : skirtEdges, skin: SIDEWALK[r.k] ? null : skinRoads });
       if (MARKED.test(r.k)) for (const [ji, ow] of junctions) zebraJobs.push({ pts, i: ji, hw: r.w / 2, D: fadeDistance(ow), col, H });
     }
     for (const z of zebraJobs) zebras += addZebras(gb, z);
-    group.add(flatMesh(gb.build(), -16, 'roads', texGround ? roadMaterial(tiles) : null, 'roads'));
+    flatChunks(group, gb.build(), -16, 'roads', texGround ? roadMaterial(tiles) : null, 'roads', null);
     stats.roadTris = gb.triangles;
     stats.zebras = zebras;
+  }
+  // ---------- curb skirts: close the gap under the edge of a layer ----------
+  // Where the ground lies lower than a road edge (RTIN error, up to 1.4 m in the far chunks) the cut leaves a slit
+  // under the edge, and at a low angle you look through it (background, buildings behind). A vertical apron hung from
+  // the outer edge of every layer closes it; where the ground is higher it is simply buried.
+  if (mask && useSkin && skirtEdges.length) {
+    const pos = [];
+    const gAt = (x, z) => (groundHeightAt ? groundHeightAt(x, z) : NaN);
+    // is the edge a-b (points [x, y, z]) inside the union of the layers (a layer on both sides), outside, or mixed?
+    const classify = (a, b) => {
+      const dx = b[0] - a[0], dz = b[2] - a[2], dl = Math.hypot(dx, dz) || 1, nx = -dz / dl, nz = dx / dl;
+      let inner = 0, outer = 0, out = 1;
+      for (const t of [0.1, 0.5, 0.9]) {
+        const mx = a[0] + dx * t, mz = a[2] + dz * t;
+        const sA = mask.sample(mx + nx * 0.7, mz + nz * 0.7), sB = mask.sample(mx - nx * 0.7, mz - nz * 0.7);
+        if (sA && sB) inner++; else { outer++; out = sA ? -1 : 1; }
+      }
+      return { kind: outer === 0 ? 'inner' : inner === 0 ? 'outer' : 'mixed', out, nx, nz };
+    };
+    const wallOf = (p, kind, out, nx, nz) => {
+      const g0 = gAt(p[0], p[2]);
+      if (g0 !== g0) return { top: kind === 'inner' ? p[1] - 0.12 : p[1], bot: p[1] - SKIRT_DROP, hi: p[1], g0 };
+      // the highest ground within a metre outside an outer edge: a ray that slips over the edge meets the ground there
+      let hi = g0;
+      if (kind !== 'inner') for (const d of [0.5, 1.0]) { const q = gAt(p[0] + nx * out * d, p[2] + nz * out * d); if (q === q && q > hi) hi = q; }
+      return { top: kind === 'inner' ? p[1] - 0.12 : Math.max(p[1], hi + 0.03), bot: Math.min(p[1], g0) - 0.4, hi, g0 };
+    };
+    const emit = (a, b, kind, out, nx, nz) => {
+      if (kind !== 'inner') {   // overlap the neighbouring aprons a little, so no speck is left at a corner
+        const dx = b[0] - a[0], dz = b[2] - a[2], dl = Math.hypot(dx, dz) || 1, e = 0.3;
+        a = [a[0] - dx / dl * e, a[1], a[2] - dz / dl * e]; b = [b[0] + dx / dl * e, b[1], b[2] + dz / dl * e];
+      }
+      const A = wallOf(a, kind, out, nx, nz), B = wallOf(b, kind, out, nx, nz);
+      // where the ground follows the edge within a few cm there is nothing to close
+      if (A.g0 === A.g0 && B.g0 === B.g0 && (kind === 'inner' ? Math.min(a[1] - A.g0, b[1] - B.g0) < SKIRT_MIN
+        : Math.abs(a[1] - A.g0) < SKIRT_MIN && Math.abs(b[1] - B.g0) < SKIRT_MIN && A.hi - a[1] < SKIRT_MIN && B.hi - b[1] < SKIRT_MIN)) return;
+      pos.push(a[0], A.top, a[2], a[0], A.bot, a[2], b[0], B.top, b[2], b[0], B.top, b[2], a[0], A.bot, a[2], b[0], B.bot, b[2]);
+    };
+    for (let k = 0; k < skirtEdges.length; k += 2) {
+      const a = skirtEdges[k], b = skirtEdges[k + 1];
+      const c = classify(a, b);
+      if (c.kind !== 'mixed') { emit(a, b, c.kind, c.out, c.nx, c.nz); continue; }
+      // an edge that runs partly inside another layer (a junction): cut it into short pieces and decide for each
+      const n = Math.max(2, Math.ceil(Math.hypot(b[0] - a[0], b[2] - a[2]) / 1.5));
+      let prev = a;
+      for (let q = 1; q <= n; q++) {
+        const t = q / n, cur = q === n ? b : [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+        const cc = classify(prev, cur);
+        emit(prev, cur, cc.kind === 'inner' ? 'inner' : 'outer', cc.out, cc.nx, cc.nz);
+        prev = cur;
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.computeVertexNormals();
+    const skirtMat = new THREE.MeshLambertMaterial({ color: 0xb3a78e, side: THREE.DoubleSide });
+    for (const [key, g] of splitCells(geo, LAYER_CELL)) {
+      const skirt = new THREE.Mesh(g, skirtMat);
+      skirt.name = 'curb skirts ' + key;
+      skirt.matrixAutoUpdate = false;
+      group.add(skirt);
+    }
+    stats.skirtTris = pos.length / 9;
+  }
+  // ---------- depth skin: the layers need a depth of their own where the ground is cut away ----------
+  // The layers draw without depth write (painter's order, no z-fighting between them) and the ground used to supply
+  // the depth under them. Where the ground is discarded (footprint mask) nothing does, so buildings below / behind a
+  // road (on the slope, behind the hill) were drawn over it. The skin redraws the SAME geometry once more, after all
+  // layers, with colour writes off and depth writes on, a little below the road surface (objects standing on it are
+  // not clipped).
+  if (mask && useSkin) {
+    const mat = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true, side: THREE.DoubleSide });   // two-sided: the winding of the pieces is not fixed
+    mat.onBeforeCompile = (sh) => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed.y -= ' + SKIN_DROP.toFixed(3) + ';'); };
+    mat.customProgramCacheKey = () => 'depth-skin';
+    let skinTris = 0;
+    if (skinRoads.length) {
+      const sp = new Float32Array(skinRoads.length * 3); skinRoads.forEach((v, i) => sp.set(v, i * 3));
+      const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+      for (const [key, g] of splitCells(sg, LAYER_CELL)) { let l = layerBag.get(key); if (!l) layerBag.set(key, (l = [])); l.push(g); }
+    }
+    for (const [key, geos] of layerBag) {   // one draw call per cell: the positions of parks + plazas + roads together
+      let n = 0; for (const g of geos) n += g.attributes.position.array.length;
+      const all = new Float32Array(n); let o = 0;
+      for (const g of geos) { all.set(g.attributes.position.array, o); o += g.attributes.position.array.length; }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(all, 3));
+      geo.computeBoundingSphere();
+      const skin = new THREE.Mesh(geo, mat);
+      skin.renderOrder = -15;
+      skin.name = 'depth-skin ' + key;
+      skin.matrixAutoUpdate = false;
+      group.add(skin);
+      skinTris += all.length / 9;
+    }
+    stats.skinTris = skinTris;
   }
   // ---------- buildings (chunked for frustum culling) ----------
   {
@@ -426,7 +543,7 @@ const fadeDistance = (otherW) => otherW / 2 + 3.5;
 // Road polyline -> ribbon with mitred joints and round-ish end caps.
 // opts: { tpl, roadHalf, junctions: [[index, otherWidth]] } -> aRoad = (along m, across m, road half width, marking fade)
 function addRibbon(gb, ptsIn, w, col, opts = {}) {
-  const { tpl = 0, roadHalf = w / 2, junctions = null, H = () => 0, lift = 0 } = opts;
+  const { tpl = 0, roadHalf = w / 2, junctions = null, H = () => 0, lift = 0, skirt = null, skin = null } = opts;
   const faded = junctions && junctions.length ? insertFades(ptsIn, junctions) : { pts: ptsIn, fade: ptsIn.map(() => 1) };
   const { pts, fade } = subdivide(faded.pts, faded.fade, RIBBON_STEP, H);
   const hw = w / 2, n = pts.length, up = [0, 1, 0];
@@ -448,6 +565,8 @@ function addRibbon(gb, ptsIn, w, col, opts = {}) {
     R.push([rx, H(rx, rz) + lift, rz]);
     along.push(s);
   }
+  if (skirt) for (let i = 0; i < n - 1; i++) { skirt.push(L[i], L[i + 1]); skirt.push(R[i], R[i + 1]); }
+  if (skin) for (let i = 0; i < n - 1; i++) skin.push(L[i], R[i], R[i + 1], L[i], R[i + 1], L[i + 1]);
   const A = (i, side) => [along[i], side * hw, roadHalf, fade[i]];
   const T = [tpl];
   for (let i = 0; i < n - 1; i++) {
@@ -462,6 +581,7 @@ function addRibbon(gb, ptsIn, w, col, opts = {}) {
       const a0 = (k / seg) * Math.PI * 2, a1 = ((k + 1) / seg) * Math.PI * 2;
       const q0 = [p[0] + Math.cos(a0) * hw, p[1] + Math.sin(a0) * hw], q1 = [p[0] + Math.cos(a1) * hw, p[1] + Math.sin(a1) * hw];
       gb.tri([p[0], y, p[1]], [q0[0], H(q0[0], q0[1]) + lift, q0[1]], [q1[0], H(q1[0], q1[1]) + lift, q1[1]], up, col, col, col, { aRoad: [0, 0, roadHalf, 0], aTpl: capTpl });
+      if (skin) skin.push([p[0], y, p[1]], [q0[0], H(q0[0], q0[1]) + lift, q0[1]], [q1[0], H(q1[0], q1[1]) + lift, q1[1]]);
     }
   }
 }
@@ -484,6 +604,15 @@ function subdivide(pts, fade, step, H) {
     out.push(b); f.push(fade[i]);
   }
   return { pts: out, fade: f };
+}
+// Outer edge of a polygon layer as short pieces on the ground (for the curb skirts)
+function ringEdges(out, ring, H, lift) {
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i], b = ring[(i + 1) % ring.length];
+    const n = Math.max(1, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / RIBBON_STEP));
+    let prev = [a[0], H(a[0], a[1]) + lift, a[1]];
+    for (let k = 1; k <= n; k++) { const t = k / n, x = a[0] + (b[0] - a[0]) * t, z = a[1] + (b[1] - a[1]) * t, q = [x, H(x, z) + lift, z]; out.push(prev, q); prev = q; }
+  }
 }
 // A polygon cut into DRAPE_CELL squares, each piece triangulated with its vertices on the ground
 export function drapePolygon(gb, ring, H, lift, col, aux = null) {
