@@ -14,7 +14,8 @@ function h(tag, css, text, parent) {
 const BTN = 'font:600 13px system-ui,sans-serif;padding:8px 12px;min-height:36px;border:0;border-radius:8px;background:#ffd166;color:#222;cursor:pointer;touch-action:manipulation';
 const BTN_GHOST = 'font:600 13px system-ui,sans-serif;padding:8px 12px;min-height:36px;border:1px solid #ffd166;border-radius:8px;background:rgba(16,22,28,.85);color:#ffd166;cursor:pointer;touch-action:manipulation';
 
-// opts: { stats, getReport() -> Promise<string>, cap, onBench() | null, visible }
+// opts: { stats, getReport() -> Promise<string>, cap, onBench() | null, visible, side: 'left' | 'right' (right: next to the
+// phone's top-right buttons) }
 export function createDiagUI(opts) {
   const { stats } = opts;
   const D = window.__diag || {};
@@ -24,11 +25,13 @@ export function createDiagUI(opts) {
   // ---- button + widget ----
   // top-left: [FPS] toggle; when open, [Діагностика] [Замір] next to it and a compact block below
   // (kept short: on a phone the minimap of the desktop HUD starts ~200 px from the top)
-  const topRow = h('div', `position:fixed;left:calc(8px + ${SAFE_L});top:8px;display:flex;gap:6px;pointer-events:auto`, null, root);
+  const right = opts.side === 'right';
+  const SAFE_R = 'max(8px, env(safe-area-inset-right))';
+  const topRow = h('div', `position:fixed;${right ? `right:calc(${SAFE_R} + 164px)` : `left:calc(8px + ${SAFE_L})`};top:8px;display:flex;gap:6px;pointer-events:auto`, null, root);
   const toggle = h('button', `${BTN_GHOST};padding:6px 10px;min-height:32px`, 'FPS', topRow);
   const diagBtn = h('button', `${BTN};padding:6px 10px;min-height:32px;display:none`, 'Діагностика', topRow);
   const benchBtn = opts.onBench ? h('button', `${BTN_GHOST};padding:6px 10px;min-height:32px;display:none`, 'Замір', topRow) : null;
-  const widget = h('div', `position:fixed;left:calc(8px + ${SAFE_L});top:46px;width:288px;padding:6px 8px;border-radius:10px;background:rgba(16,22,28,.82);color:#fff;pointer-events:none;display:none`, null, root);
+  const widget = h('div', `position:fixed;${right ? `right:${SAFE_R};top:62px` : `left:calc(8px + ${SAFE_L});top:46px`};width:288px;padding:6px 8px;border-radius:10px;background:rgba(16,22,28,.82);color:#fff;pointer-events:none;display:none`, null, root);
   const l1 = h('div', 'font:700 15px ui-monospace,monospace', '', widget);
   const l2 = h('div', 'font:11px ui-monospace,monospace;color:#cfe3f5;margin-top:1px', '', widget);
   const l3 = h('div', 'font:10px ui-monospace,monospace;color:#9fb3c8;margin-top:1px', '', widget);
@@ -36,23 +39,28 @@ export function createDiagUI(opts) {
   canvas.width = 544; canvas.height = 68;
   h('div', 'font:9px system-ui,sans-serif;color:#9fb3c8;margin-top:1px', '5 с — стовпчик, до 10 хв · лінії 60 і 30 FPS', widget);
 
-  let shown = loadSetting('diagWidget', !!opts.visible);
+  let shown = loadSetting('diagWidget.v2', !!opts.visible);
   const apply = () => {
     widget.style.display = shown ? 'block' : 'none';
     diagBtn.style.display = shown ? 'block' : 'none';
     if (benchBtn) benchBtn.style.display = shown ? 'block' : 'none';
   };
-  toggle.addEventListener('click', () => { shown = !shown; saveSetting('diagWidget', shown); apply(); draw(); });
+  toggle.addEventListener('click', () => { shown = !shown; saveSetting('diagWidget.v2', shown); apply(); draw(); });
   apply();
 
+  const last = { l1: '', l2: '', l3: '', graph: '' };
+  const put = (el, key, text) => { if (last[key] !== text) { last[key] = text; el.textContent = text; } };
   function draw() {
     if (!shown) return;
     const s = stats.snapshot();
     const hz = stats.refreshHz;
-    l1.textContent = `${s.fps.toFixed(0)} FPS · ${s.avgMs.toFixed(1)} мс`;
+    put(l1, 'l1', `${s.fps.toFixed(0)} FPS · ${s.avgMs.toFixed(1)} мс`);
     l1.style.color = s.fps >= 55 ? '#8be28b' : s.fps >= 40 ? '#ffd166' : '#ff7a5c';
-    l2.textContent = `p95 ${s.p95.toFixed(0)} мс · 1 %: ${s.low1.toFixed(0)} FPS · макс ${s.worst.toFixed(0)} мс`;
-    l3.textContent = `calls ${s.calls} · ${(s.tris / 1000).toFixed(0)}k · CPU ${s.cpuMs.toFixed(1)} мс${hz ? ` · екран ${hz.toFixed(0)} Гц` : ''}${opts.cap > 0 ? ` · ліміт ${opts.cap}` : ''}`;
+    put(l2, 'l2', `p95 ${s.p95.toFixed(0)} мс · 1 %: ${s.low1.toFixed(0)} FPS · макс ${s.worst.toFixed(0)} мс`);
+    put(l3, 'l3', `calls ${s.calls} · ${(s.tris / 1000).toFixed(0)}k · CPU ${s.cpuMs.toFixed(1)} мс${hz ? ` · екран ${hz.toFixed(0)} Гц` : ''}${opts.cap > 0 ? ` · ліміт ${opts.cap}` : ''}`);
+    const sig = stats.history.length + ':' + (stats.history.length ? stats.history[stats.history.length - 1].fps.toFixed(0) : '');
+    if (sig === last.graph) return;   // the graph changes once per 5 s
+    last.graph = sig;
     const g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
     g.clearRect(0, 0, W, H);
     const max = 75, hist = stats.history, bw = W / 120;
@@ -112,10 +120,11 @@ export function createDiagUI(opts) {
   document.body.appendChild(bar2);
 
   function setProgress(st) {
-    if (!st) { pill.style.display = bar2.style.display = 'none'; return; }
-    pill.style.display = bar2.style.display = 'block';
-    pill.textContent = st.text;
-    fill.style.width = `${Math.round(st.progress * 100)}%`;
+    if (!st) { if (pill.style.display !== 'none') pill.style.display = bar2.style.display = 'none'; return; }
+    if (pill.style.display !== 'block') pill.style.display = bar2.style.display = 'block';
+    if (pill.textContent !== st.text) pill.textContent = st.text;
+    const w = `${Math.round(st.progress * 100)}%`;
+    if (fill.style.width !== w) fill.style.width = w;
   }
 
   function showIntro({ passes, stations, per = 10.5, onStart }) {
@@ -129,5 +138,7 @@ export function createDiagUI(opts) {
     document.body.appendChild(card);
   }
 
-  return { open, close, setProgress, showIntro, draw, refresh };
+  // the FPS button row and widget can be hidden (the phone start screen); the panel, the red error line and the bench card stay
+  const setVisible = (v) => { root.style.display = v ? '' : 'none'; };
+  return { open, close, setProgress, showIntro, draw, refresh, setVisible };
 }

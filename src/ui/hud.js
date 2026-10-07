@@ -33,7 +33,7 @@ export class DesktopHud {
       card = `<div class="t">Тур завершено! <span class="s">${'★'.repeat(panel.stars)}${'☆'.repeat(5 - panel.stars)}</span></div>` +
         `<div class="b">Чайові ${euro(panel.tips)} · час ${clock(panel.time)} / ${clock(panel.target)}<br>${esc(panel.events)}<br><i>${panel.review ? '«' + esc(panel.review) + '»' : ''}</i><br><span class="c">${esc(panel.best || '')}</span></div><div class="f">${esc(panel.footer || '')}</div>`;
     } else if (panel.text) card = `<div class="t">${esc(panel.text.title)}</div><div class="b">${esc(panel.text.body)}</div>`;
-    if (card !== this.lastCard) { this.card.innerHTML = card; this.lastCard = card; }
+    if (card !== this.lastCard) { this.card.innerHTML = card; this.lastCard = card; this.card.className = panel.mode === 'card' ? 'mode-card' : panel.mode === 'summary' ? 'mode-summary' : 'mode-text'; }
   }
 
   // heading-up map in the corner (desktop only), ~10 Hz from main

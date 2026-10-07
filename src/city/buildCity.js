@@ -10,6 +10,7 @@ import { ZEBRA_DEPTH, BAY_W } from './tiles.js';
 import { facadeMaterial, roadMaterial, plazaMaterial, buildBuildingTable, buildingLayout, TPL, MARK_TEMPLATES, SHUTTER_COLORS } from './facades.js';
 import { PhotoBuilder, addPhotoBuilding, photoMaterial } from './landmarks.js';
 import { buildGround } from './ground.js';
+import { buildFootprintMask } from './footprint.js';
 
 const COLORS = {
   ground: 0xd9ccb0,
@@ -48,9 +49,10 @@ const LIFT = { parks: 0.03, plazas: 0.04, sidewalk: 0.05, road: 0.06, zebra: 0.0
 const DRAPE_CELL = 8; // m, polygons are cut into cells of this size so they follow the ground
 
 // options: { texMode: 'full' | 'low' | 'off', tiles (from buildTiles), sky, photos (from loadPhotoFacades),
-//   cuts (Map osmId -> niches behind 3D models, from loadModels), terrain (Terrain, src/city/terrain.js) }
+//   cuts (Map osmId -> niches behind 3D models, from loadModels), terrain (Terrain, src/city/terrain.js),
+//   footprint (default true): the ground is not drawn under roads, plazas and parks (src/city/footprint.js) }
 export function buildCity(city, options = {}) {
-  const { texMode = 'off', tiles = null, sky = 0xbfe3f5, photos = null, cuts = null, terrain = null } = options;
+  const { texMode = 'off', tiles = null, sky = 0xbfe3f5, photos = null, cuts = null, terrain = null, footprint = true } = options;
   const texFacades = texMode !== 'off' && tiles;
   const texGround = texMode === 'full' && tiles;
   const group = new THREE.Group();
@@ -61,7 +63,9 @@ export function buildCity(city, options = {}) {
 
   // ---------- ground ----------
   if (terrain) {
-    const g = buildGround(terrain);
+    const mask = footprint ? buildFootprintMask(city, terrain) : null;
+    const g = buildGround(terrain, { mask });
+    if (mask) Object.assign(stats, mask.stats);
     g.group.renderOrder = -21;
     for (const m of g.group.children) m.renderOrder = -21;
     group.add(g.group);

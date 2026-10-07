@@ -177,6 +177,32 @@ desktop view are unchanged (the phone parts switch on by themselves on a touch s
 
 Files: `src/diag/` (`frameStats.js`, `report.js`, `ui.js`, `bench.js`, `device.js`), `src/perf/frameCap.js`.
 
+## Phone play: touch controls, full screen, ground mask (0.11.0, stage F1 of [docs/plan-phone.md](docs/plan-phone.md))
+
+On a touch phone (`?ui=phone` forces it) the game is played with the thumbs in landscape; PC and VR are unchanged.
+
+- **Layout ("За столом").** Left: **◄ ►** steering buttons (or a slider, setting "Кермо"). Right: **ГАЗ** pedal
+  (analog: the higher the finger on the pedal, the more throttle; or a plain button), **ГАЛЬМО**, **РУЧНИК**
+  (handbrake), **НІТРО**. Middle: horn and **⟲** (look back). The free area of the screen turns the head; a
+  double tap looks ahead. **≡** opens the menu (resume, back to the road, recentre, restart tour, free ride,
+  diagnostics, full screen, settings: control mode, steering, throttle, field of view 100° horizontal,
+  vibration, auto-return of the look, camera). The HTML HUD (speed, minimap, tour card) replaces the 3D panel
+  on a phone.
+- **Full screen.** The start button requests full screen + landscape lock + wake lock from the tap itself;
+  the menu and a ⛶ button repeat it; a web manifest (`manifest.webmanifest`, `display: fullscreen`) and a no-op
+  service worker (`sw.js`) allow "install as an app" (Chrome ⋮ → Install), which has no address bar at all.
+  The diagnostics report shows what the browser answered (`запит повного екрана`).
+- **Ground never covers the road.** The terrain mesh is a different surface from the road ribbons, so near
+  roads it could cut through them (visible on Mali GPUs). `src/city/footprint.js` rasterises the footprint of all
+  roads / sidewalks / plazas / parks into a 2048² mask and the ground fragment shader discards what lies under
+  it. `?mask=0` turns it off (comparison only).
+- **Hitch warm-up.** After the shaders are compiled one hidden 1×1 draw of the whole scene uploads every
+  buffer, so the first frames of a route are not slow.
+- Tests: `node tools/test-touch.mjs` (input curves of the touch controls match the keyboard ones).
+
+Files: `src/input/touchControls.js`, `touchMath.js`, `src/ui/phoneUi.js`, `screenMode.js`, `src/city/rtin.js`,
+`footprint.js`, `manifest.webmanifest`, `sw.js`, `assets/icons/` (`tools/make-icons.mjs` regenerates them).
+
 ## Run locally
 
 Any static server works, e.g.

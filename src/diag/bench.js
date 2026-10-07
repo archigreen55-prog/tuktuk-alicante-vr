@@ -162,7 +162,7 @@ export class Bench {
       if (!rows.length) continue;
       const avg = (k) => rows.reduce((s, r) => s + (r[k] || 0), 0) / rows.length;
       const gpu = rows.filter((r) => r.gpuMs != null);
-      out.push({ id: rows[0].id, label: rows[0].label, frames: rows.reduce((s, r) => s + r.frames, 0), fps: avg('fps'), low1: Math.min(...rows.map((r) => r.low1)), p95: avg('p95'), worst: Math.max(...rows.map((r) => r.worst)), long: rows.reduce((s, r) => s + r.long, 0), calls: avg('calls'), tris: avg('tris'), cpuMs: avg('cpuMs'), gpuMs: gpu.length ? gpu.reduce((s, r) => s + r.gpuMs, 0) / gpu.length : null });
+      out.push({ slow: rows.flatMap((r) => r.slow || []), cpuMax: Math.max(...rows.map((r) => r.cpuMax || 0)), id: rows[0].id, label: rows[0].label, frames: rows.reduce((s, r) => s + r.frames, 0), fps: avg('fps'), low1: Math.min(...rows.map((r) => r.low1)), p95: avg('p95'), worst: Math.max(...rows.map((r) => r.worst)), long: rows.reduce((s, r) => s + r.long, 0), calls: avg('calls'), tris: avg('tris'), cpuMs: avg('cpuMs'), gpuMs: gpu.length ? gpu.reduce((s, r) => s + r.gpuMs, 0) / gpu.length : null });
     }
     return out;
   }
@@ -201,6 +201,11 @@ export class Bench {
     if (this.results.length > 1) {
       L.push('', 'Середній FPS по колу, прохід за проходом: ' + this.results.map((r, i) => `${i + 1}: ${this.roundFps(r).toFixed(1)}`).join(' · '));
     }
+    // slow frames from the inside: JS total, submitting the draw calls, the panel part. A slow frame with small JS and
+    // render-submit times was waiting for the GPU or the compositor; a big JS time points at the code.
+    const withSlow = rows.filter((r) => r.slow && r.slow.length);
+    L.push('', `Повільні кадри (>25 мс): ${withSlow.length ? '' : 'немає'}`);
+    for (const r of withSlow) L.push(`  ${r.label}: ${r.slow.length} шт.; найдовший JS кадру ${r.cpuMax.toFixed(1)} мс; перші: ` + r.slow.slice(0, 5).map((q) => `${q.dt.toFixed(0)} мс (JS ${q.cpu.toFixed(1)}, submit ${q.render.toFixed(1)}, панель ${q.dash.toFixed(1)})`).join('; '));
     L.push('', ...this.verdict(cap));
     return L;
   }

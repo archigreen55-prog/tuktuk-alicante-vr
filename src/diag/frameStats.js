@@ -4,6 +4,7 @@ const WINDOW = 300;        // frames in the live statistics (~5 s at 60 FPS)
 const BUCKET_MS = 5000;    // graph step
 const BUCKETS = 120;       // 10 minutes
 const LONG_MS = 33.4;      // a frame longer than this is "a hitch" at a 60 FPS target
+const SLOW_MS = 25;        // frames longer than this get a breakdown in the bench report
 
 const mean = (a) => a.reduce((s, v) => s + v, 0) / (a.length || 1);
 
@@ -30,7 +31,7 @@ export class FrameStats {
     this.ring = new Float32Array(WINDOW);
     this.count = 0;           // frames recorded in total
     this.last = 0;            // timestamp of the previous recorded frame (0 = none)
-    this.extra = { calls: 0, tris: 0, cpuMs: 0, gpuMs: null };
+    this.extra = { calls: 0, tris: 0, cpuMs: 0, gpuMs: null, renderMs: 0, dashMs: 0 };
     this.history = [];        // [{ fps, low }] per 5 s bucket, oldest first
     this.bucket = { t: 0, frames: 0, worst: 0 };
     this.segment = null;
@@ -73,7 +74,11 @@ export class FrameStats {
       this.bucket = { t: 0, frames: 0, worst: 0 };
     }
     const s = this.segment;
-    if (s) { s.times.push(dt); s.calls.push(e.calls); s.tris.push(e.tris); s.cpu.push(e.cpuMs); if (e.gpuMs != null) s.gpu.push(e.gpuMs); }
+    if (s) {
+      s.times.push(dt); s.calls.push(e.calls); s.tris.push(e.tris); s.cpu.push(e.cpuMs); if (e.gpuMs != null) s.gpu.push(e.gpuMs);
+      // what did a slow frame look like from the inside? (JS total / submitting the draw calls / the panel part), the first 20
+      if (dt > SLOW_MS && s.slow.length < 20) s.slow.push({ dt, cpu: e.cpuMs, render: e.renderMs || 0, dash: e.dashMs || 0, at: s.times.length });
+    }
   }
 
   // live statistics over the last ~300 frames
@@ -83,11 +88,11 @@ export class FrameStats {
   }
 
   // measuring segment (bench): start, then stop() returns the summary of the frames in between
-  startSegment() { this.segment = { times: [], calls: [], tris: [], cpu: [], gpu: [] }; }
+  startSegment() { this.segment = { times: [], calls: [], tris: [], cpu: [], gpu: [], slow: [] }; }
   stopSegment() {
     const s = this.segment;
     this.segment = null;
     if (!s) return null;
-    return { ...summarize(s.times), calls: mean(s.calls), tris: mean(s.tris), cpuMs: mean(s.cpu), gpuMs: s.gpu.length ? mean(s.gpu) : null };
+    return { ...summarize(s.times), calls: mean(s.calls), tris: mean(s.tris), cpuMs: mean(s.cpu), cpuMax: s.cpu.reduce((m, v) => Math.max(m, v), 0), gpuMs: s.gpu.length ? mean(s.gpu) : null, slow: s.slow };
   }
 }

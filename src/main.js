@@ -30,6 +30,10 @@ import { FrameStats } from './diag/frameStats.js';
 import { Bench, buildStations } from './diag/bench.js';
 import { buildReport } from './diag/report.js';
 import { createDiagUI } from './diag/ui.js';
+import { TouchControls } from './input/touchControls.js';
+import { verticalFov } from './input/touchMath.js';
+import { createPhoneUi } from './ui/phoneUi.js';
+import { screenReport } from './ui/screenMode.js';
 
 const DT = 1 / 72;                 // fixed physics step
 const EYE_HEIGHT = 1.42;           // eye height above the cab floor (desktop camera, VR recentre target)
@@ -88,12 +92,20 @@ const sun = new THREE.DirectionalLight(0xfff0d8, 2.4);
 sun.position.set(-0.45, 0.8, 0.4).multiplyScalar(100); // Mediterranean sun from the south-west
 scene.add(sun);
 
+// the phone has a wide screen (20:9): the field of view is set HORIZONTALLY (100 deg by default), the vertical one follows
+function applyFov() {
+  if (!IS_PHONE || renderer.xr.isPresenting) return;
+  camera.fov = verticalFov(loadSetting('phone.fov', 100), camera.aspect);
+  camera.updateProjectionMatrix();
+}
 addEventListener('resize', () => {
   if (renderer.xr.isPresenting) return;
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
+  applyFov();
   renderer.setSize(innerWidth, innerHeight);
 });
+applyFov();
 
 // ---------- textures (drawn by code) ----------
 const ANISOTROPY = Math.min(8, renderer.capabilities.getMaxAnisotropy());
@@ -150,7 +162,8 @@ if (city.tour) for (const pl of Object.values(city.tour.places)) pl.credit = [cr
 status(`Будую ${city.buildings.length} будинків…`);
 await new Promise((r) => setTimeout(r, 0));
 const t0 = performance.now();
-const { group: cityGroup, stats: cityStats } = buildCity(city, { texMode, tiles, sky: SKY, photos, cuts: models && models.cuts, terrain });
+// ?mask=0: ground drawn under the roads too (the 0.10.2 look), for A/B comparison
+const { group: cityGroup, stats: cityStats } = buildCity(city, { texMode, tiles, sky: SKY, photos, cuts: models && models.cuts, terrain, footprint: !['0', 'off', 'no'].includes(params.get('mask')) });
 scene.add(cityGroup);
 // distance culling of the chunked meshes (buildings, ground): from the castle the whole city is in view
 const cullable = cityGroup.children.filter((m) => /^(buildings|ground) /.test(m.name)).map((m) => ({ m, c: m.geometry.boundingSphere.center, r: m.geometry.boundingSphere.radius }));
@@ -201,6 +214,10 @@ const minimap = new Minimap(city);
 minimap.mesh.position.set(-0.375, 1.134, -0.875);
 minimap.mesh.rotation.x = -0.45;
 tuk.group.add(minimap.mesh);
+// on a phone the interface is HTML (src/ui/phoneUi.js): the 3D panel and minimap are not drawn, which also saves a
+// 768 x 384 canvas upload with mipmap generation several times a second
+const hudIn3D = !IS_PHONE;
+tuk.dashboard.mesh.visible = hudIn3D;
 const marker = new StopMarker(scene);
 const tourists = new Tourists(scene, tuk.group, SEATS, groundY);
 const hud = new DesktopHud(minimap);
@@ -219,12 +236,33 @@ const tc0 = performance.now();
 renderer.compile(scene, camera);
 const compileMs = performance.now() - tc0;
 console.log(`Shaders compiled in ${compileMs.toFixed(0)} ms`);
+// One throw-away draw of everything (frustum culling off, a 1 x 1 px scissor): the GPU buffers and textures of every
+// mesh are uploaded NOW, behind the loading screen, not in the first frame in which the mesh comes into view
+// (that was a hitch of several ms on a phone each time a new chunk of the city appeared).
+const warmStart = performance.now();
+{
+  const saved = [];
+  scene.traverse((o) => { if (o.isMesh || o.isPoints || o.isLine) { saved.push([o, o.frustumCulled]); o.frustumCulled = false; } });
+  renderer.setScissorTest(true); renderer.setScissor(0, 0, 1, 1);
+  try { renderer.render(scene, camera); } catch (e) { console.warn(`warm-up draw: ${e.message}`); }
+  renderer.setScissorTest(false);
+  for (const [o, f] of saved) o.frustumCulled = f;
+}
+const warmMs = performance.now() - warmStart;
+console.log(`Warm-up draw in ${warmMs.toFixed(0)} ms`);
 
 // ---------- input & camera modes ----------
 const keys = new KeyboardInput();
 const xrIn = new XRInput();
 const input = { throttle: 0, brake: 0, steer: 0, handbrake: false, horn: false, nitro: false, reverseDelay: undefined };
 let nitroUses = 0, nitroHeld = false; // nitro bursts already handled, the button's last state
+// phone, mode "За столом" (docs/plan-phone.md): on-screen controls; none in ?bench (the autopilot drives)
+let paused = false, phone = null;
+const touch = IS_PHONE && !benchOn ? new TouchControls({
+  steer: loadSetting('phone.steer', 'buttons'), gas: loadSetting('phone.gas', 'analog'),
+  lookReturn: loadSetting('phone.lookReturn', true) !== false, vibrate: loadSetting('phone.vibrate', true) !== false,
+}) : null;
+const buzz = (ms) => { if (touch) touch.buzz(ms); };
 let camMode = params.get('cam') === 'chase' ? 'chase' : 'cockpit';
 let lookYaw = 0, lookPitch = 0, dragging = false;
 renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -292,6 +330,7 @@ function startTour() {
   tourists.setup(tour.group, tour.groupPos, tour.groupFacing);
   tourists.visible = true;
   lookYaw = 0; lookPitch = 0;
+  if (touch) touch.resetLook();
   return true;
 }
 function setGameMode(mode) {
@@ -343,7 +382,7 @@ const EVENT_NAMES = { brake: 'різке гальмування', emergency: 'е
 // what the dashboard and the desktop HUD show for the tour (null in free ride)
 function tourPanel() {
   if (!tour) return null;
-  const T = tour, st = T.state, btn = inVR ? 'Y' : 'T';
+  const T = tour, st = T.state, btn = inVR ? 'Y' : touch ? null : 'T';
   if (st === 'summary') {
     const r = T.result;
     const ev = Object.entries(r.counts).filter(([, n]) => n > 0).map(([k, n]) => `${EVENT_NAMES[k] || k} ×${n}`).join(', ');
@@ -351,7 +390,7 @@ function tourPanel() {
       mode: 'summary', stars: r.stars, tips: r.tips, time: r.time, target: r.target, onTime: r.onTime,
       events: `Настрій ${r.mood} %${ev ? ': ' + ev : ' — жодної різкої події!'}${r.passCount ? ` · факти на ходу ${r.passes}/${r.passCount}` : ''}`,
       review: r.reviewText, best: r.prevBest ? `Було найкраще: ${bestText(r.prevBest).replace('Найкраще: ', '')}` : 'Перший результат збережено',
-      footer: `${btn} — новий тур`,
+      footer: btn ? `${btn} — новий тур` : 'Новий тур — кнопкою внизу',
     };
   }
   if (T.card && (st === 'photo' || st === 'afterPhoto')) {
@@ -403,6 +442,7 @@ renderer.xr.addEventListener('sessionend', () => {
   camera.scale.set(1, 1, 1);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
+  applyFov();
   renderer.setSize(innerWidth, innerHeight);
   comfort.fade = 0;
   $('overlay').style.display = 'flex';
@@ -466,10 +506,11 @@ function frame(now, xrFrame) {
   frameStats.raf(now);
   if (!inVR) {
     // phone held upright: the game waits (and the measuring clocks stop); frame limiter: skipped frames cost nothing
-    if (rotateGuard && rotateGuard.portrait) { last = now; frameStats.pause(); return; }
+    if ((rotateGuard && rotateGuard.portrait) || paused) { last = now; frameStats.pause(); return; }
     if (!frameCap.allow(now)) return;
   }
   const cpuStart = performance.now();
+  let dashMs = 0;   // time spent on the panel / HUD part of this frame (for the slow-frame report)
   const frameDt = Math.min(0.1, Math.max(0, (now - last) / 1000));
   last = now;
   clock.t += frameDt;
@@ -484,6 +525,7 @@ function frame(now, xrFrame) {
   if (keys.take('KeyK')) cycleTilt();
   input.reverseDelay = undefined;
   keys.read(frameDt, input);
+  if (touch) touch.read(frameDt, input);
 
   if (inVR) {
     if (xrRig.update(xrFrame)) {
@@ -538,7 +580,7 @@ function frame(now, xrFrame) {
   if (phys.nitro.uses > nitroUses) {
     nitroUses = phys.nitro.uses; nitroStarted = true;
     if (!tour) flash(`НІТРО! до ${TUNING.nitroMaxKmh} км/год`, 1.5, '#ff9f43');
-    if (inVR) xrIn.pulse('right', 0.5, 120);
+    if (inVR) xrIn.pulse('right', 0.5, 120); else buzz(70);
   } else if (nitroPress && !phys.nitro.active) {
     if (phys.nitro.charge < 1) flash(`Нітро заряджається: ${Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge)} с`, 1.5, '#9fb3c8');
     else if (phys.forwardSpeed < TUNING.nitroMinSpeed) flash('Нітро — лише коли їдеш уперед', 1.5, '#9fb3c8');
@@ -549,12 +591,12 @@ function frame(now, xrFrame) {
     comfort.flashBlack(0.3);
     resetToRoad();
     flash('Удар! Назад на дорогу', 2.5, '#ff7a5c');
-    if (inVR) xrIn.pulse('both', 1, 160);
+    if (inVR) xrIn.pulse('both', 1, 160); else buzz(140);
   }
   if (inVR && Math.max(impact, verge) > 1.5) {
     xrIn.pulse('both', Math.min(1, impact / 6), 40 + Math.min(80, impact * 15));
     bars.quietUntil = now + 150;
-  }
+  } else if (!inVR && Math.max(impact, verge) > 1.5) buzz(30 + Math.min(70, impact * 10));
 
   // interpolate between the last two physics states for smooth motion at any refresh rate
   const a = acc / DT;
@@ -589,18 +631,21 @@ function frame(now, xrFrame) {
   marker.update(frameDt, zone, tmpV, !!(tour && tour.holdBrake));
   const target = tour ? tour.target : null;
   const h = tuk.group.rotation.y;
-  minimap.mesh.visible = mapOn || inVR;
-  minimap.setRoute(tour ? tour.route : null, tour ? tour.routeVersion : -1);
-  minimap.update(frameDt, x, z, h, phys.forwardSpeed, target);
+  minimap.mesh.visible = hudIn3D && (mapOn || inVR);
+  if (hudIn3D) {
+    minimap.setRoute(tour ? tour.route : null, tour ? tour.routeVersion : -1);
+    minimap.update(frameDt, x, z, h, phys.forwardSpeed, target);
+  }
   const tvx = target ? target.x - x : 0, tvz = target ? target.z - z : 0;
   if (target && Math.hypot(tvx, tvz) > 10 && tour.state !== 'boarding' && tour.state !== 'photo' && tour.state !== 'afterPhoto') {
     const vx = tvx, vz = tvz, dist = Math.hypot(vx, vz);
     const ang = Math.atan2(vx * Math.cos(h) - vz * Math.sin(h), -vx * Math.sin(h) - vz * Math.cos(h));
-    tuk.dashboard.setArrow(ang, Math.abs(ang) > 2.1 ? 0xff9f43 : dist < 50 ? 0x55ee77 : 0xffcc33);
-  } else tuk.dashboard.setArrow(null);
+    if (hudIn3D) tuk.dashboard.setArrow(ang, Math.abs(ang) > 2.1 ? 0xff9f43 : dist < 50 ? 0x55ee77 : 0xffcc33);
+  } else if (hudIn3D) tuk.dashboard.setArrow(null);
   mapTimer -= frameDt;
   if (mapTimer <= 0) { mapTimer = 0.1; hud.drawMap(!inVR && mapOn, x, z, h, target, tour ? tour.route : null); }
 
+  if (touch && touch.visible) { const l = touch.update(frameDt); lookYaw = l.yaw; lookPitch = l.pitch; touch.setSpeed(phys.forwardSpeed * 3.6); }
   if (inVR) {
     // head pose comes from the headset, under xrRig
   } else if (camMode === 'cockpit') {
@@ -620,7 +665,9 @@ function frame(now, xrFrame) {
 
   gpu.poll();
   gpu.begin();
+  const renderStart = performance.now();
   for (let i = 0; i < stress; i++) renderer.render(scene, camera);
+  const renderMs = performance.now() - renderStart;   // CPU time to submit the frame (not the GPU time)
   gpu.end();
   perf.calls = renderer.info.render.calls;
   perf.tris = renderer.info.render.triangles;
@@ -633,6 +680,7 @@ function frame(now, xrFrame) {
   flashT -= frameDt;
   dashTimer -= frameDt;
   if (dashTimer <= 0) {
+    const dashStart = performance.now();
     dashTimer = 0.2;
     let msg = '', msgColor;
     if (flashT > 0) { msg = flashText; msgColor = flashColor; }
@@ -643,13 +691,16 @@ function frame(now, xrFrame) {
     const gpuMs = gpu.take(), cpuMs = cpu.n ? (cpu.ms = cpu.sum / cpu.n, cpu.sum = cpu.n = 0, cpu.ms) : cpu.ms;
     if (gpuMs != null) gpuLatest = gpuMs;
     const panel = tourPanel();
-    tuk.dashboard.draw({
+    if (hudIn3D) tuk.dashboard.draw({
       speed: phys.forwardSpeed, msg, msgColor, tour: panel,
       nitro: { state: phys.nitro.active ? 'active' : phys.nitro.charge < 1 ? 'charge' : 'ready', level: phys.nitro.active ? 1 - phys.nitro.t / TUNING.nitroTime : phys.nitro.charge, left: Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge) },
       stats: showStats ? { fps: Math.round(perf.fps), calls: perf.calls, tris: perf.tris, hz: session && session.frameRate ? Math.round(session.frameRate) : 0,
         gpuMs: gpuMs == null ? null : Math.round(gpuMs * 10) / 10, cpuMs: cpuMs == null ? null : Math.round(cpuMs * 10) / 10, stress } : null,
     });
     hud.update(!inVR, panel);
+    if (phone) phone.update({ msg, msgColor, panel });
+    if (touch) touch.setNitro({ state: phys.nitro.active ? 'active' : phys.nitro.charge < 1 ? 'charge' : 'ready', level: phys.nitro.active ? 1 - phys.nitro.t / TUNING.nitroTime : phys.nitro.charge, left: Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge) });
+    dashMs = performance.now() - dashStart;
     debugEl.style.display = showStats && !inVR ? 'block' : 'none';
     if (showStats) {
       debugEl.textContent = `${perf.fps.toFixed(0)} FPS\ncalls ${perf.calls}  tris ${perf.tris}\n` +
@@ -659,7 +710,7 @@ function frame(now, xrFrame) {
   keys.endFrame();
   const frameMs = performance.now() - cpuStart;
   cpu.sum += frameMs; cpu.n++;
-  frameStats.frame(now, { calls: perf.calls, tris: perf.tris, cpuMs: frameMs, gpuMs: gpuLatest });
+  frameStats.frame(now, { calls: perf.calls, tris: perf.tris, cpuMs: frameMs, gpuMs: gpuLatest, renderMs, dashMs });
 }
 const loadedAt = performance.now();   // since the navigation start: how long the whole loading took
 renderer.setAnimationLoop(frame);
@@ -667,11 +718,11 @@ renderer.setAnimationLoop(frame);
 // ---------- start overlay ----------
 const startBtn = $('start');
 startBtn.disabled = false;
-startBtn.textContent = 'Грати (клавіатура)';
+startBtn.textContent = IS_PHONE ? 'Грати' : 'Грати (клавіатура)';
 status(`${city.buildings.length} будинків · ${city.roads.length} вулиць · зібрано за ${buildMs.toFixed(0)} мс${tiles ? ` · ${tiles.preview.facade.length + tiles.preview.ground.length + 1} плиток за ${tiles.ms.toFixed(0)} мс` : ' · без текстур'}${photos ? ` · ${photos.stats.photos} фото фасадів за ${photos.stats.ms} мс` : ''}${models ? ` · ${models.stats.models} 3D-модел${models.stats.models === 1 ? 'ь' : 'і'} за ${models.stats.ms} мс` : ''}`);
-const start = () => { horn.unlock(); $('overlay').style.display = 'none'; renderer.domElement.focus(); };
+// full screen and the landscape lock must be requested inside the tap itself (phone: phone.onStart)
+const start = (e) => { horn.unlock(); if (phone) phone.onStart({ gesture: !!(e && e.isTrusted) }); $('overlay').style.display = 'none'; renderer.domElement.focus(); };
 startBtn.addEventListener('click', start);
-if (params.has('autostart')) start();
 
 const vrButton = VRButton.createButton(renderer);
 vrButton.id = 'vrbutton';
@@ -723,6 +774,8 @@ const reportCtx = {
       'побудова міста': JSON.stringify(cityStats).slice(0, 400),
       'позиція': `x ${phys.x.toFixed(0)}, z ${phys.z.toFixed(0)}, висота ${phys.y.toFixed(1)} м, швидкість ${(phys.forwardSpeed * 3.6).toFixed(0)} км/год`,
       'відсікання / туман': `${CULL_DIST} м / 300–1150 м`,
+      'підігрів і маска': `warm-up ${warmMs.toFixed(0)} мс; маска слідів: ${cityStats.footMs != null ? cityStats.footMs + ' мс, ' + cityStats.footRoads + ' доріг' : 'вимкнена'}; 3D-панель кабіни: ${hudIn3D ? 'так' : 'ні (HTML-інтерфейс)'}`,
+      ...screenReport(),
     },
   }),
 };
@@ -743,8 +796,9 @@ function benchUrl() {
   return u.href;
 }
 if (IS_PHONE || benchOn || params.has('diag')) {
-  diagUI = createDiagUI({ stats: frameStats, cap: capFps, visible: IS_PHONE || benchOn, getReport: () => buildReport(reportCtx), onBench: () => (benchOn ? runBench() : (location.href = benchUrl())) });
+  diagUI = createDiagUI({ stats: frameStats, cap: capFps, visible: benchOn || (IS_PHONE && !touch), side: touch ? 'right' : 'left', getReport: () => buildReport(reportCtx), onBench: () => (benchOn ? runBench() : (location.href = benchUrl())) });
   setInterval(() => { if (bench) diagUI.setProgress(bench.status()); }, 250);
+  if (touch) diagUI.setVisible(false);   // the phone start screen is crowded: the FPS button appears when the game starts
   if (benchOn) {
     $('overlay').style.display = 'none';
     if (benchStations.length < 3) diagUI.open();
@@ -752,5 +806,30 @@ if (IS_PHONE || benchOn || params.has('diag')) {
   }
 }
 
+// ---------- phone interface (docs/plan-phone.md, stage F1) ----------
+if (touch) {
+  phone = createPhoneUi({
+    touch,
+    api: {
+      setPaused: (p) => { paused = p; if (!p) last = performance.now(); },
+      resetToRoad: () => { resetToRoad(); flash('Повернулись на дорогу', 2); },
+      restartTour: () => { if (gameMode !== 'tour') setGameMode('tour'); else startTour(); },
+      newTour: () => tourButton(),
+      freeRide: () => setGameMode('free'),
+      hasTour: () => !!tour, hasTourSpec: () => !!(tourSpec && graph),
+      cycleTilt, tiltLabel: () => tilt.label,
+      toggleCamera: () => { setCamMode(camMode === 'cockpit' ? 'chase' : 'cockpit'); chaseInit = false; },
+      camLabel: () => (camMode === 'cockpit' ? 'кабіна' : 'ззаду'),
+      toggleMap: () => { mapOn = !mapOn; saveSetting('minimap', mapOn); },
+      mapOn: () => mapOn,
+      openDiagnostics: () => { if (diagUI) diagUI.open(); },
+      applyFov, version: VERSION, onStarted: () => { if (diagUI) diagUI.setVisible(true); },
+      credit: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · рельєф © IGN (CNIG) · фото фасадів: <a href="assets/facades/CREDITS.md" target="_blank" rel="noopener">Wikimedia Commons</a> · 3D-скани: <a href="assets/models/CREDITS.md" target="_blank" rel="noopener">Sketchfab</a>',
+    },
+  });
+  phone.adaptStartScreen();
+}
+if (params.has('autostart')) start();   // after the phone interface exists (it hides the start screen's parts)
+
 // test / debugging hook
-window.__game = { frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
