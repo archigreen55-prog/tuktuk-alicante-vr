@@ -224,6 +224,28 @@ Files: `src/input/touchControls.js`, `touchMath.js`, `src/ui/phoneUi.js`, `scree
   direction arrows, the way to the next target (orange) and the named places (names from 0.4 px/m). **N** now toggles
   the corner minimap (was M). Code: `src/ui/fullMap.js`; nothing runs while it is closed.
 
+## Crazy Tuk: the arcade mode (0.12.0, stages A0-A1 of [docs/plan-arcade.md](docs/plan-arcade.md))
+
+The second game mode on the start screen (phone first, PC too; not in VR). A run through the gates of a tour at
+60-150 km/h, no stops: the tips come from the speed, every gate (a tour place) banks what is "at stake", a wall hit
+burns 30 % of the stake, the clock counts down and every gate adds time. Report: [docs/report-arcade-a1.md](docs/report-arcade-a1.md).
+
+- **Physics profile** `ARCADE` in `src/vehicle/physics.js` (the real tuk-tuk's `TUNING` is untouched): 120 km/h,
+  150 with the nitro (a tank: burns 25 %/s, refills 3 %/s and at the gates), a motor that ignores the slope tables,
+  brakes of 12 m/s², a turn rate bounded by 30 m/s² sideways and a 7.5 m radius, a stronger drift on the handbrake,
+  a rebound instead of a crash reset, a 120 m soft edge.
+- **The run** (`src/game/arcade.js`, no three.js): gates by the closest approach (exact ≤ 3 m, good ≤ 8, ok ≤ 20),
+  fares every 20 m at speed, stake / pocket, the clock (35 % of par at the start, the rest spread over the gates ×
+  1.3 / 1.0 / 0.6), stuck → back onto the road −3 s. Par times come from `data/arcade-par.json`.
+- **Simulation** `node tools/sim-arcade.mjs [tour] [beginner|normal|pro]`: three autopilots on the same physics,
+  the corners of the planned route with the largest arc that fits between the walls (→ the top speed per corner),
+  the par (`--write` stores it). `PROFILE=arcade node tools/test-collisions.mjs`: throws at walls up to 170 km/h.
+- **Game:** `?mode=arcade`; automatic throttle (60+ km/h unless braking; "газ вручну" on the start screen), chase
+  camera that moves back and widens with the speed, clock / tips / gate line on top, the landmark card (name + one
+  line from `data/arcade-facts.json`, uk/en/es, ≤ 70 characters) 6 s before a gate, a summary with the record
+  (localStorage), "Ще раз", "Справжній тур" and "Забронювати" (WhatsApp, number in `src/config.js`), synthesized
+  wind / nitro / hit sounds (`src/audio/arcadeSound.js`). T: run again (twice).
+
 ## Run locally
 
 Any static server works, e.g.

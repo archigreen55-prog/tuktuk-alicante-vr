@@ -7,7 +7,11 @@ import { buildTiles, showTilesPage } from './city/tiles.js';
 import { loadPhotoFacades, creditLine } from './city/landmarks.js';
 import { loadModels, modelCreditLine } from './city/models.js';
 import { CollisionWorld } from './vehicle/collision.js';
-import { TukTukPhysics, TUNING } from './vehicle/physics.js';
+import { TukTukPhysics, TUNING, ARCADE } from './vehicle/physics.js';
+import { Arcade } from './game/arcade.js';
+import { ArcadeSound } from './audio/arcadeSound.js';
+import { createArcadeHud } from './ui/arcadeHud.js';
+import { bookingLink } from './config.js';
 import { createTukTuk, SEATS } from './vehicle/tuktuk.js';
 import { Horn, shout } from './vehicle/horn.js';
 import { KeyboardInput } from './input/keyboard.js';
@@ -145,6 +149,10 @@ try {
   if (tourSpec && (!Array.isArray(tourSpec.tours) || !tourSpec.places)) { tourError = 'data/tour.json: немає "tours" або "places"'; tourSpec = null; }
 } catch (e) { tourError = `data/tour.json не завантажився: ${e.message}`; }
 if (!city.tour) tourError = tourError || 'city.json без даних туру (node tools/build-city.mjs)';
+// Crazy Tuk: the one-line facts (edited by hand) and the par times (tools/sim-arcade.mjs --write); both optional
+let arcadeFacts = null, arcadePar = {};
+try { arcadeFacts = await (await fetch(`data/arcade-facts.json?t=${Date.now()}`, { cache: 'no-store' })).json(); } catch (e) { console.warn(`data/arcade-facts.json: ${e.message}`); }
+try { arcadePar = await (await fetch(`data/arcade-par.json?v=${VERSION}`)).json(); } catch (e) { console.warn(`data/arcade-par.json: ${e.message}`); }
 if (tourError) console.warn(tourError);
 // terrain heights (data/terrain.bin, IGN MDT05): the ground, the roads and the physics read one grid
 let terrain = null;
@@ -241,10 +249,15 @@ const marker = new StopMarker(scene);
 const tourists = new Tourists(scene, tuk.group, SEATS, groundY);
 const hud = new DesktopHud(minimap);
 let mapOn = loadSetting('minimap', true) !== false;
-let gameMode = benchOn ? 'free' : params.get('mode') === 'free' || params.get('mode') === 'tour' ? params.get('mode') : loadSetting('mode', 'tour');
+let gameMode = benchOn ? 'free' : ['free', 'tour', 'arcade'].includes(params.get('mode')) ? params.get('mode') : loadSetting('mode', 'tour');
 let tourId = params.get('tour') || loadSetting('tourId', 'short');
 if (tourSpec && !tourSpec.tours.some((t) => t.id === tourId)) tourId = tourSpec.tours[0]?.id;
 let tour = null, freeConfirm = -1e9;
+// Crazy Tuk (docs/plan-arcade.md): the run, its countdown before the start, the sounds and the HTML interface
+let run = null, runCountdown = 0, runRestartAt = -1e9;
+const arcadeSound = new ArcadeSound(horn);
+const arcadeHud = createArcadeHud({ onAgain: () => startArcade(), onTour: () => setGameMode('tour'), bookLink: bookingLink('uk'), showSpeed: !IS_PHONE,
+  onBookMissing: () => flash('Номер WhatsApp ще не вписано (src/config.js)', 4, '#ff9f43') });
 const trail = []; let trailLast = null;   // where the tuk-tuk has been during the tour (grey line on the full map)
 
 const buildMs = performance.now() - t0;
@@ -311,7 +324,7 @@ setCamMode(camMode);
 // Nearest road vertex where the tuk-tuk fits (away from the play-area edge); heading along the road.
 function resetToRoad() {
   let best = null, bestD = Infinity;
-  const edge = TUNING.edgeZone + 5;
+  const edge = phys.T.edgeZone + 5;
   for (const r of city.roads) {
     if (r.k === 'pedestrian' && r.w < 5) continue;
     const p = r.p;
@@ -354,12 +367,70 @@ function startTour() {
   if (touch) touch.resetLook();
   return true;
 }
+// ---------- Crazy Tuk ----------
+const arcadeBestKey = () => `arcade.best.${tourId}`;
+function startArcade() {
+  if (!tourSpec || !graph) { flash(tourError || 'Тур недоступний', 5, '#ff7a5c'); return false; }
+  try { run = new Arcade(tourSpec, city.tour, graph, tourId, { par: arcadePar[tourId] || null, facts: arcadeFacts && arcadeFacts.uk }); } catch (e) {
+    run = null; flash(`Crazy Tuk: ${e.message}`, 6, '#ff7a5c'); console.warn(e); return false;
+  }
+  tour = null; tourists.dispose();
+  phys.T = ARCADE;
+  const back = run.start.back && run.start.back.length ? run.start.back.map(([x, z, heading]) => ({ x, z, heading })) : [{ x: city.start.x, z: city.start.z, heading: city.start.heading }];
+  const spawn = back.find((c) => phys.fits(c.x, c.z, c.heading)) || back[0];
+  phys.teleport(spawn.x, spawn.z, spawn.heading);
+  phys.nitro.charge = 0.5; phys.hit = null;
+  trail.length = 0; trailLast = null;
+  cab.snap = true; chaseInit = false;
+  if (camMode !== 'chase' && !inVR) setCamMode('chase');
+  lookYaw = 0; lookPitch = 0; if (touch) { touch.resetLook(); touch.setAutoGas(!manualGas()); }
+  runCountdown = 3.2;
+  arcadeHud.hideSummary(); arcadeHud.show(true); arcadeHud.setCountdown(3);
+  arcadeSound.setOn(true);
+  updateBestLabel();
+  return true;
+}
+function leaveArcade() {
+  if (!run && phys.T === TUNING) return;
+  run = null; phys.T = TUNING; phys.hit = null; phys.nitro.charge = 1; phys.nitro.active = false;
+  arcadeHud.show(false); arcadeSound.setOn(false);
+  if (touch) touch.setAutoGas(false);
+  if (camMode === 'chase' && !IS_PHONE) setCamMode('cockpit');
+  chaseInit = false; cab.snap = true;
+}
+const manualGas = () => loadSetting('arcade.manualGas', false) === true;
+// what the full-screen map and the trail need from a run, in the tour's shape
+function arcadeAsTour() {
+  if (!run) return null;
+  return { items: run.gates.map((g) => ({ kind: g.finish ? 'finish' : 'stop', place: { id: g.id, p: g.p, title: g.title } })),
+    done: run.results.map((r) => (r === 'missed' ? 'missed' : r ? 'done' : null)), state: run.done ? 'summary' : 'driving',
+    start: run.start, target: run.target, route: run.route, routeVersion: run.routeVersion, next: run.next, spec: tourSpec };
+}
+function handleRunEvents() {
+  for (const ev of run.events) {
+    if (ev.type === 'gate') { arcadeHud.flashGate(ev); arcadeSound.gate(ev.kind); if (ev.kind !== 'missed') buzz(40); }
+    else if (ev.type === 'hit') { arcadeHud.flashText(ev.burnt > 0.5 ? `Удар! −${euro(ev.burnt)}` : 'Удар!'); }
+    else if (ev.type === 'stuck') { resetToRoad(); comfort.flashBlack(0.25); arcadeHud.flashText('Назад на дорогу −3 с'); }
+    else if (ev.type === 'finish') {
+      const r = ev.result, b = loadSetting(arcadeBestKey(), null);
+      const isRecord = !b || r.tips > b.tips;
+      if (isRecord) saveSetting(arcadeBestKey(), { tips: r.tips, stars: r.stars, time: Math.round(r.time) });
+      updateBestLabel();
+      arcadeHud.summary(r, { gates: run.gates.map((g, i) => ({ title: g.title, text: g.short, kind: run.results[i] })), best: b, isRecord, tourTitle: run.def.title || tourId });
+      if (window.__onArcadeFinish) window.__onArcadeFinish(r);
+    }
+  }
+  run.events = [];
+}
+
 function setGameMode(mode) {
   gameMode = mode;
   saveSetting('mode', mode);
   $('mode').value = mode;
-  if (mode === 'tour') { if (inVR) comfort.fadeIn(0.35); startTour(); }
+  if (mode === 'arcade') { if (!startArcade()) { gameMode = 'free'; $('mode').value = 'free'; } }
+  else if (mode === 'tour') { leaveArcade(); if (inVR) comfort.fadeIn(0.35); startTour(); }
   else {
+    leaveArcade();
     tour = null; tourists.dispose();
     phys.teleport(city.start.x, city.start.z, city.start.heading);
     if (!phys.fits(phys.x, phys.z, phys.heading)) resetToRoad();
@@ -368,6 +439,11 @@ function setGameMode(mode) {
 }
 // Y (VR) / T: new tour after the summary; restart / start from free ride needs a second press
 function tourButton() {
+  if (run) {   // T / the menu in Crazy Tuk: once more (a second press within 2 s while the run is on)
+    if (run.done || clock.t - runRestartAt < 2) startArcade();
+    else { runRestartAt = clock.t; flash('Натисни ще раз — забіг заново', 2); }
+    return;
+  }
   if (!tour) {
     if (clock.t - freeConfirm < 2) setGameMode('tour');
     else { freeConfirm = clock.t; flash('Натисни ще раз — почати тур', 2); }
@@ -397,7 +473,11 @@ function saveBest(r) {
   updateBestLabel();
 }
 function bestText(b) { return b ? `Найкраще: ${'★'.repeat(b.stars)}${'☆'.repeat(5 - b.stars)} · ${euro(b.tips)} · ${fmtClock(b.time)}` : ''; }
-function updateBestLabel() { const el = $('best'); if (el) el.textContent = gameMode === 'tour' ? bestText(loadSetting(bestKey(), null)) : ''; }
+function updateBestLabel() {
+  const el = $('best'); if (!el) return;
+  if (gameMode === 'arcade') { const b = loadSetting(arcadeBestKey(), null); el.textContent = b ? `Рекорд Crazy Tuk: ${euro(b.tips)} · ${'★'.repeat(b.stars)}${'☆'.repeat(5 - b.stars)} · ${fmtClock(b.time)}` : 'Crazy Tuk: рекорду ще немає'; }
+  else el.textContent = gameMode === 'tour' ? bestText(loadSetting(bestKey(), null)) : '';
+}
 const fmtDist = (d) => (d < 1000 ? `${Math.round(d / 10) * 10} м` : `${(d / 1000).toFixed(1)} км`);
 const EVENT_NAMES = { brake: 'різке гальмування', emergency: 'екстрене гальмування', turn: 'швидкий поворот', danger: 'небезпечний поворот', touch: 'дотик до стіни', hit: 'удар', hitHard: 'сильний удар', scrape: 'шкрябання', nearPeople: 'швидко біля людей', reset: 'повернення на дорогу', leftEarly: 'поїхав під час фото' };
 // what the dashboard and the desktop HUD show for the tour (null in free ride)
@@ -434,6 +514,7 @@ let inVR = false, firstRecenter = false, vrStart = 0, autoHzDone = false;
 const fpsWindow = { frames: 0, since: 0 }; // 3 s window for the automatic 72 Hz fallback
 renderer.xr.addEventListener('sessionstart', () => {
   inVR = true;
+  if (run) setGameMode('tour');   // Crazy Tuk is a screen mode; VR stays the real tour
   firstRecenter = true;
   setCamMode('cockpit');
   xrRig.group.add(camera);
@@ -484,7 +565,7 @@ if (stress > 1) showStats = tuk.dashboard.showFps = true;
 let acc = 0, last = performance.now(), mapTimer = 0, gpuLatest = null;
 // the full-screen map: opened by a tap / click on the minimap (or M); the game stands still while it is open
 const fullMap = createFullMap({
-  city, graph, getTour: () => tour, getTrail: () => (tour ? trail : null),
+  city, graph, getTour: () => tour || arcadeAsTour(), getTrail: () => (tour || run ? trail : null),
   getTuk: () => ({ x: phys.x, z: phys.z, heading: phys.heading }),
   setPaused: (p) => { paused = p; if (p && touch) touch.releaseAll(); if (!p) last = performance.now(); },
   canOpen: () => !renderer.xr.isPresenting && !(rotateGuard && rotateGuard.portrait),
@@ -589,6 +670,14 @@ function frame(now, xrFrame) {
   tuk.setPedal(pedal);
   horn.set(input.horn);
   if (window.__autopilot) window.__autopilot(input, phys, clock.t);
+  if (run) {
+    // Crazy Tuk: the throttle is automatic (the tuk-tuk keeps 60+ km/h unless braking), the countdown holds it still,
+    // after the finish it rolls out on the brake
+    if (runCountdown > 0) { runCountdown -= frameDt; arcadeHud.setCountdown(Math.ceil(runCountdown - 0.2)); if (runCountdown <= 0) { arcadeHud.setCountdown(null); run.begin(phys.x, phys.z); } }
+    if (run.state === 'ready') { input.throttle = 0; input.brake = 1; input.nitro = false; input.reverseDelay = Infinity; }
+    else if (run.done) { input.throttle = 0; input.brake = 0.6; input.nitro = false; input.reverseDelay = Infinity; }
+    else if (!manualGas()) input.throttle = input.brake > 0 ? 0 : 1;
+  }
   // tour: while boarding / taking photos, holding the brake keeps the tuk-tuk still (no reversing)
   if (tour && tour.holdBrake) input.reverseDelay = Infinity;
 
@@ -608,9 +697,9 @@ function frame(now, xrFrame) {
   let nitroStarted = false;
   if (phys.nitro.uses > nitroUses) {
     nitroUses = phys.nitro.uses; nitroStarted = true;
-    if (!tour) flash(`НІТРО! до ${TUNING.nitroMaxKmh} км/год`, 1.5, '#ff9f43');
+    if (!tour && !run) flash(`НІТРО! до ${TUNING.nitroMaxKmh} км/год`, 1.5, '#ff9f43');
     if (inVR) xrIn.pulse('right', 0.5, 120); else buzz(70);
-  } else if (nitroPress && !phys.nitro.active) {
+  } else if (nitroPress && !phys.nitro.active && !run) {
     if (phys.nitro.charge < 1) flash(`Нітро заряджається: ${Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge)} с`, 1.5, '#9fb3c8');
     else if (phys.forwardSpeed < TUNING.nitroMinSpeed) flash('Нітро — лише коли їдеш уперед', 1.5, '#9fb3c8');
   }
@@ -645,6 +734,14 @@ function frame(now, xrFrame) {
   tuk.group.rotation.set(cab.pitch, phys.prev.heading + dh * a, -cab.roll, 'YXZ');
   tuk.group.updateMatrixWorld();
 
+  // ---------- Crazy Tuk ----------
+  if (run) {
+    if (phys.hit) { arcadeSound.hit(phys.hit.into); buzz(60 + Math.min(120, phys.hit.into * 12)); phys.hit = null; }
+    if (run.nitroBonus) { phys.nitro.charge = Math.min(1, phys.nitro.charge + run.nitroBonus); run.nitroBonus = 0; }
+    run.update({ dt: frameDt, x: phys.x, z: phys.z, speed: phys.forwardSpeed, impact, contact: phys.contactTimer > 0, blocked: verge > 0, nitroActive: phys.nitro.active });
+    handleRunEvents();
+    arcadeSound.update(phys.forwardSpeed * 3.6, phys.nitro.active);
+  }
   // ---------- tour ----------
   if (tour) {
     tour.update({ dt: frameDt, x: phys.x, z: phys.z, speed: phys.forwardSpeed, accel: phys.accel, yawRate: phys.yawRate,
@@ -658,27 +755,29 @@ function frame(now, xrFrame) {
   const zone = tour ? tour.zone : null;
   if (zone) zone.y = groundY(zone.x, zone.z);
   marker.update(frameDt, zone, tmpV, !!(tour && tour.holdBrake));
-  const target = tour ? tour.target : null;
+  const target = tour ? tour.target : run ? run.target : null;
   const h = tuk.group.rotation.y;
+  const routeNow = tour ? tour.route : run ? run.route : null, routeV = tour ? tour.routeVersion : run ? run.routeVersion : -1;
   minimap.mesh.visible = hudIn3D && (mapOn || inVR);
   if (hudIn3D) {
-    minimap.setRoute(tour ? tour.route : null, tour ? tour.routeVersion : -1);
+    minimap.setRoute(routeNow, routeV);
     minimap.update(frameDt, x, z, h, phys.forwardSpeed, target);
   }
   const tvx = target ? target.x - x : 0, tvz = target ? target.z - z : 0;
-  if (target && Math.hypot(tvx, tvz) > 10 && tour.state !== 'boarding' && tour.state !== 'photo' && tour.state !== 'afterPhoto') {
+  if (target && Math.hypot(tvx, tvz) > 10 && (!tour || (tour.state !== 'boarding' && tour.state !== 'photo' && tour.state !== 'afterPhoto'))) {
     const vx = tvx, vz = tvz, dist = Math.hypot(vx, vz);
     const ang = Math.atan2(vx * Math.cos(h) - vz * Math.sin(h), -vx * Math.sin(h) - vz * Math.cos(h));
     if (hudIn3D) tuk.dashboard.setArrow(ang, Math.abs(ang) > 2.1 ? 0xff9f43 : dist < 50 ? 0x55ee77 : 0xffcc33);
   } else if (hudIn3D) tuk.dashboard.setArrow(null);
-  if (tour && !inVR && tour.state !== 'summary') {
+  if (((tour && tour.state !== 'summary') || (run && !run.done)) && !inVR) {
     if (!trailLast || Math.hypot(x - trailLast[0], z - trailLast[1]) > 6) {
       trailLast = [x, z]; trail.push(trailLast);
       if (trail.length > 4000) trail.splice(0, 1000);
     }
   }
   mapTimer -= frameDt;
-  if (mapTimer <= 0) { mapTimer = 0.1; hud.drawMap(!inVR && mapOn, x, z, h, target, tour ? tour.route : null); }
+  if (run && !hudIn3D) minimap.radius += (150 + 250 * Math.max(0, Math.min(1, (phys.forwardSpeed - 16.7) / 25)) - minimap.radius) * (1 - Math.exp(-frameDt / 0.8));   // the phone map grows with the speed
+  if (mapTimer <= 0) { mapTimer = 0.1; hud.drawMap(!inVR && mapOn, x, z, h, target, routeNow); }
 
   if (touch && touch.visible) { const l = touch.update(frameDt); lookYaw = l.yaw; lookPitch = l.pitch; touch.setSpeed(phys.forwardSpeed * 3.6); }
   if (inVR) {
@@ -688,13 +787,30 @@ function frame(now, xrFrame) {
   } else if (camMode === 'chase') {
     const h = tuk.group.rotation.y;
     const gy = groundY(x, z);
-    tmpV.set(Math.sin(h) * 7 + x, gy + 3.2, Math.cos(h) * 7 + z);
-    tmpV.y = Math.max(tmpV.y, groundY(tmpV.x, tmpV.z) + 1.5);
-    if (!chaseInit) { chasePos.copy(tmpV); chaseInit = true; }
-    chasePos.lerp(tmpV, 1 - Math.exp(-frameDt * 4));
-    camera.position.copy(chasePos);
-    chaseLook.set(x, gy + 1.2, z);
-    camera.lookAt(chaseLook);
+    if (run) {
+      // Crazy Tuk: farther and lower with the speed, a wider view, the look ahead along the motion (docs/plan-arcade.md 2.4)
+      const k = Math.max(0, Math.min(1, (phys.forwardSpeed - 16.7) / 25));
+      const dist = 6 + 3 * k, height = 2.8 - 0.6 * k;
+      const sp = Math.hypot(phys.vx, phys.vz), ux = sp > 1 ? phys.vx / sp : -Math.sin(h), uz = sp > 1 ? phys.vz / sp : -Math.cos(h);
+      tmpV.set(x - ux * dist, gy + height, z - uz * dist);
+      tmpV.y = Math.max(tmpV.y, groundY(tmpV.x, tmpV.z) + 1.5);
+      if (!chaseInit) { chasePos.copy(tmpV); chaseInit = true; }
+      chasePos.lerp(tmpV, 1 - Math.exp(-frameDt * 6));
+      camera.position.copy(chasePos);
+      chaseLook.set(x + ux * (2 + 4 * k), gy + 1.0, z + uz * (2 + 4 * k));
+      camera.lookAt(chaseLook);
+      const fovH = (IS_PHONE ? 100 : 95) + 15 * k;
+      const fovV = verticalFov(fovH, camera.aspect);
+      if (Math.abs(camera.fov - fovV) > 0.05) { camera.fov = fovV; camera.updateProjectionMatrix(); }
+    } else {
+      tmpV.set(Math.sin(h) * 7 + x, gy + 3.2, Math.cos(h) * 7 + z);
+      tmpV.y = Math.max(tmpV.y, groundY(tmpV.x, tmpV.z) + 1.5);
+      if (!chaseInit) { chasePos.copy(tmpV); chaseInit = true; }
+      chasePos.lerp(tmpV, 1 - Math.exp(-frameDt * 4));
+      camera.position.copy(chasePos);
+      chaseLook.set(x, gy + 1.2, z);
+      camera.lookAt(chaseLook);
+    }
   }
   comfort.update(frameDt, phys, Math.max(impact, verge), (inVR || vignetteOnDesktop) && camMode === 'cockpit', cab.pitchRate, phys.nitro.active);
 
@@ -734,7 +850,13 @@ function frame(now, xrFrame) {
     });
     hud.update(!inVR, panel);
     if (phone) phone.update({ msg, msgColor, panel });
-    if (touch) touch.setNitro({ state: phys.nitro.active ? 'active' : phys.nitro.charge < 1 ? 'charge' : 'ready', level: phys.nitro.active ? 1 - phys.nitro.t / TUNING.nitroTime : phys.nitro.charge, left: Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge) });
+    if (touch && run) touch.setNitro({ state: phys.nitro.active ? 'active' : phys.nitro.charge > 0.05 ? 'ready' : 'charge', level: phys.nitro.charge, left: Math.round(phys.nitro.charge * 100) });
+    else if (touch) touch.setNitro({ state: phys.nitro.active ? 'active' : phys.nitro.charge < 1 ? 'charge' : 'ready', level: phys.nitro.active ? 1 - phys.nitro.t / TUNING.nitroTime : phys.nitro.charge, left: Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge) });
+    if (run) {
+      const g = run.gate;
+      arcadeHud.update({ timeLeft: run.timeLeft, pocket: run.pocket, stake: run.stake, combo: run.combo, kmh: phys.forwardSpeed * 3.6, card: run.card,
+        gateIndex: run.next, gateCount: run.gates.length, gateTitle: g ? (g.finish ? 'Фініш: ' + g.title : g.title) : '', gateDist: g ? Math.hypot(g.p[0] - phys.x, g.p[1] - phys.z) : null });
+    }
     dashMs = performance.now() - dashStart;
     debugEl.style.display = showStats && !inVR ? 'block' : 'none';
     if (showStats) {
@@ -777,11 +899,17 @@ const modeSel = $('mode'), tourSel = $('tourSel');
 for (const t of tourSpec?.tours || []) tourSel.add(new Option(t.title || t.id, t.id));
 tourSel.value = tourId;
 modeSel.value = gameMode;
-modeSel.addEventListener('change', () => setGameMode(modeSel.value));
+const syncModeUi = () => { vrButton.style.display = gameMode === 'arcade' ? 'none' : ''; $('manualGasRow').style.display = gameMode === 'arcade' ? '' : 'none'; };
+modeSel.addEventListener('change', () => { setGameMode(modeSel.value); syncModeUi(); });
+$('manualGas').checked = manualGas();
+$('manualGas').addEventListener('change', () => { saveSetting('arcade.manualGas', $('manualGas').checked); if (touch && run) touch.setAutoGas(!manualGas()); });
 tourSel.addEventListener('change', () => { tourId = tourSel.value; saveSetting('tourId', tourId); if (gameMode === 'tour') startTour(); updateBestLabel(); });
 if (tourError) { $('tourError').textContent = tourError; $('tourError').style.display = 'block'; }
 if (!tourSpec || !graph) { modeSel.value = 'free'; modeSel.disabled = tourSel.disabled = true; if (gameMode === 'tour') gameMode = 'free'; }
 if (gameMode === 'tour' && !startTour()) gameMode = 'free';
+if (gameMode === 'arcade' && !startArcade()) gameMode = 'free';
+modeSel.value = gameMode;
+syncModeUi();
 updateBestLabel();
 $('vibration').checked = bars.engineVibration;
 $('vibration').addEventListener('change', () => { bars.engineVibration = $('vibration').checked; saveSetting('engineVibration', bars.engineVibration); });
@@ -803,7 +931,7 @@ const reportCtx = {
     version: VERSION,
     info: {
       'інтерфейс': `${UI}${IS_PHONE ? ' (телефон)' : ''}; ?bench ${benchOn ? benchPasses + ' пр.' : 'ні'}`,
-      'режим / камера': `${gameMode} / ${camMode}; нахил кабіни: ${tilt.label}`,
+      'режим / камера': `${gameMode}${run ? ' (Crazy Tuk, ' + run.state + ')' : ''} / ${camMode}; нахил кабіни: ${tilt.label}`,
       'місто': `${city.buildings.length} будинків, ${city.roads.length} вулиць; terrain=${terrainMode ? 'так' : 'ні'} tex=${texMode} photo=${photoMode} model=${modelMode}`,
       'завантаження': `усього ${(loadedAt / 1000).toFixed(1)} с від відкриття; місто ${buildMs.toFixed(0)} мс, шейдери ${compileMs.toFixed(0)} мс${tiles ? `, плитки ${tiles.ms.toFixed(0)} мс (${(tiles.bytes / 1048576).toFixed(1)} МБ)` : ''}`,
       'побудова міста': JSON.stringify(cityStats).slice(0, 400),
@@ -848,10 +976,11 @@ if (touch) {
     api: {
       setPaused: (p) => { paused = p; if (!p) last = performance.now(); },
       resetToRoad: () => { resetToRoad(); flash('Повернулись на дорогу', 2); },
-      restartTour: () => { if (gameMode !== 'tour') setGameMode('tour'); else startTour(); },
+      restartTour: () => { if (run) startArcade(); else if (gameMode !== 'tour') setGameMode('tour'); else startTour(); },
+      startArcade: () => setGameMode('arcade'),
       newTour: () => tourButton(),
       freeRide: () => setGameMode('free'),
-      hasTour: () => !!tour, hasTourSpec: () => !!(tourSpec && graph),
+      hasTour: () => !!tour || !!run, isArcade: () => !!run, hasTourSpec: () => !!(tourSpec && graph),
       cycleTilt, tiltLabel: () => tilt.label,
       toggleCamera: () => { setCamMode(camMode === 'cockpit' ? 'chase' : 'cockpit'); chaseInit = false; },
       camLabel: () => (camMode === 'cockpit' ? 'кабіна' : 'ззаду'),
@@ -868,4 +997,4 @@ if (touch) {
 if (params.has('autostart')) start();   // after the phone interface exists (it hides the start screen's parts)
 
 // test / debugging hook
-window.__game = { fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { get run() { return run; }, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };

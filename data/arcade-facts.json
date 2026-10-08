@@ -1,0 +1,55 @@
+{
+  "_help": [
+    "Crazy Tuk: один рядок про кожну пам'ятку, показується на ходу (≤ 70 символів, docs/plan-arcade.md 3.1).",
+    "Чернетка складена за загальновідомими фактами, бо в tour.json факти ще заглушки — виправ, що не так.",
+    "Ключі — id місць із tour.json; мови uk / en / es. Гра зараз бере uk (мови інтерфейсу — етап А3)."
+  ],
+  "uk": {
+    "melia": "Готель Meliá на молу порту: тут туристи сідають і виходять",
+    "explanada": "Explanada: 6.6 млн мармурових плиток хвилями, 1950-ті",
+    "canalejas": "Парк Canalejas: фікуси-велетні, посаджені в 1886 році",
+    "brujas": "Casa de las Brujas, 1910: модерн «з відьмами» на кутах даху",
+    "university": "Головний корпус університету на Сан-Фернандо, 40",
+    "rambla": "Rambla de Méndez Núñez: головна вулиця старого центру",
+    "townHall": "Ратуша, XVIII ст.: від її сходинки міряють висоту над морем",
+    "santaMaria": "Санта-Марія: найстаріша церква міста, на місці мечеті",
+    "postiguet": "Пляж Postiguet під замком Санта-Барбара, 166 м над морем",
+    "mercado": "Mercado Central, 1921: ринок у стилі модерн, 2 поверхи",
+    "marq": "MARQ — археологічний музей, Європейський музей року 2004",
+    "castle": "Замок Санта-Барбара: ворота, вид на все місто й море",
+    "luceros": "Plaza de los Luceros: фонтан з чотирма кіньми, 1930",
+    "sanFrancisco": "Calle San Francisco: вулиця з величезними грибами"
+  },
+  "en": {
+    "melia": "Hotel Meliá on the harbour pier: tourists board and leave here",
+    "explanada": "Explanada: 6.6 million marble tiles in waves, 1950s",
+    "canalejas": "Canalejas park: giant ficus trees planted in 1886",
+    "brujas": "Casa de las Brujas, 1910: Art Nouveau with 'witches' on the roof",
+    "university": "The university's main building, San Fernando street 40",
+    "rambla": "Rambla de Méndez Núñez: the old centre's main street",
+    "townHall": "Town hall, 18th c.: Spain measures sea level from its step",
+    "santaMaria": "Santa María: the oldest church, built over a mosque",
+    "postiguet": "Postiguet beach under Santa Bárbara castle, 166 m up",
+    "mercado": "Mercado Central, 1921: a two-storey Art Nouveau market",
+    "marq": "MARQ archaeological museum, European Museum of the Year 2004",
+    "castle": "Santa Bárbara castle gate: the whole city and sea below",
+    "luceros": "Plaza de los Luceros: fountain with four horses, 1930",
+    "sanFrancisco": "Calle San Francisco: the street of giant mushrooms"
+  },
+  "es": {
+    "melia": "Hotel Meliá en el muelle: aquí suben y bajan los turistas",
+    "explanada": "Explanada: 6,6 millones de teselas de mármol en olas, años 50",
+    "canalejas": "Parque de Canalejas: ficus gigantes plantados en 1886",
+    "brujas": "Casa de las Brujas, 1910: modernismo con 'brujas' en el tejado",
+    "university": "Edificio principal de la universidad, San Fernando 40",
+    "rambla": "Rambla de Méndez Núñez: la calle principal del centro viejo",
+    "townHall": "Ayuntamiento, s. XVIII: de su escalón se mide el nivel del mar",
+    "santaMaria": "Santa María: la iglesia más antigua, sobre una mezquita",
+    "postiguet": "Playa del Postiguet bajo el castillo, a 166 m de altura",
+    "mercado": "Mercado Central, 1921: mercado modernista de dos plantas",
+    "marq": "MARQ, museo arqueológico, Museo Europeo del Año 2004",
+    "castle": "Puerta del castillo de Santa Bárbara: toda la ciudad abajo",
+    "luceros": "Plaza de los Luceros: fuente con cuatro caballos, 1930",
+    "sanFrancisco": "Calle San Francisco: la calle de las setas gigantes"
+  }
+}

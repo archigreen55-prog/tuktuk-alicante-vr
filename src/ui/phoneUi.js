@@ -57,7 +57,7 @@ html.ui-phone #miniMap { left: max(10px, env(safe-area-inset-left)); top: 62px; 
 const el = (tag, cls, text, parent) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; };
 
 // touch: TouchControls. api: { startGame(), setPaused(bool), resetToRoad(), recenter(), restartTour(), newTour(), freeRide(), hasTour(),
-//   cycleTilt(), tiltLabel(), toggleCamera(), camLabel(), toggleMap(), mapOn(), openMap(), openDiagnostics(), applyFov(), applyRes(), toggleStats?(), version, credit }
+//   startArcade(), isArcade(), cycleTilt(), tiltLabel(), toggleCamera(), camLabel(), toggleMap(), mapOn(), openMap(), openDiagnostics(), applyFov(), applyRes(), toggleStats?(), version, credit }
 export function createPhoneUi({ touch, api }) {
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   const settings = {
@@ -119,7 +119,7 @@ export function createPhoneUi({ touch, api }) {
   const $ = (id) => document.getElementById(id);
   function adaptStartScreen() {
     const card = document.querySelector('#overlay .card'); if (!card) return;
-    const p = card.querySelector('p'); if (p) p.textContent = 'Забери туристів біля готелю Meliá, покажи їм місто й привези назад: плавно, щоб отримати чайові й п\'ять зірок. Керування — кнопками на екрані.';
+    const p = card.querySelector('p'); if (p) p.textContent = 'Два режими: «Справжній тур» — спокійно, із зупинками, фото й фактами, чайові за плавність; «Crazy Tuk» — 60–150 км/год крізь усі точки маршруту, чайові за швидкість. Керування — кнопками на екрані.';
     for (const id of ['steering', 'vignette', 'vibration']) { const l = $(id) && $(id).closest('label'); if (l) l.style.display = 'none'; }
     const tiltLabel = $('tilt') && $('tilt').closest('label'); if (tiltLabel && tiltLabel.firstChild) tiltLabel.firstChild.textContent = 'Нахил кабіни на підйомах';
     const settingsEl = $('settings');
@@ -151,6 +151,7 @@ export function createPhoneUi({ touch, api }) {
   }, left, 'ph-btn danger');
   act('Перецентрувати погляд', () => { touch.resetLook(); closeMenu(); });
   const tourBtn = act('Почати тур заново', () => { api.restartTour(); closeMenu(); });
+  const arcadeBtn = act('Crazy Tuk', () => { api.startArcade(); closeMenu(); });
   act('Вільна їзда', () => { api.freeRide(); closeMenu(); });
   act('Діагностика і звіт', () => { closeMenu(); api.openDiagnostics(); });
   act('На весь екран ⛶', async () => { const r = await toggleFullscreen(); closeMenu(); if (r && !r.ok) flashToast(hintFor(r), 7000); });
@@ -167,7 +168,8 @@ export function createPhoneUi({ touch, api }) {
     if (!ui.started || ui.menuOpen) return;
     ui.menuOpen = true; menu.style.display = 'flex'; touch.releaseAll(); api.setPaused(true);
     camSel.textContent = api.camLabel(); tiltBtn.textContent = api.tiltLabel(); mapBtn.textContent = api.mapOn() ? 'так' : 'ні';
-    tourBtn.style.display = api.hasTourSpec() ? '' : 'none';
+    tourBtn.style.display = api.hasTourSpec() ? '' : 'none'; tourBtn.textContent = api.isArcade && api.isArcade() ? 'Забіг заново' : 'Почати тур заново';
+    arcadeBtn.style.display = api.hasTourSpec() && !(api.isArcade && api.isArcade()) ? '' : 'none';
     defs.forEach((d, i) => { if (!d.check) rowEls[i].value = String(d.get()); else rowEls[i].checked = !!d.get(); });
   }
   scrollHint(menu, () => ui.menuOpen);

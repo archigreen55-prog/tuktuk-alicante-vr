@@ -107,6 +107,8 @@ export class TouchControls {
     this.root.style.setProperty('--k', k.toFixed(3));
     this.rects = null;
   }
+  // Crazy Tuk: the throttle is automatic, the pedal is hidden (brake, handbrake and nitro stay)
+  setAutoGas(on) { this.autoGas = !!on; this.gasEl.style.display = on ? 'none' : ''; if (on) this.gas = 0; }
   setVisible(v) { this.visible = v; this.root.style.display = v ? '' : 'none'; this.look.style.display = v ? '' : 'none'; if (!v) this.releaseAll(); }
 
   // ---------------------------------------------------------------- pointers
@@ -194,7 +196,7 @@ export class TouchControls {
       this.steer = steerRamp(this.steer, this.steerDir, dt);
       if (this.steerDir !== 0 || this.steer !== 0) out.steer = this.steer;
     }
-    out.throttle = Math.max(out.throttle, this.gas);
+    if (!this.autoGas) out.throttle = Math.max(out.throttle, this.gas);
     this.brakeT = this.brakeHeld ? this.brakeT + dt : 0;
     const br = brakeRamp(this.brakeT);
     out.brake = Math.max(out.brake, br);

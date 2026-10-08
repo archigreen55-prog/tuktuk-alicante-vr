@@ -55,24 +55,51 @@ export const TUNING = {
   crashSpeed: 50 / 3.6,   // m/s: a wall hit (normal speed > impactSlow) at a speed above this = a crash (main: fade + reset)
 };
 
+// Crazy Tuk (docs/plan-arcade.md, section 2.1): the same model with a different profile. Flat-out 120 km/h, 150 with
+// the nitro, a strong motor that ignores the slope tables, hard brakes, a turn rate bounded by a lateral acceleration
+// instead of the comfort yaw cap, a stronger drift on the handbrake, a wide soft edge and a rebound instead of a crash.
+export const ARCADE = {
+  ...TUNING,
+  arcade: true,
+  maxForward: 120 / 3.6,
+  engineAccel: 7.0,       // 0 -> 60 km/h in about 3 s
+  powerAccel: 220,        // the motor pulls the castle climb (8-14 %) without losing speed
+  climbSpeed: null, downhillCap: null, regen: 0,   // no slope governors
+  brakeDecel: 12,
+  rolling: 0.3, air: 0.0012,                       // 1.3 m/s² of drag at 120 km/h: the motor still reaches the top speed
+  steerHigh: 0.3,
+  maxYawRate: 110 * Math.PI / 180,
+  latAccelMax: 30,        // m/s² (≈ 3 g, arcade grip): R = v² / 30 -> 9.3 m at 60 km/h, 37 m at 120, 58 m at 150
+  minTurnRadius: 7.5,     // m, the tightest path at low speed
+  gripKeep: 0.86,
+  handbrakeKeep: 0.985, handbrakeDecel: 3.0, handbrakeYaw: 1.5,   // drift: the tail steps out, the speed stays
+  edgeZone: 120, edgeDecel: 8,                     // from 150 km/h the soft edge needs ≥ 110 m
+  scrapeKeep: 0.9985, bounce: 1.15,
+  overspeedFade: 4,
+  crashSpeed: Infinity,   // never a reset by the physics (arcade.js resets a stuck tuk-tuk itself)
+  // nitro as a tank: full = 100 %, burns 25 %/s while held, refills 3 %/s by itself (events add more)
+  nitroTank: true, nitroMaxKmh: 150, nitroAccel: 6.0, nitroDrain: 0.25, nitroPassive: 0.03, nitroMinSpeed: 1,
+};
+
 // max speed on a descent of `grade` (0..): linear between the table rows, none below the first
-export function downhillCap(grade) {
-  const C = TUNING.downhillCap;
-  if (grade <= C[0][0]) return Infinity;
+export function downhillCap(grade, T = TUNING) {
+  const C = T.downhillCap;
+  if (!C || grade <= C[0][0]) return Infinity;
   for (let i = 1; i < C.length; i++) if (grade <= C[i][0]) { const t = (grade - C[i - 1][0]) / (C[i][0] - C[i - 1][0]); return C[i - 1][1] + (C[i][1] - C[i - 1][1]) * t; }
   return C[C.length - 1][1];
 }
 // max speed the motor holds on a climb of `grade` (0..), m/s; none below the first row
-export function climbCap(grade) {
-  const C = TUNING.climbSpeed;
-  if (grade <= C[0][0]) return Infinity;
+export function climbCap(grade, T = TUNING) {
+  const C = T.climbSpeed;
+  if (!C || grade <= C[0][0]) return Infinity;
   for (let i = 1; i < C.length; i++) if (grade <= C[i][0]) { const t = (grade - C[i - 1][0]) / (C[i][0] - C[i - 1][0]); return (C[i - 1][1] + (C[i][1] - C[i - 1][1]) * t) / 3.6; }
   return C[C.length - 1][1] / 3.6;
 }
 
 export class TukTukPhysics {
   // bounds: optional play-area rect {minX, maxX, minZ, maxZ} for the soft edge; terrain: Terrain or null (flat)
-  constructor(world, start, bounds = null, terrain = null) {
+  constructor(world, start, bounds = null, terrain = null, tuning = TUNING) {
+    this.T = tuning;      // TUNING (the real tuk-tuk) or ARCADE (Crazy Tuk, src/vehicle/arcade profile below)
     this.world = world;
     this.bounds = bounds;
     this.terrain = terrain;
@@ -97,7 +124,7 @@ export class TukTukPhysics {
   }
 
   step(dt, input) {
-    const T = TUNING;
+    const T = this.T;
     this.prev.x = this.x; this.prev.z = this.z; this.prev.heading = this.heading;
     const sh = Math.sin(this.heading), ch = Math.cos(this.heading);
     const fx = -sh, fz = -ch, rx = ch, rz = -sh;
@@ -109,13 +136,23 @@ export class TukTukPhysics {
     // --- nitro state (button held = burn, a new press needed after the recharge) ---
     const N = this.nitro, press = !!input.nitro && !N.held;
     N.held = !!input.nitro;
-    if (N.active) {
-      N.t += dt;
-      if (!input.nitro || N.t >= T.nitroTime || vf < T.nitroMinSpeed || this.reversing) { N.active = false; N.charge = 0; }
-    } else if (press && N.charge >= 1 && vf >= T.nitroMinSpeed && !this.reversing && !input.handbrake) {
-      N.active = true; N.t = 0; N.uses++;
+    if (T.nitroTank) {
+      // arcade: a tank 0..1 burnt while the button is held (nitroDrain per s), refilled slowly by itself (nitroPassive
+      // per s) and by the game's events (arcade.js adds to `charge`); no fixed burst length, no cooldown
+      const can = !!input.nitro && N.charge > 0 && vf >= T.nitroMinSpeed && !this.reversing;
+      if (can && !N.active) { N.active = true; N.t = 0; N.uses++; }
+      if (!can) N.active = false;
+      if (N.active) { N.t += dt; N.charge = Math.max(0, N.charge - T.nitroDrain * dt); }
+      else N.charge = Math.min(1, N.charge + T.nitroPassive * dt);
+    } else {
+      if (N.active) {
+        N.t += dt;
+        if (!input.nitro || N.t >= T.nitroTime || vf < T.nitroMinSpeed || this.reversing) { N.active = false; N.charge = 0; }
+      } else if (press && N.charge >= 1 && vf >= T.nitroMinSpeed && !this.reversing && !input.handbrake) {
+        N.active = true; N.t = 0; N.uses++;
+      }
+      if (!N.active && N.charge < 1) N.charge = Math.min(1, N.charge + dt / T.nitroRecharge);
     }
-    if (!N.active && N.charge < 1) N.charge = Math.min(1, N.charge + dt / T.nitroRecharge);
     const nitroTop = T.nitroMaxKmh / 3.6;
 
     // --- longitudinal ---
@@ -139,8 +176,8 @@ export class TukTukPhysics {
     } else {
       // analog throttle (controller trigger) sets a lower top speed; the keyboard's 1 gives the full curve
       const top = T.maxForward * throttle;
-      const cap = this.grade < 0 ? downhillCap(-this.grade) : Infinity; // descents: a governor by grade
-      const climb = this.grade > 0 ? climbCap(this.grade) : Infinity;   // climbs: the motor holds this at most
+      const cap = this.grade < 0 ? downhillCap(-this.grade, T) : Infinity; // descents: a governor by grade
+      const climb = this.grade > 0 ? climbCap(this.grade, T) : Infinity;   // climbs: the motor holds this at most
       const want = Math.min(top, climb);
       if (throttle > 0 && vf < want && vf < cap) {
         const k = Math.max(0, 1 - (vf / top) ** 2);
@@ -178,11 +215,21 @@ export class TukTukPhysics {
     const target = input.steer * maxWheel;
     const dw = target - this.wheel, stepW = T.steerRate * dt;
     this.wheel += Math.abs(dw) < stepW ? dw : Math.sign(dw) * stepW;
-    let yaw = (vf / T.wheelbase) * Math.tan(this.wheel);
-    if (input.handbrake) yaw *= T.handbrakeYaw;
-    // above the normal top speed (nitro) the yaw cap shrinks: the sideways acceleration stays what it is at 40 km/h
-    const yawCap = T.maxYawRate * Math.min(1, T.maxForward / Math.max(1e-3, Math.abs(vf)));
-    yaw = Math.max(-yawCap, Math.min(yawCap, yaw));
+    let yaw;
+    if (T.arcade) {
+      // arcade: the turn rate is proportional to the stick and limited by a lateral acceleration (latAccelMax) and a
+      // smallest path radius (minTurnRadius), so a full stick never saturates in a jerk: at 60 km/h R ≈ 9 m, at 120 ≈ 37 m
+      const av = Math.max(1e-3, Math.abs(vf));
+      const yawCap = Math.min(T.maxYawRate, T.latAccelMax / av, av / T.minTurnRadius);
+      yaw = (maxWheel > 0 ? this.wheel / maxWheel : 0) * yawCap * Math.sign(vf || 1);
+      if (input.handbrake) yaw *= T.handbrakeYaw;
+    } else {
+      yaw = (vf / T.wheelbase) * Math.tan(this.wheel);
+      if (input.handbrake) yaw *= T.handbrakeYaw;
+      // above the normal top speed (nitro) the yaw cap shrinks: the sideways acceleration stays what it is at 40 km/h
+      const yawCap = T.maxYawRate * Math.min(1, T.maxForward / Math.max(1e-3, Math.abs(vf)));
+      yaw = Math.max(-yawCap, Math.min(yawCap, yaw));
+    }
     this.yawRate = yaw;
 
     // velocity stays on the old axes, heading turns: next step's projection yields the slip.
@@ -233,7 +280,7 @@ export class TukTukPhysics {
 
   // Ground height under the centre and the pitch / roll from the wheel points
   sampleGround(fx, fz, rx, rz) {
-    const T = TUNING, G = this.terrain;
+    const T = this.T, G = this.terrain;
     if (!G) { this.y = 0; this.pitch = 0; this.roll = 0; this.grade = 0; return; }
     const hF = G.height(this.x + fx * T.wheelFront, this.z + fz * T.wheelFront);
     const rxz = this.x + fx * T.wheelRear, rzz = this.z + fz * T.wheelRear;
@@ -250,7 +297,7 @@ export class TukTukPhysics {
   // The cap follows a constant-deceleration curve, so the tuk-tuk brakes smoothly and stops before
   // the wall; motion along the edge or back to the centre is not limited.
   softEdge(d, nx, nz) {
-    const T = TUNING;
+    const T = this.T;
     if (d < this.edgeDist) this.edgeDist = d;
     if (d >= (this.edgeZoneNow || T.edgeZone)) return;
     const cap = Math.sqrt(2 * T.edgeDecel * Math.max(0, d - T.edgeStop));
@@ -259,7 +306,7 @@ export class TukTukPhysics {
   }
 
   collide() {
-    const T = TUNING, W = this.world;
+    const T = this.T, W = this.world;
     const fx = -Math.sin(this.heading), fz = -Math.cos(this.heading);
     let impact = 0;
     const speedBefore = Math.hypot(this.vx, this.vz);
@@ -279,13 +326,22 @@ export class TukTukPhysics {
       this.contactTimer = 0.15;
       if (vn < 0) {
         impact = Math.max(impact, -vn);
-        this.vx -= nx * vn * 1.05; this.vz -= nz * vn * 1.05; // small bounce
-        this.vx *= 0.996; this.vz *= 0.996;                   // scrape
+        this.vx -= nx * vn * (T.bounce || 1.05); this.vz -= nz * vn * (T.bounce || 1.05); // small bounce
+        this.vx *= T.scrapeKeep || 0.996; this.vz *= T.scrapeKeep || 0.996;             // scrape
       }
     }
     if (impact > T.impactSlow) {
-      if (speedBefore > T.crashSpeed) this.crash = true; // main: short fade, back onto the road
-      this.vx *= 0.4; this.vz *= 0.4;
+      if (T.arcade) {
+        // arcade: no reset, a rebound. A glancing hit (little speed into the wall) keeps 65 % of the speed, a head-on
+        // one 40 %; the game (arcade.js) reads `hit` for the tips and the combo
+        const into = Math.min(1, impact / Math.max(1e-3, speedBefore));
+        const keep = 0.65 - 0.25 * into;
+        this.vx *= keep; this.vz *= keep;
+        this.hit = { speed: speedBefore, into: impact, keep };
+      } else {
+        if (speedBefore > T.crashSpeed) this.crash = true; // main: short fade, back onto the road
+        this.vx *= 0.4; this.vz *= 0.4;
+      }
     }
     this.lastImpact = impact;
 
@@ -304,7 +360,7 @@ export class TukTukPhysics {
   groundAt(x, z) { return this.terrain ? this.terrain.height(x, z) : 0; }
 
   fits(x, z, heading) {
-    const fx = -Math.sin(heading), fz = -Math.cos(heading), T = TUNING;
+    const fx = -Math.sin(heading), fz = -Math.cos(heading), T = this.T;
     return T.circles.every((o) => this.world.penetration(x + fx * o, z + fz * o, T.circleR + 0.3) === 0);
   }
 

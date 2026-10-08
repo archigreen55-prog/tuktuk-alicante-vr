@@ -21,7 +21,7 @@ const DRIVERS = {
   guide: { aLat: 2.2, aDec: 2.5, maxBrake: 0.55, maxThrottle: 1, lookBase: 4, lookGain: 0.6, onlyAsked: true },
 };
 
-function buildWorld() {
+export function buildWorld() {
   const R = city.meta.rect;
   const world = new CollisionWorld(R);
   for (const b of city.buildings) { world.addPolygon(b.p); for (const h of b.holes || []) world.addPolygon(h); }
@@ -35,7 +35,7 @@ function buildWorld() {
 }
 
 // point on the polyline `ahead` metres past the closest point, and curvature-limited speed ahead
-function pursue(pts, x, z, ahead) {
+export function pursue(pts, x, z, ahead) {
   const { at } = polylineDistance(pts, x, z);
   const pointAt = (s) => {
     let acc = 0;
