@@ -20,6 +20,9 @@ const CSS = `
 .ah-card.show { opacity: 1; transition: opacity .25s ease-in; }
 .ah-card .t { font: 700 14px/1.2 system-ui, sans-serif; color: #ffd166; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ah-card .f { font: 12px/1.25 system-ui, sans-serif; margin-top: 1px; color: #e8f1fa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ah-bonus { position: absolute; left: calc(50% + 74px); top: 12px; font: 800 22px/1 system-ui, sans-serif; color: #6fe06f; text-shadow: 0 1px 4px #000; opacity: 0; transform: translateY(6px); }
+.ah-pop { position: absolute; left: 50%; top: 150px; transform: translateX(-50%); font: 800 17px/1.1 system-ui, sans-serif; color: #ffd166; text-shadow: 0 1px 4px #000, 0 0 2px #000; white-space: nowrap; opacity: 0; }
+.ah-pop.show { animation: ah-pop 1.3s ease-out forwards; }
+@keyframes ah-pop { 0% { opacity: 0; transform: translate(-50%, 8px) scale(.8); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -10px); } }
 .ah-bonus.bad { color: #ff7a5c; }
 .ah-bonus.show { animation: ah-bonus 1.6s ease-out forwards; }
 @keyframes ah-bonus { 0% { opacity: 0; transform: translateY(8px) scale(.7); } 12% { opacity: 1; transform: none; } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
@@ -55,6 +58,7 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
   const clockEl = el('div', 'ah-clock', '0:00', root);
   const tips = el('div', 'ah-tips', null, root); const pocket = el('span', 'pk', '0 €', tips); const stake = el('span', 'st', '', tips); const combo = el('span', 'cb', '', tips);
   const bonus = el('div', 'ah-bonus', '', root);
+  const pop = el('div', 'ah-pop', '', root);
   const gate = el('div', 'ah-gate', '', root);
   const speed = showSpeed ? el('div', 'ah-speed', null, root) : null; const speedNum = speed ? el('b', null, '0', speed) : null; if (speed) el('span', null, 'км/год', speed);
   const card = el('div', 'ah-card', null, root); const cardT = el('div', 't', '', card), cardF = el('div', 'f', '', card);
@@ -80,6 +84,8 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
       // the card appears when a gate is passed, stays a few seconds (arcade.js), then fades out smoothly (CSS); the text stays while it fades
       if ((c ? c.id : null) !== cardId) { cardId = c ? c.id : null; if (c) { cardT.textContent = c.title; cardF.textContent = c.text || ''; card.classList.add('show'); } else card.classList.remove('show'); }
     },
+    // a small floating line for the skill bonuses (near miss, drift): text, colour
+    pop(text, color = '#ffd166') { pop.textContent = text; pop.style.color = color; pop.classList.remove('show'); void pop.offsetWidth; pop.classList.add('show'); },
     // a short white flash of the whole screen (a gate passed)
     flashScreen() { white.classList.remove('go'); void white.offsetWidth; white.classList.add('go'); },
     // seconds won / lost flash next to the clock
@@ -110,7 +116,8 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
       const row = (k, v) => { const tr = el('tr', null, null, tbl); el('td', null, k, tr); el('td', null, v, tr); };
       row('Час', fmtClock(r.time) + (r.state === 'finished' ? ` · лишилось ${Math.round(r.timeLeft)} с → +${euro(r.bonus)}` : ''));
       row('Ворота', `точно ${r.exact} · добре ${r.good} · є ${r.ok} · пропущено ${r.missed} з ${r.gates}`);
-      row('Максимум', `${r.maxKmh} км/год`); row('Удари', String(r.hits)); row('Шлях', `${(r.dist / 1000).toFixed(1)} км`);
+      row('Максимум', `${r.maxKmh} км/год`); row('Удари', String(r.hits));
+      if (r.nearMisses || r.driftSecs) row('Майстерність', `майже зачепив ${r.nearMisses} · дрифт ${r.driftSecs} с → ${euro(r.skillTips)}`); row('Шлях', `${(r.dist / 1000).toFixed(1)} км`);
       const gl = el('div', 'gates', null, c);
       for (const g of gates) { const d = el('div', 'g ' + (g.kind || 'missed'), null, gl); el('b', null, g.title, d); el('i', null, (KIND[g.kind] || 'не дістались') + (g.text ? ' · ' : ''), d); d.append(g.text || ''); }
       const btns = el('div', 'btns', null, c);

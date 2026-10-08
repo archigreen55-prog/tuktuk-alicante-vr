@@ -86,6 +86,9 @@ export class Tourists {
     this.world = world; this.vehicle = vehicle; this.seats = seats; this.groundY = groundY;
     this.mat = new THREE.MeshLambertMaterial({ vertexColors: true });
     this.mesh = null; this.figs = [];
+    this.ride = { lat: 0, lon: 0, kmh: 0 }; this.latS = 0; this.lonS = 0;   // the ride the seated ones feel (set by the game every frame)
+    this.live = false;  // Crazy Tuk only: the seated ones follow the ride and react (the real tour keeps its still poses)
+    this.mood = null;   // { kind, t, dur }: a reaction of the passengers (Crazy Tuk)
     this.tmpV = new THREE.Vector3(); this.tmpQ = new THREE.Quaternion();
   }
 
@@ -150,6 +153,39 @@ export class Tourists {
   abortBoard() { for (const f of this.figs) this.standAt(f); }
   seatAll() { for (const f of this.figs) this.sit(f); }
 
+  // Crazy Tuk: the passengers react ('cheer' | 'laugh' | 'scream' | 'gasp'); the voice is the game's (arcadeSound), this is the body
+  react(kind) { const dur = { cheer: 1.8, laugh: 1.6, scream: 1.8, gasp: 1.0 }[kind] || 1.2; this.mood = { kind, t: 0, dur }; }
+  // lateral / longitudinal acceleration (m/s², + lateral = to the left of the tuk-tuk) and the speed, from the physics
+  setRide(lat, lon, kmh) { this.ride.lat = lat; this.ride.lon = lon; this.ride.kmh = kmh; }
+  // seated: the body follows the ride and the mood (arms up, head back, shoulders shaking)
+  animateSeated(f, dt, i) {
+    const b = f.bones, k = 1 - Math.exp(-dt * 6);
+    this.latS += (this.ride.lat - this.latS) * k; this.lonS += (this.ride.lon - this.lonS) * k;
+    pose(f, 'sit', 0);
+    const ph = i * 1.7, c = (v, a) => Math.max(-a, Math.min(a, v));
+    b[B.spine].rotation.z = c(this.latS * 0.018, 0.3);
+    b[B.spine].rotation.x = 0.06 + c(this.lonS * 0.02, 0.3);
+    b[B.head].rotation.z = -b[B.spine].rotation.z * 0.6;
+    b[B.head].rotation.x = -c(this.lonS * 0.012, 0.2) + Math.sin(f.t * 31 + ph) * 0.012 * Math.min(1.5, this.ride.kmh / 100);
+    const m = this.mood;
+    if (m) {
+      const a = Math.min(1, m.t / 0.15, (m.dur - m.t) / 0.3), w = Math.max(0, a);   // quick in, softer out
+      if (m.kind === 'cheer' || m.kind === 'scream') {
+        const up = m.kind === 'cheer' ? -2.9 : -2.5, wave = Math.sin(f.t * 14 + ph) * 0.25;
+        b[B.lArm].rotation.x = b[B.rArm].rotation.x = (b[B.lArm].rotation.x) * (1 - w) + (up + wave) * w;
+        b[B.lArm].rotation.z = -0.2 * w; b[B.rArm].rotation.z = 0.2 * w;
+        b[B.lFore].rotation.x = b[B.rFore].rotation.x = 0.3 * (1 - w) + 0.15 * w;
+        b[B.head].rotation.x -= 0.3 * w; b[B.spine].rotation.x += 0.08 * w;
+      } else if (m.kind === 'laugh') {
+        b[B.spine].rotation.x += Math.sin(f.t * 20 + ph) * 0.07 * w; b[B.head].rotation.x -= (0.25 + Math.sin(f.t * 20 + ph) * 0.05) * w;
+        b[B.lArm].rotation.x = b[B.rArm].rotation.x = 0.35 + 0.5 * w;   // hands to the belly
+      } else if (m.kind === 'gasp') {
+        b[B.lArm].rotation.x = b[B.rArm].rotation.x = 0.35 - 1.1 * w; b[B.lFore].rotation.x = b[B.rFore].rotation.x = 0.9 + 0.9 * w;
+        b[B.head].rotation.x -= 0.18 * w; b[B.spine].rotation.x += 0.12 * w;
+      }
+    }
+  }
+
   // get off at the finish and walk to `goal` [x, z], then disappear
   dropOff(goal) {
     this.side = this.sideOf(goal);
@@ -178,6 +214,7 @@ export class Tourists {
   }
 
   update(dt) {
+    if (this.mood) { this.mood.t += dt; if (this.mood.t >= this.mood.dur) this.mood = null; }
     for (const f of this.figs) {
       f.t += dt;
       if (f.state === 'walkIn' || f.state === 'walkOut') {
@@ -193,6 +230,8 @@ export class Tourists {
           if (f.state === 'walkIn') { f.state = 'hop'; f.t = 0; this.vehicle.add(f.root); const d = this.doorLocal(f); f.root.position.set(d.x, 0, d.z); }
           else { f.state = 'gone'; f.root.visible = false; }
         }
+      } else if (f.state === 'seated' && this.live) {
+        this.animateSeated(f, dt, this.figs.indexOf(f));
       } else if (f.state === 'hop') {
         const k = Math.min(1, f.t / HOP_TIME), d = this.doorLocal(f);
         const y = f.seat.y - 0.95 * f.s + 0.03;

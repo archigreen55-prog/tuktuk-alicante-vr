@@ -172,7 +172,9 @@ export function simulate(tourId, style, { par = null, log = false, onStep = null
     phys.step(DT, input);
     if (phys.hit) { hitsHard++; phys.hit = null; }
     if (run.nitroBonus) { phys.nitro.charge = Math.min(1, phys.nitro.charge + run.nitroBonus); run.nitroBonus = 0; }
-    run.update({ dt: DT, x: phys.x, z: phys.z, speed: phys.forwardSpeed, impact: phys.lastImpact, contact: phys.contactTimer > 0, blocked: phys.slopeHit > 0, nitroActive: phys.nitro.active });
+    const pen = world.penetration(phys.x, phys.z, 1.8);
+    run.update({ dt: DT, x: phys.x, z: phys.z, speed: phys.forwardSpeed, impact: phys.lastImpact, contact: phys.contactTimer > 0, blocked: phys.slopeHit > 0, nitroActive: phys.nitro.active,
+      clearance: pen > 0 ? 1.8 - pen - 0.72 : null, drifting: phys.grip < 0.8 && phys.slipSpeed > ARCADE.driftSmoke && phys.contactTimer <= 0 });
     for (const ev of run.events) {
       if (ev.type === 'gate') gatesLog.push(`${(run.clock).toFixed(1).padStart(6)}s  ${ev.title.padEnd(32)} ${ev.kind.padEnd(7)} +${ev.tips.toFixed(0)} € +${ev.time.toFixed(0)} s  (${(phys.forwardSpeed * 3.6).toFixed(0)} km/h)`);
       if (ev.type === 'stuck') {   // like the game's "back onto the road": onto the racing line, facing along it
@@ -241,6 +243,7 @@ if (process.argv[1] && process.argv[1].endsWith('sim-arcade.mjs')) {
     console.log(`\n--- ${style}: ${run.state} after ${run.clock.toFixed(1)} s (sim ${(s.t).toFixed(0)} s) ---`);
     if (r) console.log(`tips ${r.tips} € (finish bonus ${r.bonus}, ${r.stars}★), time left ${r.timeLeft.toFixed(1)} s, gates exact ${r.exact} / good ${r.good} / ok ${r.ok} / missed ${r.missed} of ${r.gates}, max ${r.maxKmh} km/h`);
     if (s.driftN) console.log(`drifts: ${s.driftN}`);
+    console.log(`skill: near misses ${run.nearMisses}, drift ${run.driftSecs.toFixed(1)} s in ${run.dr.count} slides (best ${run.dr.best.toFixed(1)} s), ${run.skillTips.toFixed(0)} € of the tips`);
     console.log(`speed: avg ${s.avgV.toFixed(0)} km/h, min after start ${s.minV.toFixed(0)}, below 60 km/h ${s.below60.toFixed(1)} s; wall hits ${s.hitsHard} (run counted ${run.hits}), stuck resets ${s.stuck}, anti-stuck ${s.reverts}, distance ${(run.dist / 1000).toFixed(2)} km`);
     console.log(s.gatesLog.join('\n'));
     if (process.env.CORNERS) console.log('min speed at corners: ' + [...s.cornerMin.entries()].map(([k, v]) => `${k}: ${v.toFixed(0)}`).join(' | '));

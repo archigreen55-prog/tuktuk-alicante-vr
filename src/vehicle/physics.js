@@ -93,6 +93,7 @@ export const ARCADE = {
   maxReverse: 30 / 3.6, reverseAccel: 7, reverseDelay: 0.2,
   edgeZone: 120, edgeDecel: 8,                     // from 150 km/h the soft edge needs ≥ 110 m
   scrapeKeep: 0.9985, bounce: 1.15,
+  slopeScrape: 0.985,       // speed kept per step while sliding along a steep slope (A.2)
   overspeedFade: 4,
   crashSpeed: Infinity,   // never a reset by the physics (arcade.js resets a stuck tuk-tuk itself)
   // nitro as a tank: full = 100 %, burns 25 %/s while held, refills 3 %/s by itself (events add more)
@@ -310,7 +311,10 @@ export class TukTukPhysics {
       if (sp > 0.05) {
         const ux = this.vx / sp, uz = this.vz / sp;
         const rise = this.terrain.height(this.x + ux * T.probeAhead, this.z + uz * T.probeAhead) - this.terrain.height(this.x, this.z);
-        if (rise > T.slopeWallRise) { this.slopeHit = sp; this.vx = this.vz = 0; vf = 0; }
+        if (rise > T.slopeWallRise) {
+          if (T.arcade && this.slideAlongSlope(ux, uz)) vf = this.vx * fx + this.vz * fz;   // Crazy Tuk: slide along the slope, not into a wall
+          else { this.slopeHit = sp; this.vx = this.vz = 0; vf = 0; }
+        }
       }
     }
 
@@ -329,6 +333,27 @@ export class TukTukPhysics {
     this.accel = (this.forwardSpeed - vf0) / dt;
     // (slopeHit stays separate from lastImpact: a verge is not a wall for the tourists' mood; the
     // vignette takes both, see main.js)
+  }
+
+  // Crazy Tuk (A.2): a steep slope ahead does not stop the tuk-tuk dead: the part of the velocity that goes uphill is taken away and
+  // the rest slides along the slope (the contour). Returns false when the gradient is unusable (a DEM step): then the wall rule applies.
+  slideAlongSlope(ux, uz) {
+    const G = this.terrain, d = 0.75;
+    const gx = (G.height(this.x + d, this.z) - G.height(this.x - d, this.z)) / (2 * d), gz = (G.height(this.x, this.z + d) - G.height(this.x, this.z - d)) / (2 * d);
+    const g = Math.hypot(gx, gz);
+    if (g < 0.12) return false;
+    const nx = gx / g, nz = gz / g, vn = this.vx * nx + this.vz * nz;   // n: horizontal uphill direction
+    if (vn <= 0) return true;                                           // already moving along / down: nothing to remove
+    this.vx -= nx * vn; this.vz -= nz * vn;
+    this.vx *= this.T.slopeScrape; this.vz *= this.T.slopeScrape;
+    // the nose swings along the slope too (otherwise the tyres turn the slide back into "forward = uphill" and the speed drains away)
+    if (Math.hypot(this.vx, this.vz) > 1) {
+      const d = Math.atan2(-this.vx, -this.vz) - this.heading;
+      this.heading += Math.atan2(Math.sin(d), Math.cos(d)) * 0.15;
+    }
+    this.slopeHit = vn;                                                 // m/s lost into the slope (the vibration / the stuck timer read it)
+    this.slopeSlid = 0.2;
+    return true;
   }
 
   // Ground height under the centre and the pitch / roll from the wheel points
@@ -368,7 +393,7 @@ export class TukTukPhysics {
       let moved = false;
       for (const o of T.circles) {
         const cx = this.x + fx * o, cz = this.z + fz * o;
-        const [nx2, nz2] = W.resolveCircle(cx, cz, T.circleR, (nx, nz) => normals.push(nx, nz));
+        const [nx2, nz2] = W.resolveCircle(cx, cz, T.circleR, (nx, nz, depth, e) => { normals.push(nx, nz); if (e !== undefined && W.kind) this.contactKind = W.kind[e]; });
         if (nx2 !== cx || nz2 !== cz) { this.x += nx2 - cx; this.z += nz2 - cz; moved = true; }
       }
       if (!moved) break;

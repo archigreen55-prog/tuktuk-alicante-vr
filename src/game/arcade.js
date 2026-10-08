@@ -24,7 +24,11 @@ export const RUSH = {
   hitBurn: 0.3,                       // share of the stake burnt by a hit
   nextGateSkip: 25,                   // m: this close to the NEXT gate without crossing the active one = the active one is missed
   stuckSpeed: 5 / 3.6, stuckFor: 2, stuckPenalty: 3, // m/s, s, s: standing in a wall this long = back onto the road, minus time
-  comboMax: 5, comboHold: 4,          // (A2) multiplier cap, s without an event before it drops by one
+  comboMax: 5, comboHold: 4,          // multiplier cap, s without an event before it drops by one (events: exact gate, near miss, drift, smash)
+  // near miss (0.14.0): past a wall at speed within `gap` m of the body (not touching) for `minTime` s = a bonus (× combo), the combo grows
+  nearMiss: { speed: 80 / 3.6, gap: 1.1, release: 1.7, minTime: 0.2, tips: 2, cooldown: 0.8 },
+  // drift (0.14.0): a slide of at least `minSlide` s at `minKmh`+ pays `tipsPerSec` per second (× speed factor × combo) when it ends, the combo grows
+  drift: { minSlide: 1.0, minKmh: 40, tipsPerSec: 1.5, gapOk: 0.35 },
   cardTime: 4,                        // s the landmark card stays after its gate is passed (the HUD fades it out)
   stars: [0, 220, 360, 480, 650],     // € thresholds for 1..5 stars on the short tour (par starsPar); other tours scale them by par / starsPar
   starsPar: 309,                      // s: the par of the short tour, the thresholds above belong to it
@@ -63,6 +67,7 @@ export class Arcade {
     this.timeLeft = this.par ? this.par * RUSH.startShare : Infinity;
     this.fareAcc = 0; this.near = Infinity; this.lastX = null; this.lastZ = null;
     this.maxSpeed = 0; this.hits = 0; this.stuckT = 0; this.slowT = 0; this.dist = 0;
+    this.nm = { t: 0, since: 0, count: 0, last: -9 }; this.dr = { t: 0, count: 0, best: 0 }; this.nearMisses = 0; this.driftSecs = 0; this.skillTips = 0;
     this.events = [];
     this.route = null; this.routeVersion = (this.routeVersion || 0) + 1; this.lastRoute = -1e9; this.offT = 0;
     this.card = null;
@@ -133,6 +138,28 @@ export class Arcade {
       this.stake -= burnt; this.hits++; this.combo = 1;
       this.events.push({ type: 'hit', burnt, impact: ctx.impact });
     }
+    // --- near miss: close to a wall at speed without touching ---
+    const NM = RUSH.nearMiss;
+    if (ctx.clearance != null && v >= NM.speed && ctx.clearance < NM.gap && !ctx.contact) this.nm.t += dt;
+    else if (this.nm.t > 0 && (ctx.clearance == null || ctx.clearance > NM.release || v < NM.speed || ctx.contact)) {
+      if (this.nm.t >= NM.minTime && !ctx.contact && this.t - this.nm.last > NM.cooldown) {
+        const tips = NM.tips * this.combo * speedFactor(kmh) || NM.tips;
+        this.stake += tips; this.skillTips += tips; this.nearMisses++; this.nm.last = this.t; this.bump('nearMiss');
+        this.events.push({ type: 'nearMiss', tips, secs: this.nm.t });
+      }
+      this.nm.t = 0;
+    }
+    // --- drift: how long the tuk-tuk slides (the game says `drifting`: grip lost, sideways speed, not scraping) ---
+    const DR = RUSH.drift;
+    if (ctx.drifting && kmh >= DR.minKmh) this.dr.t += dt;
+    else if (this.dr.t > 0 && !ctx.drifting) {
+      if (this.dr.t >= DR.minSlide) {
+        const tips = DR.tipsPerSec * this.dr.t * Math.max(1, speedFactor(kmh)) * this.combo;
+        this.stake += tips; this.skillTips += tips; this.driftSecs += this.dr.t; this.dr.count++; this.dr.best = Math.max(this.dr.best, this.dr.t); this.bump('drift');
+        this.events.push({ type: 'drift', tips, secs: this.dr.t });
+      }
+      this.dr.t = 0;
+    }
     // stuck in a wall: back onto the road (the game does the teleport), minus time
     this.stuckT = (ctx.contact || ctx.blocked) && v < RUSH.stuckSpeed ? this.stuckT + dt : 0;
     if (this.stuckT > RUSH.stuckFor) { this.stuckT = 0; this.timeLeft = Math.max(0, this.timeLeft - RUSH.stuckPenalty); this.events.push({ type: 'stuck' }); }
@@ -198,7 +225,7 @@ export class Arcade {
     let stars = 1; const scale = this.par ? this.par / RUSH.starsPar : 1;
     for (let k = 1; k < RUSH.stars.length; k++) if (tips >= RUSH.stars[k] * scale) stars = k + 1;
     const count = (kind) => this.results.filter((r) => r === kind).length;
-    this.result = { state, tips, bonus: Math.round(bonus), timeLeft: left, time: this.clock, maxKmh: Math.round(this.maxSpeed * 3.6), hits: this.hits,
+    this.result = { state, tips, bonus: Math.round(bonus), nearMisses: this.nearMisses, driftSecs: Math.round(this.driftSecs * 10) / 10, skillTips: Math.round(this.skillTips), timeLeft: left, time: this.clock, maxKmh: Math.round(this.maxSpeed * 3.6), hits: this.hits,
       exact: count('exact'), good: count('good'), ok: count('ok'), missed: count('missed'), gates: this.gates.length, dist: this.dist, stars };
     this.card = null;
     this.events.push({ type: 'finish', result: this.result });
