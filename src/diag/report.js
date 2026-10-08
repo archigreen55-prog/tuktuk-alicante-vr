@@ -76,6 +76,11 @@ export async function buildReport(ctx) {
     L.push(`історія FPS (5 с на крок, ${h.length} кроків, від старого до нового): ` + h.map((b) => b.fps.toFixed(0)).join(' '));
   }
 
+  if (stats.hitches.length) {
+    const t0 = performance.now() / 1000;
+    L.push(`провали кадру понад 40 мс (останні ${Math.min(15, stats.hitches.length)}; «тому» = секунд до цього звіту; JS кадру / submit; що діялося): ` + stats.hitches.slice(-15).map((q) => `${(t0 - q.t).toFixed(0)} с тому ${q.dt.toFixed(0)} мс (JS ${q.cpu.toFixed(0)}/${q.render.toFixed(0)}${q.tag ? ', ' + q.tag : ''})`).join('; '));
+  } else L.push('провалів кадру понад 40 мс не було');
+
   sec('Пристрій');
   L.push(`інтерфейс: ${D.ui}${new URLSearchParams(location.search).get('ui') ? ' (примусово)' : ''} · торкання: ${navigator.maxTouchPoints || 0} точок`);
   L.push(`браузер: ${navigator.userAgent}`);

@@ -67,6 +67,7 @@ export class DesktopHud {
         g.fillStyle = 'rgba(255,209,102,0.95)'; g.strokeStyle = '#10161c'; g.lineWidth = 2 * m;
         g.beginPath(); g.arc(p.x, p.z, 11 * m, 0, Math.PI * 2); g.fill(); g.stroke();
       });
+      for (const v of gates.vias || []) { g.fillStyle = 'rgba(255,255,255,0.9)'; g.strokeStyle = '#10161c'; g.lineWidth = 1.5 * m; g.beginPath(); g.arc(v.x, v.z, 6 * m, 0, Math.PI * 2); g.fill(); g.stroke(); }   // via points: small, no grade
       const n = gates.list[gates.next];
       if (n) {
         g.strokeStyle = '#10161c'; g.lineWidth = 3 * m;

@@ -86,13 +86,17 @@ export const ARCADE = {
   driftScrub: 0.5,          // 1/s: forward speed lost per m/s of sideways speed while sliding
   driftAlign: 1.0,          // 1/s: how hard the heading is pulled back to the path with the stick centred
   driftMaxSlip: 70 * Math.PI / 180,   // rad: the heading does not rotate any further away from the path than this
+  // a slide with the nitro (or the gas pedal) held: long and fast, hardly any speed lost (the plain handbrake drift is unchanged)
+  driftBoostScrub: 0.1, driftBoostFriction: 0.7,   // × driftScrub, × driftFriction while input.slideBoost
   driftSmoke: 2.5,          // m/s of sideways speed above which the game shows smoke / marks / squeal
+  // reversing (the real tuk-tuk keeps 8 km/h): quick enough for a U-turn in an alley
+  maxReverse: 30 / 3.6, reverseAccel: 7, reverseDelay: 0.2,
   edgeZone: 120, edgeDecel: 8,                     // from 150 km/h the soft edge needs ≥ 110 m
   scrapeKeep: 0.9985, bounce: 1.15,
   overspeedFade: 4,
   crashSpeed: Infinity,   // never a reset by the physics (arcade.js resets a stuck tuk-tuk itself)
   // nitro as a tank: full = 100 %, burns 25 %/s while held, refills 3 %/s by itself (events add more)
-  nitroTank: true, nitroMaxKmh: 150, nitroAccel: 6.0, nitroDrain: 0.25, nitroPassive: 0.03, nitroMinSpeed: 1,
+  nitroTank: true, nitroMaxKmh: 150, nitroAccel: 6.0, nitroDrain: 0.25, nitroPassive: 0.03, nitroMinSpeed: -10,   // from a standstill, even rolling backwards, without the gas
 };
 
 // max speed on a descent of `grade` (0..): linear between the table rows, none below the first
@@ -156,6 +160,7 @@ export class TukTukPhysics {
     if (T.nitroTank) {
       // arcade: a tank 0..1 burnt while the button is held (nitroDrain per s), refilled slowly by itself (nitroPassive
       // per s) and by the game's events (arcade.js adds to `charge`); no fixed burst length, no cooldown
+      if (input.nitro && N.charge > 0 && this.reversing) this.reversing = false;   // the nitro takes the tuk-tuk out of reverse
       const can = !!input.nitro && N.charge > 0 && vf >= T.nitroMinSpeed && !this.reversing;
       if (can && !N.active) { N.active = true; N.t = 0; N.uses++; }
       if (!can) N.active = false;
@@ -210,7 +215,8 @@ export class TukTukPhysics {
       if (vf > cap && vf <= T.maxForward) vf = Math.max(cap, vf - T.capDecel * dt); // (above 40 after a burst: the even fade below)
       if (brake > 0) vf = vf > 0 ? Math.max(0, vf - T.brakeDecel * brake * dt) : Math.min(0, vf + T.brakeDecel * brake * dt);
     }
-    if (input.handbrake) vf = vf > 0 ? Math.max(0, vf - T.handbrakeDecel * dt) : Math.min(0, vf + T.handbrakeDecel * dt);
+    const boosted = T.arcade && !!input.slideBoost && this.grip < 1;   // sliding with the nitro / gas held: no braking from the handbrake
+    if (input.handbrake && !boosted) vf = vf > 0 ? Math.max(0, vf - T.handbrakeDecel * dt) : Math.min(0, vf + T.handbrakeDecel * dt);
     // resistance (none while the nitro burns: its push is net; above the normal top speed after a burst an
     // even fade instead of the drag, which at 100 km/h would brake as hard as the brake pedal)
     if (!N.active && vf > T.maxForward) vf = Math.max(T.maxForward, vf - T.overspeedFade * dt);
@@ -221,7 +227,7 @@ export class TukTukPhysics {
     }
     vf = Math.min(N.active ? Math.max(T.maxForward, nitroTop) : Infinity, Math.max(-T.maxReverse, vf));
     // parking hold: no pedal and (almost) standing -> standing, whatever the slope
-    if (throttle === 0 && brake === 0 && !this.reversing && Math.abs(vf) < T.holdSpeed) vf = 0;
+    if (throttle === 0 && brake === 0 && !this.reversing && !N.active && Math.abs(vf) < T.holdSpeed) vf = 0;
 
     // --- lateral grip ---
     // while scraping a wall, keep the sideways speed so the tuk-tuk slides along it
@@ -235,13 +241,13 @@ export class TukTukPhysics {
       else {
         const held = vr * Math.pow(T.gripKeep, dt * 60);
         if (this.grip < 1) {
-          const slid = Math.sign(vr) * Math.max(0, Math.abs(vr) - T.driftFriction * dt);   // bounded side force
+          const slid = Math.sign(vr) * Math.max(0, Math.abs(vr) - T.driftFriction * (boosted ? T.driftBoostFriction : 1) * dt);   // bounded side force
           vr = slid + (held - slid) * this.grip;
         } else vr = held;
         // the tyres rotate the path instead of killing the speed: what vanished sideways turns (mostly) into forward speed
         const turned = (vr0 * vr0 - vr * vr) * T.driftCarry;
         if (turned > 0 && vf > 0.5) vf = Math.sqrt(vf * vf + turned);
-        if (this.grip < 1 && vf > 0) vf = Math.max(0, vf - T.driftScrub * Math.abs(vr) * (1 - this.grip) * dt);
+        if (this.grip < 1 && vf > 0) vf = Math.max(0, vf - T.driftScrub * (boosted ? T.driftBoostScrub : 1) * Math.abs(vr) * (1 - this.grip) * dt);
       }
     } else {
       const keep = this.contactTimer > 0 ? T.wallSlideKeep : input.handbrake ? T.handbrakeKeep : T.gripKeep;

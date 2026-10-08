@@ -3,6 +3,7 @@
 const WINDOW = 300;        // frames in the live statistics (~5 s at 60 FPS)
 const BUCKET_MS = 5000;    // graph step
 const BUCKETS = 120;       // 10 minutes
+const HITCH_MS = 40;
 const LONG_MS = 33.4;      // a frame longer than this is "a hitch" at a 60 FPS target
 const SLOW_MS = 25;        // frames longer than this get a breakdown in the bench report
 
@@ -32,6 +33,7 @@ export class FrameStats {
     this.count = 0;           // frames recorded in total
     this.last = 0;            // timestamp of the previous recorded frame (0 = none)
     this.extra = { calls: 0, tris: 0, cpuMs: 0, gpuMs: null, renderMs: 0, dashMs: 0 };
+    this.hitches = [];        // the last frames over HITCH_MS outside a bench: { t (s since the start), dt, cpu, render, tag } for the report
     this.history = [];        // [{ fps, low }] per 5 s bucket, oldest first
     this.bucket = { t: 0, frames: 0, worst: 0 };
     this.segment = null;
@@ -73,11 +75,12 @@ export class FrameStats {
       if (this.history.length > BUCKETS) this.history.shift();
       this.bucket = { t: 0, frames: 0, worst: 0 };
     }
+    if (dt > HITCH_MS) { this.hitches.push({ t: now / 1000, dt, cpu: e.cpuMs, render: e.renderMs || 0, tag: e.tag || '' }); if (this.hitches.length > 30) this.hitches.shift(); }
     const s = this.segment;
     if (s) {
       s.times.push(dt); s.calls.push(e.calls); s.tris.push(e.tris); s.cpu.push(e.cpuMs); if (e.gpuMs != null) s.gpu.push(e.gpuMs);
       // what did a slow frame look like from the inside? (JS total / submitting the draw calls / the panel part), the first 20
-      if (dt > SLOW_MS && s.slow.length < 20) s.slow.push({ dt, cpu: e.cpuMs, render: e.renderMs || 0, dash: e.dashMs || 0, at: s.times.length });
+      if (dt > SLOW_MS && s.slow.length < 20) s.slow.push({ dt, cpu: e.cpuMs, render: e.renderMs || 0, dash: e.dashMs || 0, at: s.times.length, tag: e.tag || '' });
     }
   }
 

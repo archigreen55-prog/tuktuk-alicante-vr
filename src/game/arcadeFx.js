@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 
 const GATE = 0xffae00, FINISH = 0x22d36b;
+const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const KIND = { exact: 0x6fe06f, good: 0xffd166, ok: 0xcfe3f5 };
 
 // ---------------------------------------------------------------- shaders
@@ -104,50 +105,43 @@ export class NavArrow {
     const geo = new THREE.ExtrudeGeometry(arrowShape(), { depth: 0.32, bevelEnabled: false }).translate(0, 0, -0.16);
     // lie flat: shape (x, y) -> (x, z = -y), thickness along y
     geo.rotateX(-Math.PI / 2);
-    this.mat = new THREE.MeshBasicMaterial({ color: GATE, fog: false });
+    this.mat = new THREE.MeshBasicMaterial({ color: GATE, transparent: true, opacity: 0.62, depthWrite: false, fog: false });
     this.mesh = new THREE.Mesh(geo, this.mat);
-    this.edge = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x10161c, side: THREE.BackSide, fog: false }));
+    this.edge = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x10161c, side: THREE.BackSide, transparent: true, opacity: 0.4, depthWrite: false, fog: false }));
     this.edge.scale.set(1.14, 1.5, 1.14);
-    this.yaw = new THREE.Group(); this.yaw.add(this.mesh, this.edge);   // turns the arrow to the gate, in its own plane
+    this.yaw = new THREE.Group(); this.yaw.add(this.mesh, this.edge);   // turns the arrow to the aim, in its own plane
     this.tilt = new THREE.Group(); this.tilt.add(this.yaw);             // leans that plane towards the camera: never seen edge-on
     this.group = new THREE.Group(); this.group.add(this.tilt);
-    // the distance on a sprite above the arrow
-    this.canvas = document.createElement('canvas'); this.canvas.width = 256; this.canvas.height = 96;
-    this.tex = new THREE.CanvasTexture(this.canvas); this.tex.colorSpace = THREE.SRGBColorSpace;
-    this.sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.tex, depthTest: false, transparent: true, fog: false }));
-    this.sprite.scale.set(2.6, 0.97, 1); this.sprite.position.y = 1.7; this.sprite.renderOrder = 12;
-    this.group.add(this.sprite);
     this.group.renderOrder = 11; this.mesh.renderOrder = 11; this.edge.renderOrder = 10;
     this.group.visible = false; scene.add(this.group);
-    this.label = ''; this.t = 0; this.q = new THREE.Quaternion(); this.axis = new THREE.Vector3();
+    this.t = 0; this.ang = null; this.q = new THREE.Quaternion(); this.axis = new THREE.Vector3();
   }
-  setText(text) {
-    if (text === this.label) return; this.label = text;
-    const g = this.canvas.getContext('2d'); g.clearRect(0, 0, 256, 96);
-    g.fillStyle = 'rgba(10,14,20,.72)'; g.beginPath(); g.roundRect(8, 8, 240, 80, 22); g.fill();
-    g.font = '700 54px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.fillText(text, 128, 50);
-    this.tex.needsUpdate = true;
-  }
-  // x, y, z: the tuk-tuk; tx, tz: the next gate (or null); cam*: the camera
-  update(dt, x, y, z, tx, tz, camX, camY, camZ) {
-    if (tx == null) { this.group.visible = false; return; }
+  // x, y, z: the tuk-tuk; aim: { x, z, via } or null; heading: the tuk-tuk's rotation.y; cam*: the camera
+  update(dt, x, y, z, aim, heading, camX, camY, camZ) {
+    if (!aim) { this.group.visible = false; this.ang = null; return; }
     this.t += dt;
-    const dx = tx - x, dz = tz - z, dist = Math.hypot(dx, dz);
+    const dx = aim.x - x, dz = aim.z - z, dist = Math.hypot(dx, dz);
     this.group.visible = true;
+    // the direction: towards the aim; within ~18 m of a GATE it blends into "straight ahead" (the bearing to a point you drive
+    // over spins round: no jumping at the pillar), and a turn to a new aim is a smooth swing, never a snap
+    let want = Math.atan2(-dx, -dz);
+    if (!aim.via) { const w = Math.max(0, Math.min(1, (18 - dist) / 12)); if (w > 0) want += angDiff(heading, want) * w; }
+    if (this.ang == null) this.ang = want;
+    const d = angDiff(want, this.ang), step = Math.min(Math.abs(d), (3 + 9 * Math.abs(d) / Math.PI) * dt);   // up to 12 rad/s for a half turn, 3 rad/s for the last bit
+    this.ang += Math.sign(d) * step;
     // above the roof, a little below the camera
-    const yy = Math.max(y + 2.9, Math.min(y + 4.0, camY - 1.0));
-    this.group.position.set(x, yy + 0.12 * Math.sin(this.t * 4), z);
+    const yy = Math.max(y + 3.4, Math.min(y + 4.8, camY - 0.8));
+    this.group.position.set(x, yy + 0.1 * Math.sin(this.t * 4), z);
     // lean the arrow's plane about the camera's right axis so that the camera looks at it from ~55 degrees above
     const hx = x - camX, hz = z - camZ, hl = Math.hypot(hx, hz) || 1;
     const elev = Math.atan2(camY - yy, hl), lean = Math.max(0.25, Math.min(1.15, 0.95 - elev));
     this.axis.set(-hz / hl, 0, hx / hl);   // the camera's right, horizontal
     this.tilt.quaternion.setFromAxisAngle(this.axis, lean);
-    this.yaw.rotation.y = Math.atan2(-dx, -dz);   // the nose (-Z) towards the gate
-    this.mat.color.setHex(dist < 60 ? 0x22d36b : GATE);
-    // the arrow keeps its size on the screen whatever the camera distance does (close at a standstill, far at speed)
+    this.yaw.rotation.y = this.ang;   // the nose (-Z) towards the aim
+    this.mat.color.setHex(aim.via ? 0xffe27a : dist < 60 ? 0x22d36b : GATE);
+    // about half the size it was, and the same size on the screen whatever the camera distance does
     const cd = Math.hypot(camX - x, camY - yy, camZ - z);
-    this.group.scale.setScalar(Math.max(0.5, Math.min(1.5, cd / 11)) * (1 + 0.05 * Math.sin(this.t * 6)));
-    this.setText(dist < 1000 ? `${Math.round(dist / 10) * 10} м` : `${(dist / 1000).toFixed(1)} км`);
+    this.group.scale.setScalar(0.5 * Math.max(0.5, Math.min(1.5, cd / 11)) * (1 + 0.04 * Math.sin(this.t * 6)));
   }
   show(on) { if (!on) this.group.visible = false; }
 }
@@ -206,7 +200,7 @@ export class DriftFx {
           p[b] = l.x + nx; p[b + 1] = l.y; p[b + 2] = l.z + nz; p[b + 3] = l.x - nx; p[b + 4] = l.y; p[b + 5] = l.z - nz;
           p[b + 6] = wx + nx; p[b + 7] = y; p[b + 8] = wz + nz; p[b + 9] = wx - nx; p[b + 10] = y; p[b + 11] = wz - nz;
           this.mi = (this.mi + 1) % this.M; this.dirty = true;
-          this.last[w] = { x: wx, y, z: wz };
+          l.x = wx; l.y = y; l.z = wz;
         } else if (!l || Math.hypot(wx - l.x, wz - l.z) >= 8) this.last[w] = { x: wx, y, z: wz };
         // smoke: ~25 puffs per second per wheel at full slide
         this.acc += dt * 25 * (0.4 + s.amount);
@@ -236,6 +230,14 @@ export class ArcadeFx {
   constructor(scene) {
     this.beacon = new GateBeacon(scene); this.arrow = new NavArrow(scene); this.drift = new DriftFx(scene);
     this.on = false; this.gateIdx = -1; this.enable(false);
+  }
+  // the beacon, the arrow and the smoke use their own shaders: compile them once at the start instead of on the first frame they are seen
+  precompile(renderer, scene, camera) {
+    const objs = [this.beacon.group, this.arrow.group, this.drift.points, this.drift.markMesh, this.beacon.burst];
+    const was = objs.map((o) => o.visible);
+    objs.forEach((o) => { o.visible = true; });
+    try { renderer.compile(scene, camera); } catch (e) { /* compiled on first use then */ }
+    objs.forEach((o, i) => { o.visible = was[i]; });
   }
   enable(on) {
     this.on = on;

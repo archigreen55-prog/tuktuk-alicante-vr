@@ -152,8 +152,9 @@ try {
 } catch (e) { tourError = `data/tour.json не завантажився: ${e.message}`; }
 if (!city.tour) tourError = tourError || 'city.json без даних туру (node tools/build-city.mjs)';
 // Crazy Tuk: the one-line facts (edited by hand) and the par times (tools/sim-arcade.mjs --write); both optional
-let arcadeFacts = null, arcadePar = {};
+let arcadeFacts = null, arcadePar = {}, arcadeVia = {};
 try { arcadeFacts = await (await fetch(`data/arcade-facts.json?t=${Date.now()}`, { cache: 'no-store' })).json(); } catch (e) { console.warn(`data/arcade-facts.json: ${e.message}`); }
+try { arcadeVia = await (await fetch(`data/arcade-via.json?v=${VERSION}`)).json(); } catch (e) { console.warn(`data/arcade-via.json: ${e.message}`); }
 try { arcadePar = await (await fetch(`data/arcade-par.json?v=${VERSION}`)).json(); } catch (e) { console.warn(`data/arcade-par.json: ${e.message}`); }
 if (tourError) console.warn(tourError);
 // terrain heights (data/terrain.bin, IGN MDT05): the ground, the roads and the physics read one grid
@@ -257,6 +258,7 @@ if (tourSpec && !tourSpec.tours.some((t) => t.id === tourId)) tourId = tourSpec.
 let tour = null, freeConfirm = -1e9;
 // Crazy Tuk (docs/plan-arcade.md): the run, its countdown before the start, the sounds and the HTML interface
 let run = null, runCountdown = 0, runRestartAt = -1e9;
+let frameTag = '';   // what happened in this frame (gate, hit, drift...), for the slow-frame list of the diagnostics
 const arcadeSound = new ArcadeSound(horn);
 const arcadeHud = createArcadeHud({ onAgain: () => startArcade(), onTour: () => setGameMode('tour'), bookLink: bookingLink('uk'), showSpeed: !IS_PHONE,
   onBookMissing: () => flash('Номер WhatsApp ще не вписано (src/config.js)', 4, '#ff9f43') });
@@ -373,7 +375,7 @@ function startTour() {
 const arcadeBestKey = () => `arcade.best.${tourId}`;
 function startArcade() {
   if (!tourSpec || !graph) { flash(tourError || 'Тур недоступний', 5, '#ff7a5c'); return false; }
-  try { run = new Arcade(tourSpec, city.tour, graph, tourId, { par: arcadePar[tourId] || null, facts: arcadeFacts && arcadeFacts.uk, useRoute: false }); run.estimatePar(); } catch (e) {
+  try { run = new Arcade(tourSpec, city.tour, graph, tourId, { par: arcadePar[tourId] || null, facts: arcadeFacts && arcadeFacts.uk, useRoute: false, vias: arcadeVia[tourId] || null }); run.estimatePar(); } catch (e) {
     run = null; flash(`Crazy Tuk: ${e.message}`, 6, '#ff7a5c'); console.warn(e); return false;
   }
   tour = null; tourists.dispose();
@@ -389,7 +391,7 @@ function startArcade() {
   runCountdown = 3.2;
   arcadeHud.hideSummary(); arcadeHud.show(true); arcadeHud.setCountdown(3);
   arcadeSound.setOn(true);
-  if (!arcadeFx) arcadeFx = new ArcadeFx(scene);
+  if (!arcadeFx) { arcadeFx = new ArcadeFx(scene); arcadeFx.precompile(renderer, scene, camera); }   // compile the shaders now, not in the middle of the first drift
   arcadeFx.enable(true); arcadeFx.setGate(run, groundY);
   updateBestLabel();
   return true;
@@ -413,6 +415,7 @@ function arcadeAsTour() {
 }
 function handleRunEvents() {
   for (const ev of run.events) {
+    frameTag += `${ev.type}${ev.kind ? ':' + ev.kind : ''} `;
     if (ev.type === 'gate') { if (arcadeFx) { arcadeFx.beacon.flash(run.gates[ev.index], ev.kind, groundY(run.gates[ev.index].p[0], run.gates[ev.index].p[1])); arcadeHud.flashScreen(); } arcadeHud.flashGate(ev); arcadeHud.bonusTime(ev.time); arcadeSound.gate(ev.kind); if (ev.kind !== 'missed') buzz(40); }
     else if (ev.type === 'hit') { arcadeHud.flashText(ev.burnt > 0.5 ? `Удар! −${euroWhole(ev.burnt)}` : 'Удар!'); }
     else if (ev.type === 'stuck') { resetToRoad(); comfort.flashBlack(0.25); arcadeHud.flashText('Назад на дорогу −3 с'); arcadeHud.bonusTime(-3); }
@@ -677,7 +680,7 @@ function frame(now, xrFrame) {
   tuk.setPedal(pedal);
   horn.set(input.horn);
   if (window.__autopilot) window.__autopilot(input, phys, clock.t);
-  input.cruiseKmh = 0;
+  input.cruiseKmh = 0; input.slideBoost = false;
   if (run) {
     // Crazy Tuk: the throttle is automatic (the tuk-tuk keeps 60+ km/h unless braking), the countdown holds it still,
     // after the finish it rolls out on the brake
@@ -686,6 +689,8 @@ function frame(now, xrFrame) {
     else if (run.done) { input.throttle = 0; input.brake = 0.6; input.nitro = false; input.reverseDelay = Infinity; }
     else if (!manualGas()) { input.throttle = input.brake > 0 ? 0 : 1; input.cruiseKmh = ARCADE.autoGasKmh; }   // the auto-gas holds ARCADE.autoGasKmh; the nitro goes past it
   }
+  // a slide with the nitro (or, with the pedal, the gas) held keeps its speed: physics.js driftBoost*
+  if (run) input.slideBoost = !!input.nitro || (manualGas() && input.throttle > 0.3);
   // tour: while boarding / taking photos, holding the brake keeps the tuk-tuk still (no reversing)
   if (tour && tour.holdBrake) input.reverseDelay = Infinity;
 
@@ -786,7 +791,7 @@ function frame(now, xrFrame) {
   }
   mapTimer -= frameDt;
   if (run && !hudIn3D) minimap.radius += (150 + 250 * Math.max(0, Math.min(1, (phys.forwardSpeed - 16.7) / 25)) - minimap.radius) * (1 - Math.exp(-frameDt / 0.8));   // the phone map grows with the speed
-  if (mapTimer <= 0) { mapTimer = 0.1; hud.drawMap(!inVR && mapOn, x, z, h, run ? null : target, routeNow, run && !run.done ? { list: run.gates.slice(run.next).map((g) => ({ x: g.p[0], z: g.p[1] })), next: 0 } : null); }
+  if (mapTimer <= 0) { mapTimer = 0.1; hud.drawMap(!inVR && mapOn, x, z, h, run ? null : target, routeNow, run && !run.done ? { list: run.gates.slice(run.next).map((g) => ({ x: g.p[0], z: g.p[1] })), next: 0, vias: run.gate ? run.gate.vias.slice(run.viaI).map((v) => ({ x: v.p[0], z: v.p[1] })) : [] } : null); }
 
   if (touch && touch.visible) { const l = touch.update(frameDt); lookYaw = l.yaw; lookPitch = l.pitch; touch.setSpeed(phys.forwardSpeed * 3.6); }
   if (inVR) {
@@ -820,8 +825,9 @@ function frame(now, xrFrame) {
   if (run && arcadeFx) {
     // gate beacon, arrow over the tuk-tuk, drift smoke and tyre marks (src/game/arcadeFx.js), after the camera moved
     const g = run.done ? null : run.gate, sliding = phys.slipSpeed > ARCADE.driftSmoke && phys.grip < 0.8 && Math.abs(phys.forwardSpeed) > 6;
+    if (sliding) frameTag += 'drift '; if (phys.nitro.active) frameTag += 'nitro ';
     arcadeFx.beacon.update(frameDt, camera.position.x, camera.position.z);
-    arcadeFx.arrow.update(frameDt, x, groundY(x, z), z, g && run.state === 'running' ? g.p[0] : null, g ? g.p[1] : 0, camera.position.x, camera.position.y, camera.position.z);
+    arcadeFx.arrow.update(frameDt, x, groundY(x, z), z, g && run.state === 'running' ? run.aim : null, h, camera.position.x, camera.position.y, camera.position.z);
     arcadeFx.drift.update(frameDt, { x, z, heading: h, groundAt: groundY, sliding, amount: Math.min(1, phys.slipSpeed / 9), cam: camera, viewH: renderer.domElement.height });
   }
   comfort.update(frameDt, phys, Math.max(impact, verge), (inVR || vignetteOnDesktop) && camMode === 'cockpit', cab.pitchRate, phys.nitro.active);
@@ -879,7 +885,8 @@ function frame(now, xrFrame) {
   keys.endFrame();
   const frameMs = performance.now() - cpuStart;
   cpu.sum += frameMs; cpu.n++;
-  frameStats.frame(now, { calls: perf.calls, tris: perf.tris, cpuMs: frameMs, gpuMs: gpuLatest, renderMs, dashMs });
+  frameStats.frame(now, { calls: perf.calls, tris: perf.tris, cpuMs: frameMs, gpuMs: gpuLatest, renderMs, dashMs, tag: frameTag });
+frameTag = '';
 }
 const loadedAt = performance.now();   // since the navigation start: how long the whole loading took
 renderer.setAnimationLoop(frame);

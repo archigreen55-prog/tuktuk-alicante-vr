@@ -10,7 +10,10 @@ export const RUSH = {
   tipBase: 1.0,                       // € per fare at speed factor 1 and combo 1
   speedFactor: [[60, 1], [90, 1.6], [120, 2.5]],   // [km/h from, factor]
   gateExact: 3, gateGood: 8, gateMiss: 20,   // m from the gate's point at the closest approach: exact / good / ok
-  gateNear: 60, gateFar: 90,                 // m: came within gateNear and left beyond gateFar without crossing = missed
+  gateNear: 60, gateFar: 50,                 // m: came within gateNear and left beyond gateFar without crossing = missed
+  viaReach: 16, viaSkip: 70,                 // m: a via point counts when this close; within viaSkip of its gate the rest are dropped
+  gateLeave: [1.0, 2.5],                     // m the tuk-tuk may recede from its closest approach before the gate counts: [exact, good / ok]; this close (gateCentre) = at once
+  gateCentre: 1.5,
   gateTips: { exact: 25, good: 10, ok: 0 },          // € (× combo)
   gateTime: { exact: 1.3, good: 1.0, ok: 0.6 },      // × the gate's share of the time
   gateNitro: { exact: 0.25, good: 0.1, ok: 0 },      // tank refill
@@ -32,7 +35,8 @@ const speedFactor = (kmh) => { let f = 0; for (const [from, k] of RUSH.speedFact
 export class Arcade {
   // spec: data/tour.json; cityTour: city.json "tour"; graph: RoadGraph; tourId; par: ideal time (s, from the
   // simulation; null = no clock, used by the simulation itself to measure the par)
-  constructor(spec, cityTour, graph, tourId, { par = null, facts = null, useRoute = true } = {}) {
+  // vias: { gateId: [[x, z], ...] } intermediate points before a gate (no grade; the arrow leads through them, e.g. round a dead end)
+  constructor(spec, cityTour, graph, tourId, { par = null, facts = null, useRoute = true, vias = null } = {}) {
     this.spec = spec; this.graph = graph; this.useRoute = useRoute;   // the game draws no route (the player picks the streets); the simulation's autopilot needs one
     this.def = spec.tours.find((t) => t.id === tourId) || spec.tours[0];
     const place = (id) => {
@@ -43,6 +47,7 @@ export class Arcade {
     this.start = place(this.def.start);
     const ids = this.def.route.map((r) => r.stop || r.pass);
     this.gates = ids.map((id) => gateOf(place(id))).concat([gateOf(this.start, true)]);
+    for (const g of this.gates) g.vias = (vias && vias[g.finish ? g.id + ':finish' : g.id] || vias && !g.finish && vias[g.id] || []).map((v) => ({ p: v.p || v, r: v.r || RUSH.viaReach }));
     this.par = par;
     this.reset();
   }
@@ -51,6 +56,7 @@ export class Arcade {
     this.state = 'ready';          // ready (countdown shown by the UI) -> running -> finished | timeout
     this.t = 0; this.clock = 0;    // run time
     this.next = 0;                 // index of the active gate
+    this.viaI = 0;                 // index of the active via point of that gate
     this.results = this.gates.map(() => null);   // 'exact' | 'good' | 'ok' | 'missed'
     this.pocket = 0; this.stake = 0;
     this.combo = 1; this.comboT = 0;
@@ -74,6 +80,12 @@ export class Arcade {
   }
 
   get gate() { return this.gates[this.next] || null; }
+  // where the arrow leads: the active via point of the active gate, else the gate itself
+  get aim() {
+    const g = this.gate; if (!g) return null;
+    const v = g.vias[this.viaI];
+    return v ? { x: v.p[0], z: v.p[1], via: true } : { x: g.p[0], z: g.p[1], via: false };
+  }
   get target() { const g = this.gate; return g ? { x: g.p[0], z: g.p[1], title: g.title, kind: g.finish ? 'finish' : 'gate' } : null; }
   get done() { return this.state === 'finished' || this.state === 'timeout'; }
   get timeShare() { return this.par ? this.par * (1 - RUSH.startShare) / this.gates.length : 0; }
@@ -131,9 +143,17 @@ export class Arcade {
       const dist = Math.hypot(ctx.x - g.p[0], ctx.z - g.p[1]);
       this.near = Math.min(this.near, dist);
       const n = this.gates[this.next + 1];
-      if (this.near <= RUSH.gateMiss && dist > this.near + 3) this.cross(this.near <= RUSH.gateExact ? 'exact' : this.near <= RUSH.gateGood ? 'good' : 'ok', ctx);
+      // via points: reaching any of the remaining ones (a later one too: the player took a shortcut) drops it and all before it;
+      // close to the gate the rest is dropped (the gate is in sight)
+      if (dist < RUSH.viaSkip) this.viaI = g.vias.length;
+      else for (let j = g.vias.length - 1; j >= this.viaI; j--) {
+        const v = g.vias[j];
+        if (Math.hypot(ctx.x - v.p[0], ctx.z - v.p[1]) < v.r) { this.viaI = j + 1; this.events.push({ type: 'via', index: this.viaI }); break; }
+      }
+      const leave = this.near <= RUSH.gateExact ? RUSH.gateLeave[0] : RUSH.gateLeave[1];
+      if (this.near <= RUSH.gateMiss && (dist > this.near + leave || dist < RUSH.gateCentre)) this.cross(this.near <= RUSH.gateExact ? 'exact' : this.near <= RUSH.gateGood ? 'good' : 'ok', ctx);
       // missed: came near the gate and drove off again, or reached the next gate
-      else if ((this.near < RUSH.gateNear && dist > RUSH.gateFar) || (n && Math.hypot(ctx.x - n.p[0], ctx.z - n.p[1]) < RUSH.nextGateSkip)) this.cross('missed', ctx);
+      else if ((this.near < RUSH.gateNear && dist > Math.max(RUSH.gateFar, this.near + 30)) || (n && Math.hypot(ctx.x - n.p[0], ctx.z - n.p[1]) < RUSH.nextGateSkip)) this.cross('missed', ctx);
     }
     if (this.card && this.card.until < this.t) this.card = null;
     // off the planned route: recompute (no message, the line just changes)
@@ -160,7 +180,7 @@ export class Arcade {
     if (this.par) this.timeLeft += time;
     if (kind !== 'missed' && !g.finish) this.card = { id: g.id, title: g.title, text: g.short, until: this.t + RUSH.cardTime };   // the card of the place just passed
     this.events.push({ type: 'gate', index: i, kind, tips, time, title: g.title, finish: !!g.finish });
-    this.next++;
+    this.next++; this.viaI = 0;
     this.near = Infinity;
     if (this.next >= this.gates.length) this.finish('finished');
     else this.newRoute(g.p[0], g.p[1]);   // from the gate itself: its road is known, the tuk-tuk may stand on a side street that leads the long way round

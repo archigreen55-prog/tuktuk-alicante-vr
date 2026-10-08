@@ -247,12 +247,16 @@ the stake, the clock counts down and every gate adds time. Reports: [a1](docs/re
   walls, the par; `--drift`: the same pro driver with the brake against the handbrake, corner by corner.
   `PROFILE=arcade node tools/test-collisions.mjs`: throws at walls up to 170 km/h. `node tools/test-camera.mjs`: the chase
   camera along a whole run (never inside the cab, never inside a wall).
+- **Via points** (`data/arcade-via.json`, 0.13.1): intermediate points before a gate where the straight arrow leads into a dead end (e.g. from the
+  Postiguet beach to MARQ the arrow leads up the steep old-town steps); no grade, the arrow leads through them, the minimap shows them as small white
+  dots. `node tools/arcade-vias.mjs [--write]` computes them from the drivable street graph (edges that are walls or steeper than 33 % are dropped).
+  Slide with the nitro (or the gas pedal) held keeps its speed (`driftBoost*` in `ARCADE`); reversing 30 km/h; nitro works from a standstill.
 - **Game:** `?mode=arcade`; auto-gas (a switch in the menu / on the start screen, remembered), chase camera
   (`src/game/arcadeCam.js`: higher and farther with the speed, a wider view, a light shake on the nitro, pulled in by walls),
   clock (+ the seconds a gate gives) / tips / gate line on top, a compact landmark card after each gate (name + one line from
   `data/arcade-facts.json`, uk/en/es, ≤ 70 characters; 4 s, fades), the minimap shows only the gates (the next one big and blinking,
   an arrow on the rim when it is out of the disc), a light pillar + ring on the next gate (pulses; a flash on passing), a 3D arrow over
-  the tuk-tuk with the distance (`src/game/arcadeFx.js`), drift smoke and tyre marks, a summary with the record (localStorage),
+  the tuk-tuk (half size, translucent, swings smoothly, never flips at a gate; `src/game/arcadeFx.js`), drift smoke and tyre marks, a summary with the record (localStorage),
   "Ще раз", "Справжній тур" and "Забронювати" (WhatsApp, number in `src/config.js`). Sound is synthesized
   (`src/audio/arcadeSound.js`): engine (pitch follows the speed), soft wind, nitro, tyre squeal, hit, gate; "Звук" and "Музика" are separate
   switches in the menu / start screen (the music itself comes in wave 2). T: run again (twice).
