@@ -2,7 +2,7 @@
 // graph, tour logic and scoring as the game. For checking the tour data and calibrating the scoring.
 // Usage: node tools/sim-tour.mjs [tourId] [careful|rough]    (defaults: every tour, both drivers)
 import { readFile } from 'node:fs/promises';
-import { CollisionWorld } from '../src/vehicle/collision.js';
+import { CollisionWorld, KIND } from '../src/vehicle/collision.js';
 import { TukTukPhysics } from '../src/vehicle/physics.js';
 import { RoadGraph, polylineDistance } from '../src/game/route.js';
 import { Tour } from '../src/game/tour.js';
@@ -25,11 +25,11 @@ export function buildWorld() {
   const R = city.meta.rect;
   const world = new CollisionWorld(R);
   for (const b of city.buildings) { world.addPolygon(b.p); for (const h of b.holes || []) world.addPolygon(h); }
-  for (const w of city.walls || []) world.addPolygon(w.p, !!w.closed);
-  world.addPolygon(city.sea);
+  for (const w of city.walls || []) world.addPolygon(w.p, !!w.closed, KIND.wall);
+  world.addPolygon(city.sea, true, KIND.sea);
   const M = 5;
   const bounds = { minX: R.minX + M, maxX: R.maxX - M, minZ: R.minZ + M, maxZ: R.maxZ - M };
-  world.addPolygon([bounds.minX, bounds.minZ, bounds.maxX, bounds.minZ, bounds.maxX, bounds.maxZ, bounds.minX, bounds.maxZ]);
+  world.addPolygon([bounds.minX, bounds.minZ, bounds.maxX, bounds.minZ, bounds.maxX, bounds.maxZ, bounds.minX, bounds.maxZ], true, KIND.bounds);
   world.finalize();
   return { world, bounds };
 }

@@ -260,6 +260,10 @@ the stake, the clock counts down and every gate adds time. Reports: [a1](docs/re
   "Ще раз", "Справжній тур" and "Забронювати" (WhatsApp, number in `src/config.js`). T: run again (twice).
 - **Skill bonuses and combo (0.14.0):** a near miss (within 1.1 m of a wall at 80+ km/h without touching) and a drift of 1+ s pay a bonus (× combo) and
   raise the combo (also exact gates); a hit resets it. Two passengers sit on the back seat, feel the ride and react (cheer, laugh, scream, gasp).
+- **Smashable things (0.15.0):** traffic cones, terrace tables, bins, beach umbrellas stand along the route (`data/smashables.json`, 94 on the short tour,
+  generated and reproducible: `node tools/place-smashables.mjs short --write`); driving through one smashes it (+1…3 € × combo, debris, a little speed lost, no wall
+  hit; every 3rd smash raises the combo). `src/game/smashables.js`: 4 instanced meshes + one for the debris pool (+5 draw calls). `?smash=0` switches them off,
+  `?smash=0.5` keeps half (the frame-rate A/B test).
 - **A.2 (0.14.0):** in Crazy Tuk a steep slope no longer stops the tuk-tuk dead (the real tuk-tuk keeps the wall): the uphill part of the velocity is taken
   away and the tuk-tuk slides along the slope. **A.0:** `?debug=walls` draws what blocks it (red curtains: buildings, magenta: castle walls, blue: sea, white:
   zone edge, orange squares: slope wall) and says what stopped it with the coordinates.

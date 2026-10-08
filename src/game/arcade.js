@@ -28,6 +28,8 @@ export const RUSH = {
   // near miss (0.14.0): past a wall at speed within `gap` m of the body (not touching) for `minTime` s = a bonus (× combo), the combo grows
   nearMiss: { speed: 80 / 3.6, gap: 1.1, release: 1.7, minTime: 0.2, tips: 2, cooldown: 0.8 },
   // drift (0.14.0): a slide of at least `minSlide` s at `minKmh`+ pays `tipsPerSec` per second (× speed factor × combo) when it ends, the combo grows
+  // smash (0.15.0): tips per smashed thing by type (× combo); every 3rd smash within the combo's hold time raises the combo
+  smash: { c: 1, b: 2, t: 3, u: 2, every: 3 },
   drift: { minSlide: 1.0, minKmh: 40, tipsPerSec: 1.5, gapOk: 0.35 },
   cardTime: 4,                        // s the landmark card stays after its gate is passed (the HUD fades it out)
   stars: [0, 220, 360, 480, 650],     // € thresholds for 1..5 stars on the short tour (par starsPar); other tours scale them by par / starsPar
@@ -67,7 +69,7 @@ export class Arcade {
     this.timeLeft = this.par ? this.par * RUSH.startShare : Infinity;
     this.fareAcc = 0; this.near = Infinity; this.lastX = null; this.lastZ = null;
     this.maxSpeed = 0; this.hits = 0; this.stuckT = 0; this.slowT = 0; this.dist = 0;
-    this.nm = { t: 0, since: 0, count: 0, last: -9 }; this.dr = { t: 0, count: 0, best: 0 }; this.nearMisses = 0; this.driftSecs = 0; this.skillTips = 0;
+    this.smashCount = 0; this.smashTips = 0; this.nm = { t: 0, since: 0, count: 0, last: -9 }; this.dr = { t: 0, count: 0, best: 0 }; this.nearMisses = 0; this.driftSecs = 0; this.skillTips = 0;
     this.events = [];
     this.route = null; this.routeVersion = (this.routeVersion || 0) + 1; this.lastRoute = -1e9; this.offT = 0;
     this.card = null;
@@ -213,6 +215,14 @@ export class Arcade {
     else this.newRoute(g.p[0], g.p[1]);   // from the gate itself: its road is known, the tuk-tuk may stand on a side street that leads the long way round
   }
 
+  // things smashed this frame (types 'c' | 'b' | 't' | 'u'): the tips go to the stake; returns the euros
+  smashed(types) {
+    let tips = 0;
+    for (const t of types) { tips += (RUSH.smash[t] || 1) * this.combo; this.smashCount = (this.smashCount || 0) + 1; if (this.smashCount % RUSH.smash.every === 0) this.bump('smash'); }
+    this.stake += tips; this.skillTips += tips; this.smashTips = (this.smashTips || 0) + tips;
+    this.events.push({ type: 'smash', n: types.length, tips });
+    return tips;
+  }
   bump(why) { if (this.combo < RUSH.comboMax) this.combo++; this.comboT = 0; this.events.push({ type: 'combo', combo: this.combo, why }); }
 
   finish(state) {
@@ -225,7 +235,7 @@ export class Arcade {
     let stars = 1; const scale = this.par ? this.par / RUSH.starsPar : 1;
     for (let k = 1; k < RUSH.stars.length; k++) if (tips >= RUSH.stars[k] * scale) stars = k + 1;
     const count = (kind) => this.results.filter((r) => r === kind).length;
-    this.result = { state, tips, bonus: Math.round(bonus), nearMisses: this.nearMisses, driftSecs: Math.round(this.driftSecs * 10) / 10, skillTips: Math.round(this.skillTips), timeLeft: left, time: this.clock, maxKmh: Math.round(this.maxSpeed * 3.6), hits: this.hits,
+    this.result = { state, tips, bonus: Math.round(bonus), nearMisses: this.nearMisses, smashed: this.smashCount, smashTips: Math.round(this.smashTips), driftSecs: Math.round(this.driftSecs * 10) / 10, skillTips: Math.round(this.skillTips), timeLeft: left, time: this.clock, maxKmh: Math.round(this.maxSpeed * 3.6), hits: this.hits,
       exact: count('exact'), good: count('good'), ok: count('ok'), missed: count('missed'), gates: this.gates.length, dist: this.dist, stars };
     this.card = null;
     this.events.push({ type: 'finish', result: this.result });

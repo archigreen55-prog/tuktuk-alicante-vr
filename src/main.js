@@ -11,6 +11,7 @@ import { TukTukPhysics, TUNING, ARCADE } from './vehicle/physics.js';
 import { Arcade } from './game/arcade.js';
 import { ArcadeCam } from './game/arcadeCam.js';
 import { ArcadeFx } from './game/arcadeFx.js';
+import { Smashables, SMASH_TYPES } from './game/smashables.js';
 import { WallsDebug, wallsReason } from './diag/wallsDebug.js';
 import { ArcadeSound } from './audio/arcadeSound.js';
 import { createArcadeHud } from './ui/arcadeHud.js';
@@ -153,8 +154,9 @@ try {
 } catch (e) { tourError = `data/tour.json не завантажився: ${e.message}`; }
 if (!city.tour) tourError = tourError || 'city.json без даних туру (node tools/build-city.mjs)';
 // Crazy Tuk: the one-line facts (edited by hand) and the par times (tools/sim-arcade.mjs --write); both optional
-let arcadeFacts = null, arcadePar = {}, arcadeVia = {};
+let arcadeFacts = null, arcadePar = {}, arcadeVia = {}, arcadeSmash = {};
 try { arcadeFacts = await (await fetch(`data/arcade-facts.json?t=${Date.now()}`, { cache: 'no-store' })).json(); } catch (e) { console.warn(`data/arcade-facts.json: ${e.message}`); }
+try { arcadeSmash = await (await fetch(`data/smashables.json?v=${VERSION}`)).json(); } catch (e) { console.warn(`data/smashables.json: ${e.message}`); }
 try { arcadeVia = await (await fetch(`data/arcade-via.json?v=${VERSION}`)).json(); } catch (e) { console.warn(`data/arcade-via.json: ${e.message}`); }
 try { arcadePar = await (await fetch(`data/arcade-par.json?v=${VERSION}`)).json(); } catch (e) { console.warn(`data/arcade-par.json: ${e.message}`); }
 if (tourError) console.warn(tourError);
@@ -261,6 +263,7 @@ let tour = null, freeConfirm = -1e9;
 // Crazy Tuk (docs/plan-arcade.md): the run, its countdown before the start, the sounds and the HTML interface
 let run = null, runCountdown = 0, runRestartAt = -1e9;
 let hornHeld = false;
+const smashPop = { n: 0, tips: 0, t: 0 };   // the smashes of the last half second are shown as one line
 let frameTag = '';   // what happened in this frame (gate, hit, drift...), for the slow-frame list of the diagnostics
 const arcadeSound = new ArcadeSound(horn);
 arcadeSound.init(VERSION);   // the sound files of assets/audio (manifest.json); none yet = silent
@@ -396,6 +399,11 @@ function startArcade() {
   arcadeHud.hideSummary(); arcadeHud.show(true); arcadeHud.setCountdown(3);
   arcadeSound.setOn(true); arcadeSound.setSection('menu');
   { const fx = -Math.sin(phys.heading), fz = -Math.cos(phys.heading); tourists.setup(2, [phys.x, phys.z], [fx, fz]); tourists.live = true; tourists.seatAll(); tourists.visible = true; }   // two passengers on the back seat who feel the ride
+  if (params.get('smash') !== '0') {
+    if (!smash) smash = new Smashables(scene, groundY);
+    const frac = parseFloat(params.get('smash')), all = arcadeSmash[tourId] || [];   // ?smash=0.5: half of the things (the frame-rate test: fewer or none)
+    smash.load(frac > 0 && frac < 1 ? all.filter((_, i) => (i * frac) % 1 < frac) : all); smash.enable(true); smash.reset();
+  }
   if (!arcadeFx) { arcadeFx = new ArcadeFx(scene); arcadeFx.precompile(renderer, scene, camera); }   // compile the shaders now, not in the middle of the first drift
   arcadeFx.enable(true); arcadeFx.setGate(run, groundY);
   updateBestLabel();
@@ -406,6 +414,7 @@ function leaveArcade() {
   run = null; phys.T = TUNING; phys.hit = null; phys.nitro.charge = 1; phys.nitro.active = false;
   arcadeHud.show(false); arcadeSound.setOn(false);
   tourists.live = false; tourists.dispose();
+  if (smash) smash.enable(false);
   if (arcadeFx) arcadeFx.enable(false);
   if (touch) touch.setArcade(false);
   if (camMode === 'chase' && !IS_PHONE) setCamMode('cockpit');
@@ -598,6 +607,7 @@ const fullMap = createFullMap({
 const rotateGuard = IS_PHONE ? installRotateGuard() : null;
 const clock = { t: 0 };
 const arcadeCam = new ArcadeCam();
+let smash = null;   // the smashable street things (src/game/smashables.js); ?smash=0 switches them off (an A/B for the frame rate)
 let arcadeFx = null;   // the beacon, the arrow and the drift effects: built on the first Crazy Tuk run
 const chasePos = new THREE.Vector3(), chaseLook = new THREE.Vector3(), tmpV = new THREE.Vector3();
 function setTilt(level) { tilt = level; saveSetting('tilt', level.id); $('tilt').value = level.id; }
@@ -774,6 +784,17 @@ function frame(now, xrFrame) {
     const pen = world.penetration(phys.x, phys.z, 1.8), clearance = pen > 0 ? 1.8 - pen - 0.72 : null;
     const drifting = phys.grip < 0.8 && phys.slipSpeed > ARCADE.driftSmoke && phys.contactTimer <= 0;
     run.update({ dt: frameDt, x: phys.x, z: phys.z, speed: phys.forwardSpeed, impact, contact: phys.contactTimer > 0, blocked: verge > 0, nitroActive: phys.nitro.active, clearance, drifting });
+    if (smash && smash.on && run.state === 'running') {
+      const hit = smash.update(frameDt, phys.x, phys.z, phys.heading, phys.vx, phys.vz);
+      if (hit.length) {
+        for (const h of hit) { const k = SMASH_TYPES[h.t].slow; phys.vx *= k; phys.vz *= k; }
+        const tips = run.smashed(hit.map((h) => h.t));
+        smashPop.n += hit.length; smashPop.tips += tips; smashPop.t = 0.5;
+        arcadeSound.play('smash', { gain: Math.min(1, 0.6 + hit.length * 0.15) }, 0.12); buzz(20 + 8 * hit.length);
+        if (hit.some((h) => h.t === 't')) passengers('laugh', 2.5);
+      }
+    } else if (smash) smash.update(frameDt, phys.x, phys.z, phys.heading, 0, 0);
+    if (smashPop.n && (smashPop.t -= frameDt) <= 0) { arcadeHud.pop(`Розбито${smashPop.n > 1 ? ' ×' + smashPop.n : ''}! +${euroWhole(smashPop.tips)}${run.combo > 1 ? ' · ×' + run.combo : ''}`, '#ffe27a'); smashPop.n = smashPop.tips = 0; }
     handleRunEvents();
     if (arcadeFx) arcadeFx.setGate(run, groundY);
     arcadeSound.setSection(run.state === 'running' ? 'drive' : 'menu');
@@ -1049,4 +1070,4 @@ if (touch) {
 if (params.has('autostart')) start();   // after the phone interface exists (it hides the start screen's parts)
 
 // test / debugging hook
-window.__game = { get run() { return run; }, get fx() { return arcadeFx; }, arcadeSound, tourists, debugWalls, arcadeCam, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { get run() { return run; }, get smash() { return smash; }, smashPop, get fx() { return arcadeFx; }, arcadeSound, tourists, debugWalls, arcadeCam, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };

@@ -117,7 +117,7 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
       row('Час', fmtClock(r.time) + (r.state === 'finished' ? ` · лишилось ${Math.round(r.timeLeft)} с → +${euro(r.bonus)}` : ''));
       row('Ворота', `точно ${r.exact} · добре ${r.good} · є ${r.ok} · пропущено ${r.missed} з ${r.gates}`);
       row('Максимум', `${r.maxKmh} км/год`); row('Удари', String(r.hits));
-      if (r.nearMisses || r.driftSecs) row('Майстерність', `майже зачепив ${r.nearMisses} · дрифт ${r.driftSecs} с → ${euro(r.skillTips)}`); row('Шлях', `${(r.dist / 1000).toFixed(1)} км`);
+      if (r.nearMisses || r.driftSecs || r.smashed) row('Майстерність', `розбито ${r.smashed || 0} · майже зачепив ${r.nearMisses} · дрифт ${r.driftSecs} с → ${euro(r.skillTips)}`); row('Шлях', `${(r.dist / 1000).toFixed(1)} км`);
       const gl = el('div', 'gates', null, c);
       for (const g of gates) { const d = el('div', 'g ' + (g.kind || 'missed'), null, gl); el('b', null, g.title, d); el('i', null, (KIND[g.kind] || 'не дістались') + (g.text ? ' · ' : ''), d); d.append(g.text || ''); }
       const btns = el('div', 'btns', null, c);
