@@ -44,9 +44,12 @@ const PAR_MARGIN = 1.3;   // par = the normal autopilot's time × this (a person
 // Drivers: aLat = sideways acceleration they plan corners for (the physics allows 30), aDec = braking they plan with,
 // top = the speed they are comfortable with without nitro, nitro = use it on straights, look = pursuit distance
 export const DRIVERS = {
-  beginner: { aLat: 9, aDec: 8, top: 95 / 3.6, nitro: false, lookBase: 6, lookGain: 0.5, gain: 1.3, brakeMax: 0.9 },
-  normal: { aLat: 15, aDec: 11, top: 120 / 3.6, nitro: true, nitroMinStraight: 120, lookBase: 5, lookGain: 0.45, gain: 1.6, brakeMax: 1 },
+  // cruise = the auto-gas speed (km/h; none = the pedal, up to 120), drift = the handbrake in sharp corners instead of the brake
+  beginner: { aLat: 9, aDec: 8, top: 95 / 3.6, cruise: ARCADE.autoGasKmh, nitro: false, lookBase: 6, lookGain: 0.5, gain: 1.3, brakeMax: 0.9 },
+  normal: { aLat: 15, aDec: 11, top: 120 / 3.6, cruise: ARCADE.autoGasKmh, nitro: true, nitroMinStraight: 120, lookBase: 5, lookGain: 0.45, gain: 1.6, brakeMax: 1 },
   pro: { aLat: 26, aDec: 12, top: 120 / 3.6, nitro: true, nitroMinStraight: 70, lookBase: 4.5, lookGain: 0.42, gain: 1.9, brakeMax: 1 },
+  // the same pro driver, with the handbrake (drift) in the sharp corners instead of braking
+  proDrift: { aLat: 26, aDec: 12, top: 120 / 3.6, nitro: true, nitroMinStraight: 70, lookBase: 4.5, lookGain: 0.42, gain: 1.9, brakeMax: 1, drift: true },
 };
 
 // ---------- corners of a route: the largest arc that fits between the walls ----------
@@ -119,6 +122,8 @@ export function simulate(tourId, style, { par = null, log = false, onStep = null
   const D = DRIVERS[style];
   const input = { throttle: 0, brake: 0, steer: 0, handbrake: false, horn: false, nitro: false };
   let t = 0, routeV = -1, line = null, pursueLine = null, cs = null, below60 = 0, hitsHard = 0, minV = Infinity, sumV = 0, nV = 0, stuck = 0;
+  const cornerT = new Map();
+  let driftOn = false, driftT = 0, driftN = 0;
   const cornerMin = new Map();   // corner index -> min speed within 12 m
   const gatesLog = [];
   while (t < 900 && !run.done) {
@@ -127,7 +132,7 @@ export function simulate(tourId, style, { par = null, log = false, onStep = null
       routeV = run.routeVersion; cs = corners(run.route, world); line = racingLine(run.route, cs); pursueLine = makePursuit(line);
     }
     const v = phys.forwardSpeed;
-    input.throttle = 1; input.brake = 0; input.steer = 0; input.nitro = false; input.handbrake = false;
+    input.throttle = 1; input.brake = 0; input.steer = 0; input.nitro = false; input.handbrake = false; input.cruiseKmh = D.cruise || 0;
     if (line) {
       const look = D.lookBase + D.lookGain * Math.abs(v);
       let { target, at, total, pointAt } = pursueLine(phys.x, phys.z, look);
@@ -143,7 +148,7 @@ export function simulate(tourId, style, { par = null, log = false, onStep = null
       const alpha = Math.atan2(tx * rx + tz * rz, tx * fx + tz * fz);
       input.steer = Math.max(-1, Math.min(1, alpha * D.gain));
       // speed plan: curvature ahead on the racing line (heading change over 6 m), braking distance to it
-      let vt = D.top, straight = total - at;
+      let vt = D.top, straight = total - at, sSharp = Infinity;
       const horizon = Math.max(40, v * v / (2 * D.aDec) + 30);
       for (let s = 3; s <= horizon; s += 3) {
         const a = pointAt(at + s - 3), b = pointAt(at + s), c = pointAt(at + s + 3);
@@ -152,8 +157,16 @@ export function simulate(tourId, style, { par = null, log = false, onStep = null
         if (k > 0.004 && s < straight) straight = s;
         const vTurn = k > 1e-3 ? Math.sqrt(D.aLat / k) : D.top;
         vt = Math.min(vt, Math.sqrt(vTurn * vTurn + 2 * D.aDec * Math.max(0, s - 4)));
+        if (k > 0.035 && vTurn < v - 3 && sSharp === Infinity) sSharp = s;   // a sharp corner we are too fast for
       }
-      if (v > vt + 0.5) { input.throttle = 0; input.brake = Math.min(D.brakeMax, Math.max(0.2, (v - vt) * 0.25)); }
+      // the drift: instead of braking before a sharp corner, pull the handbrake at its mouth and hold it until the nose points along the way out
+      if (D.drift) {
+        const kNow = (() => { const a = pointAt(at), b = pointAt(at + 4), c = pointAt(at + 8); const h1 = Math.atan2(b[1] - a[1], b[0] - a[0]), h2 = Math.atan2(c[1] - b[1], c[0] - b[0]); return Math.abs(Math.atan2(Math.sin(h2 - h1), Math.cos(h2 - h1))) / 4; })();
+        if (!driftOn && v > 14 && sSharp < v * 0.22 + 2) { driftOn = true; driftT = 0; driftN++; }
+        if (driftOn) { driftT += DT; if (driftT > 0.4 && ((kNow < 0.012 && Math.abs(alpha) < 0.3) || driftT > 2.2)) driftOn = false; }
+        if (driftOn) input.handbrake = true;
+      }
+      if (v > vt + 0.5 && !driftOn) { input.throttle = 0; input.brake = Math.min(D.brakeMax, Math.max(0.2, (v - vt) * 0.25)); }
       if (D.nitro && straight > D.nitroMinStraight && v > 14 && vt >= D.top - 0.1 && phys.nitro.charge > 0.05) input.nitro = true;
     }
     phys.step(DT, input);
@@ -172,17 +185,33 @@ export function simulate(tourId, style, { par = null, log = false, onStep = null
     if (kmh < 60) below60 += DT;
     if (t > 4) minV = Math.min(minV, kmh);
     sumV += kmh; nV++;
+    if (cs) for (const c of cs) {
+      if (c.deg < 60) continue;
+      const d = Math.hypot(phys.x - c.x, phys.z - c.z), key = `${c.x.toFixed(0)},${c.z.toFixed(0)}`;
+      if (d < 35) { const e = cornerT.get(key) || { in: t, out: t, hits: 0, deg: c.deg, R: c.R }; e.out = t; if (phys.lastImpact > 4) e.hits++; cornerT.set(key, e); }
+    }
     if (cs) for (const c of cs) { const d = Math.hypot(phys.x - c.x, phys.z - c.z); if (d < 12) { const key = `${c.x.toFixed(0)},${c.z.toFixed(0)}`; cornerMin.set(key, Math.min(cornerMin.get(key) ?? Infinity, kmh)); } }
     if (onStep) onStep(t, phys, run);
   }
-  return { run, r: run.result, t, below60, hitsHard, minV, avgV: sumV / Math.max(1, nV), stuck, reverts: phys.reverts || 0, gatesLog, cornerMin, cornersOf: (pts) => corners(pts, world) };
+  return { run, driftN, cornerT, r: run.result, t, below60, hitsHard, minV, avgV: sumV / Math.max(1, nV), stuck, reverts: phys.reverts || 0, gatesLog, cornerMin, cornersOf: (pts) => corners(pts, world) };
 }
 
 const [argTour = 'short', argStyle] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const wantPar = process.argv.includes('--par') || process.argv.includes('--write');
 const writePar = process.argv.includes('--write');
+if (process.argv[1] && process.argv[1].endsWith('sim-arcade.mjs') && process.argv.includes('--drift')) {
+  // the handbrake against the brake: the same pro driver, per corner of 60°+ (35 m before to 35 m after the corner point)
+  const par = parFile[argTour] || null;
+  const a = simulate(argTour, 'pro', { par }), b = simulate(argTour, 'proDrift', { par });
+  let ta = 0, tb = 0, n = 0, faster = 0; const rows = [];
+  for (const [k, ea] of a.cornerT) { const eb = b.cornerT.get(k); if (!eb) continue; const da = ea.out - ea.in, db = eb.out - eb.in; ta += da; tb += db; n++; if (db < da - 0.05) faster++; rows.push(`${k.padEnd(10)} ${ea.deg.toFixed(0).padStart(3)}° R${ea.R.toFixed(1).padStart(5)}  brake ${da.toFixed(2)} s (${ea.hits} hits)   drift ${db.toFixed(2)} s (${eb.hits} hits)   ${(da - db >= 0 ? '-' : '+') + Math.abs(da - db).toFixed(2)} s`); }
+  console.log(rows.join('\n'));
+  console.log(`\ncorners ${n}: brake ${ta.toFixed(1)} s, drift ${tb.toFixed(1)} s (${((tb - ta) / ta * 100).toFixed(1)} %), drift faster in ${faster} of ${n}`);
+  console.log(`whole run: brake ${a.run.clock.toFixed(1)} s, ${a.run.hits} hits | drift ${b.run.clock.toFixed(1)} s, ${b.run.hits} hits, ${b.driftN} drifts`);
+  process.exit(0);
+}
 if (process.argv[1] && process.argv[1].endsWith('sim-arcade.mjs')) {
-  const styles = argStyle ? [argStyle] : Object.keys(DRIVERS);
+  const styles = argStyle ? [argStyle] : Object.keys(DRIVERS).filter((k) => k !== 'proDrift');
   // 1. the corners of the planned route (through all gates) and what the walls allow
   {
     const { world } = buildWorld();
@@ -211,6 +240,7 @@ if (process.argv[1] && process.argv[1].endsWith('sim-arcade.mjs')) {
     const r = s.r, run = s.run;
     console.log(`\n--- ${style}: ${run.state} after ${run.clock.toFixed(1)} s (sim ${(s.t).toFixed(0)} s) ---`);
     if (r) console.log(`tips ${r.tips} € (finish bonus ${r.bonus}, ${r.stars}★), time left ${r.timeLeft.toFixed(1)} s, gates exact ${r.exact} / good ${r.good} / ok ${r.ok} / missed ${r.missed} of ${r.gates}, max ${r.maxKmh} km/h`);
+    if (s.driftN) console.log(`drifts: ${s.driftN}`);
     console.log(`speed: avg ${s.avgV.toFixed(0)} km/h, min after start ${s.minV.toFixed(0)}, below 60 km/h ${s.below60.toFixed(1)} s; wall hits ${s.hitsHard} (run counted ${run.hits}), stuck resets ${s.stuck}, anti-stuck ${s.reverts}, distance ${(run.dist / 1000).toFixed(2)} km`);
     console.log(s.gatesLog.join('\n'));
     if (process.env.CORNERS) console.log('min speed at corners: ' + [...s.cornerMin.entries()].map(([k, v]) => `${k}: ${v.toFixed(0)}`).join(' | '));

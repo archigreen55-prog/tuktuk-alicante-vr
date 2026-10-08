@@ -2,7 +2,7 @@
 // its own), the landmark card on the way to a gate, the gate result flash, the countdown and the summary with the
 // record and the "book the real tour" button. Plain HTML over the canvas, phone and PC alike; updated ~10 times a
 // second from main.js, nothing runs while the mode is off.
-import { euro, clock as fmtClock } from './dashboard.js';
+import { euroWhole as euro, clock as fmtClock } from './dashboard.js';
 
 const CSS = `
 .ah { position: fixed; inset: 0; pointer-events: none; z-index: 6; font-family: system-ui, sans-serif; color: #fff; display: none; }
@@ -16,10 +16,16 @@ const CSS = `
 .ah-speed { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); text-align: center; text-shadow: 0 1px 4px #000; line-height: 1; }
 .ah-speed b { display: block; font-size: 44px; font-variant-numeric: tabular-nums; } .ah-speed span { font-size: 13px; opacity: .85; }
 .ah-gate { position: absolute; left: 50%; top: 92px; transform: translateX(-50%); font: 600 14px/1.3 system-ui, sans-serif; color: #cfe3f5; text-shadow: 0 1px 3px #000; white-space: nowrap; }
-.ah-card { position: absolute; left: 12px; top: 186px; max-width: min(46vw, 420px); padding: 8px 12px; border-radius: 12px; background: rgba(10, 14, 20, .72); transform: translateX(-120%); transition: transform .25s; }
-.ah-card.show { transform: none; }
-.ah-card .t { font: 700 20px/1.2 system-ui, sans-serif; color: #ffd166; } .ah-card .f { font: 15px/1.3 system-ui, sans-serif; margin-top: 3px; }
-html:not(.ui-phone) .ah-card { top: 12px; left: 12px; }
+.ah-card { position: absolute; left: 50%; top: 112px; transform: translateX(-50%); max-width: min(62vw, 520px); padding: 5px 12px 6px; border-radius: 10px; background: rgba(10, 14, 20, .62); text-align: center; opacity: 0; transition: opacity .7s ease-out; }
+.ah-card.show { opacity: 1; transition: opacity .25s ease-in; }
+.ah-card .t { font: 700 14px/1.2 system-ui, sans-serif; color: #ffd166; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ah-card .f { font: 12px/1.25 system-ui, sans-serif; margin-top: 1px; color: #e8f1fa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ah-bonus { position: absolute; left: calc(50% + 74px); top: 12px; font: 800 22px/1 system-ui, sans-serif; color: #6fe06f; text-shadow: 0 1px 4px #000; opacity: 0; transform: translateY(6px); }
+.ah-bonus.bad { color: #ff7a5c; }
+.ah-bonus.show { animation: ah-bonus 1.6s ease-out forwards; }
+@keyframes ah-bonus { 0% { opacity: 0; transform: translateY(8px) scale(.7); } 12% { opacity: 1; transform: none; } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
+.ah-white { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.ah-white.go { animation: ah-white .3s ease-out; }
+@keyframes ah-white { 0% { opacity: .45; } 100% { opacity: 0; } }
 .ah-flash { position: absolute; left: 50%; top: 36%; transform: translate(-50%, -50%) scale(.6); font: 900 40px/1.1 system-ui, sans-serif; text-align: center; text-shadow: 0 2px 6px #000, 0 0 3px #000; opacity: 0; transition: opacity .15s, transform .15s; white-space: nowrap; }
 .ah-flash.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 .ah-flash small { display: block; font-size: 20px; font-weight: 700; }
@@ -48,9 +54,11 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
   const root = el('div', 'ah', null, document.body);
   const clockEl = el('div', 'ah-clock', '0:00', root);
   const tips = el('div', 'ah-tips', null, root); const pocket = el('span', 'pk', '0 €', tips); const stake = el('span', 'st', '', tips); const combo = el('span', 'cb', '', tips);
+  const bonus = el('div', 'ah-bonus', '', root);
   const gate = el('div', 'ah-gate', '', root);
   const speed = showSpeed ? el('div', 'ah-speed', null, root) : null; const speedNum = speed ? el('b', null, '0', speed) : null; if (speed) el('span', null, 'км/год', speed);
   const card = el('div', 'ah-card', null, root); const cardT = el('div', 't', '', card), cardF = el('div', 'f', '', card);
+  const white = el('div', 'ah-white', null, root);
   const flash = el('div', 'ah-flash', null, root);
   const count = el('div', 'ah-count', '3', root);
   const sum = el('div', 'ah-sum', null, document.body);
@@ -69,7 +77,16 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
       set(gate, s.gateTitle ? `${s.gateIndex + 1}/${s.gateCount} · ${s.gateTitle}${s.gateDist != null ? ' · ' + (s.gateDist < 1000 ? Math.round(s.gateDist / 10) * 10 + ' м' : (s.gateDist / 1000).toFixed(1) + ' км') : ''}` : '');
       if (speedNum) set(speedNum, String(Math.round(Math.abs(s.kmh))));
       const c = s.card;
+      // the card appears when a gate is passed, stays a few seconds (arcade.js), then fades out smoothly (CSS); the text stays while it fades
       if ((c ? c.id : null) !== cardId) { cardId = c ? c.id : null; if (c) { cardT.textContent = c.title; cardF.textContent = c.text || ''; card.classList.add('show'); } else card.classList.remove('show'); }
+    },
+    // a short white flash of the whole screen (a gate passed)
+    flashScreen() { white.classList.remove('go'); void white.offsetWidth; white.classList.add('go'); },
+    // seconds won / lost flash next to the clock
+    bonusTime(sec) {
+      if (!sec) return;
+      bonus.textContent = `${sec > 0 ? '+' : '−'}${Math.round(Math.abs(sec))} с`; bonus.classList.toggle('bad', sec < 0);
+      bonus.classList.remove('show'); void bonus.offsetWidth; bonus.classList.add('show');
     },
     flashGate(ev) {
       const k = ev.kind;

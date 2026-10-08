@@ -72,7 +72,21 @@ export const ARCADE = {
   latAccelMax: 30,        // m/s² (≈ 3 g, arcade grip): R = v² / 30 -> 9.3 m at 60 km/h, 37 m at 120, 58 m at 150
   minTurnRadius: 7.5,     // m, the tightest path at low speed
   gripKeep: 0.86,
-  handbrakeKeep: 0.985, handbrakeDecel: 3.0, handbrakeYaw: 1.5,   // drift: the tail steps out, the speed stays
+  // speeds (tune here): the auto-gas holds autoGasKmh, the pedal gives maxForward, the nitro nitroMaxKmh (below)
+  autoGasKmh: 70, cruiseFade: 3,   // km/h the auto-gas holds; m/s² it trims a faster speed back (after a nitro burst)
+  // drift (handbrake at speed): the rear loses grip, the heading turns faster than the path, the tuk-tuk slides sideways.
+  // The side force is bounded (driftFriction m/s²), so the slide is caught by steering against it; releasing the
+  // handbrake brings the grip back in 1/gripRecover s and the slide turns into forward speed. It never spins past
+  // driftMaxSlip and never flips (the model is 2D).
+  handbrakeDecel: 1.5, handbrakeYaw: 2.0,
+  driftMinSpeed: 30 / 3.6,  // m/s: slower than this the handbrake only turns tighter (no slide)
+  driftEnter: 7, gripRecover: 2.5,   // 1/s: how fast the rear lets go / takes hold again
+  driftFriction: 30,        // m/s²: side force of the sliding tyres (the grip's turn is ~30)
+  driftCarry: 0.85,         // share of the sideways speed the tyres turn into forward speed (the rest is scrubbed)
+  driftScrub: 0.5,          // 1/s: forward speed lost per m/s of sideways speed while sliding
+  driftAlign: 1.0,          // 1/s: how hard the heading is pulled back to the path with the stick centred
+  driftMaxSlip: 70 * Math.PI / 180,   // rad: the heading does not rotate any further away from the path than this
+  driftSmoke: 2.5,          // m/s of sideways speed above which the game shows smoke / marks / squeal
   edgeZone: 120, edgeDecel: 8,                     // from 150 km/h the soft edge needs ≥ 110 m
   scrapeKeep: 0.9985, bounce: 1.15,
   overspeedFade: 4,
@@ -116,6 +130,9 @@ export class TukTukPhysics {
     this.reversing = false;
     this.lastImpact = 0;  // m/s of the latest hit (for comfort effects)
     this.accel = 0;       // longitudinal acceleration m/s² (for comfort effects)
+    this.grip = 1;        // arcade: rear grip 1 (holds) .. 0 (sliding on the handbrake)
+    this.slip = 0;        // arcade: angle between the heading and the path (rad, + = the path is to the right of the nose)
+    this.slipSpeed = 0;   // arcade: sideways speed (m/s) of the tuk-tuk in its own frame, for the smoke / marks / squeal
     // nitro: active burst, seconds burnt, charge 0..1 (1 = ready), uses (count, for the tour), button edge
     this.nitro = { active: false, t: 0, charge: 1, uses: 0, held: false };
     this.crash = false;   // set by a hard wall hit above crashSpeed; main clears it after the reset
@@ -175,7 +192,11 @@ export class TukTukPhysics {
       if (brake > 0) vf = Math.max(0, vf - T.brakeDecel * brake * dt);
     } else {
       // analog throttle (controller trigger) sets a lower top speed; the keyboard's 1 gives the full curve
-      const top = T.maxForward * throttle;
+      let top = T.maxForward * throttle;
+      if (input.cruiseKmh && T.arcade) {   // the auto-gas: holds this speed, trims a faster one back (after the nitro)
+        top = Math.min(top, input.cruiseKmh / 3.6);
+        if (vf > top) vf = Math.max(top, vf - T.cruiseFade * dt);
+      }
       const cap = this.grade < 0 ? downhillCap(-this.grade, T) : Infinity; // descents: a governor by grade
       const climb = this.grade > 0 ? climbCap(this.grade, T) : Infinity;   // climbs: the motor holds this at most
       const want = Math.min(top, climb);
@@ -205,9 +226,30 @@ export class TukTukPhysics {
     // --- lateral grip ---
     // while scraping a wall, keep the sideways speed so the tuk-tuk slides along it
     // (no automatic heading change: in VR that would rotate the player's view).
-    const keep = this.contactTimer > 0 ? T.wallSlideKeep : input.handbrake ? T.handbrakeKeep : T.gripKeep;
-    vr *= Math.pow(keep, dt * 60);
+    if (T.arcade) {
+      // rear grip: the handbrake at speed lets it go, releasing brings it back (slowly: the slide is carried out)
+      const wantLoose = !!input.handbrake && vf > T.driftMinSpeed && !this.reversing;
+      this.grip = wantLoose ? Math.max(0, this.grip - T.driftEnter * dt) : Math.min(1, this.grip + T.gripRecover * dt);
+      const vr0 = vr;
+      if (this.contactTimer > 0) vr *= Math.pow(T.wallSlideKeep, dt * 60);
+      else {
+        const held = vr * Math.pow(T.gripKeep, dt * 60);
+        if (this.grip < 1) {
+          const slid = Math.sign(vr) * Math.max(0, Math.abs(vr) - T.driftFriction * dt);   // bounded side force
+          vr = slid + (held - slid) * this.grip;
+        } else vr = held;
+        // the tyres rotate the path instead of killing the speed: what vanished sideways turns (mostly) into forward speed
+        const turned = (vr0 * vr0 - vr * vr) * T.driftCarry;
+        if (turned > 0 && vf > 0.5) vf = Math.sqrt(vf * vf + turned);
+        if (this.grip < 1 && vf > 0) vf = Math.max(0, vf - T.driftScrub * Math.abs(vr) * (1 - this.grip) * dt);
+      }
+    } else {
+      const keep = this.contactTimer > 0 ? T.wallSlideKeep : input.handbrake ? T.handbrakeKeep : T.gripKeep;
+      vr *= Math.pow(keep, dt * 60);
+    }
     this.contactTimer = Math.max(0, (this.contactTimer || 0) - dt);
+    this.slipSpeed = Math.abs(vr);
+    this.slip = vf > 0.5 ? Math.atan2(vr, vf) : 0;
 
     // --- steering ---
     const sp = Math.min(1, Math.abs(vf) / T.maxForward);
@@ -221,8 +263,13 @@ export class TukTukPhysics {
       // smallest path radius (minTurnRadius), so a full stick never saturates in a jerk: at 60 km/h R ≈ 9 m, at 120 ≈ 37 m
       const av = Math.max(1e-3, Math.abs(vf));
       const yawCap = Math.min(T.maxYawRate, T.latAccelMax / av, av / T.minTurnRadius);
+      const slide = 1 - this.grip;
       yaw = (maxWheel > 0 ? this.wheel / maxWheel : 0) * yawCap * Math.sign(vf || 1);
-      if (input.handbrake) yaw *= T.handbrakeYaw;
+      if (input.handbrake) yaw *= 1 + (T.handbrakeYaw - 1) * (vf > T.driftMinSpeed ? Math.max(slide, 0.35) : 0.35);   // slow: only a tighter turn
+      if (slide > 0 && vf > 0.5) {
+        yaw += T.driftAlign * this.slip * slide;   // the nose is pulled back towards the path (the slide settles by itself)
+        if (Math.abs(this.slip) > T.driftMaxSlip && yaw * this.slip < 0) yaw = 0;   // no spinning round
+      }
     } else {
       yaw = (vf / T.wheelbase) * Math.tan(this.wheel);
       if (input.handbrake) yaw *= T.handbrakeYaw;

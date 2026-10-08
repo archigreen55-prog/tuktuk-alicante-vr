@@ -85,6 +85,9 @@ export function createPhoneUi({ touch, api }) {
     { label: 'Режим керування', options: [['table', 'За столом'], ['vr', 'Як у VR (наступний етап)', true], ['tilt', 'Нахил телефона (наступний етап)', true]], get: () => 'table', set: () => {} },
     { label: 'Кермо', options: [['buttons', 'кнопки ◄ ►'], ['slider', 'повзунок']], get: () => settings.steer, set: (v) => { saveSetting('phone.steer', v); touch.setConfig({ steer: v }); } },
     { label: 'Газ', options: [['analog', 'плавний (чим вище палець)'], ['full', 'повний']], get: () => settings.gas, set: (v) => { saveSetting('phone.gas', v); touch.setConfig({ gas: v }); } },
+    { label: 'Автогаз (Crazy Tuk, ≈ 70 км/год)', check: true, get: () => loadSetting('arcade.manualGas', false) !== true, set: (v) => { saveSetting('arcade.manualGas', !v); api.applyAutoGas(); } },
+    { label: 'Звук', check: true, get: () => loadSetting('sound.on', true) !== false, set: (v) => { saveSetting('sound.on', v); api.applySound(); } },
+    { label: 'Музика', check: true, get: () => loadSetting('music.on', true) !== false, set: (v) => { saveSetting('music.on', v); api.applySound(); } },
     { label: 'Поле зору по горизонталі', options: [[90, '90°'], [100, '100°'], [110, '110°']], get: () => settings.fov, set: (v) => { saveSetting('phone.fov', +v); api.applyFov(); } },
     { label: 'Роздільність картинки', options: [['std', 'стандартна (≈ 0.65 Мп)'], ['high', 'висока (≈ 0.85 Мп)'], ['eco', 'економна (≈ 0.4 Мп)']], get: () => loadSetting('phone.res', 'std'), set: (v) => { saveSetting('phone.res', v); api.applyRes(); } },
     { label: 'Вібрація (удари, нітро)', check: true, get: () => settings.vibrate, set: (v) => { saveSetting('phone.vibrate', v); touch.setConfig({ vibrate: v }); } },
@@ -120,7 +123,7 @@ export function createPhoneUi({ touch, api }) {
   function adaptStartScreen() {
     const card = document.querySelector('#overlay .card'); if (!card) return;
     const p = card.querySelector('p'); if (p) p.textContent = 'Два режими: «Справжній тур» — спокійно, із зупинками, фото й фактами, чайові за плавність; «Crazy Tuk» — 60–150 км/год крізь усі точки маршруту, чайові за швидкість. Керування — кнопками на екрані.';
-    for (const id of ['steering', 'vignette', 'vibration']) { const l = $(id) && $(id).closest('label'); if (l) l.style.display = 'none'; }
+    for (const id of ['steering', 'vignette', 'vibration', 'manualGasRow', 'soundRow', 'musicRow']) { const l = $(id) && $(id).closest('label'); if (l) l.style.display = 'none'; }
     const tiltLabel = $('tilt') && $('tilt').closest('label'); if (tiltLabel && tiltLabel.firstChild) tiltLabel.firstChild.textContent = 'Нахил кабіни на підйомах';
     const settingsEl = $('settings');
     for (const d of defs) addRow(settingsEl, d);

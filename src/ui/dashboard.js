@@ -165,6 +165,8 @@ export class Dashboard {
   }
 }
 
+// Crazy Tuk shows whole euros only
+export function euroWhole(v) { return `${Math.round(Number(v))} €`; }
 export function euro(v) { return `${Number(v).toFixed(2).replace(/\.00$/, '')} €`; }
 export function clock(s) { s = Math.max(0, Math.round(s)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
 export function moodColor(m) { return m >= 80 ? '#6fe06f' : m >= 55 ? '#ffd166' : m >= 35 ? '#ff9f43' : '#ff5c5c'; }

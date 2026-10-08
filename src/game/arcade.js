@@ -14,6 +14,7 @@ export const RUSH = {
   gateTips: { exact: 25, good: 10, ok: 0 },          // € (× combo)
   gateTime: { exact: 1.3, good: 1.0, ok: 0.6 },      // × the gate's share of the time
   gateNitro: { exact: 0.25, good: 0.1, ok: 0 },      // tank refill
+  parPerMetre: 0.06,                  // s of par per metre of the way, when a tour has no measured par (the short tour: 250 s / 4.4 km)
   startShare: 0.35,                   // the clock starts with this share of par; the rest is spread over the gates
   finishBonus: 1.5,                   // € per second left on the clock
   hitMin: 15 / 3.6,                   // m/s: slower wall touches cost nothing
@@ -21,8 +22,9 @@ export const RUSH = {
   nextGateSkip: 25,                   // m: this close to the NEXT gate without crossing the active one = the active one is missed
   stuckSpeed: 5 / 3.6, stuckFor: 2, stuckPenalty: 3, // m/s, s, s: standing in a wall this long = back onto the road, minus time
   comboMax: 5, comboHold: 4,          // (A2) multiplier cap, s without an event before it drops by one
-  cardAhead: 6,                       // s of travel before a gate: the landmark card appears
-  stars: [0, 220, 360, 480, 650],     // € thresholds for 1..5 stars (tools/sim-arcade.mjs: beginner autopilot 4★, normal 4★, pro 5★; a person scores less)
+  cardTime: 4,                        // s the landmark card stays after its gate is passed (the HUD fades it out)
+  stars: [0, 220, 360, 480, 650],     // € thresholds for 1..5 stars on the short tour (par starsPar); other tours scale them by par / starsPar
+  starsPar: 309,                      // s: the par of the short tour, the thresholds above belong to it
 };
 
 const speedFactor = (kmh) => { let f = 0; for (const [from, k] of RUSH.speedFactor) if (kmh >= from) f = k; return f; };
@@ -30,8 +32,8 @@ const speedFactor = (kmh) => { let f = 0; for (const [from, k] of RUSH.speedFact
 export class Arcade {
   // spec: data/tour.json; cityTour: city.json "tour"; graph: RoadGraph; tourId; par: ideal time (s, from the
   // simulation; null = no clock, used by the simulation itself to measure the par)
-  constructor(spec, cityTour, graph, tourId, { par = null, facts = null } = {}) {
-    this.spec = spec; this.graph = graph;
+  constructor(spec, cityTour, graph, tourId, { par = null, facts = null, useRoute = true } = {}) {
+    this.spec = spec; this.graph = graph; this.useRoute = useRoute;   // the game draws no route (the player picks the streets); the simulation's autopilot needs one
     this.def = spec.tours.find((t) => t.id === tourId) || spec.tours[0];
     const place = (id) => {
       const c = cityTour.places[id], s = spec.places[id];
@@ -62,6 +64,15 @@ export class Arcade {
     this.nitroBonus = 0;           // tank refill owed to the physics (main / sim adds it to phys.nitro.charge)
   }
 
+  // no measured par for this tour (data/arcade-par.json): the clock still runs, from the length of the way through the gates
+  estimatePar() {
+    if (this.par || !this.graph) return;
+    const r = this.graph.routeVia([this.start.p, ...this.gates.map((g) => g.p)]);
+    if (!r) return;
+    let len = 0; for (let i = 1; i < r.pts.length; i++) len += Math.hypot(r.pts[i][0] - r.pts[i - 1][0], r.pts[i][1] - r.pts[i - 1][1]);
+    this.par = Math.round(len * RUSH.parPerMetre); this.timeLeft = this.par * RUSH.startShare;
+  }
+
   get gate() { return this.gates[this.next] || null; }
   get target() { const g = this.gate; return g ? { x: g.p[0], z: g.p[1], title: g.title, kind: g.finish ? 'finish' : 'gate' } : null; }
   get done() { return this.state === 'finished' || this.state === 'timeout'; }
@@ -69,6 +80,7 @@ export class Arcade {
 
   // the way from the tuk-tuk through the remaining gates (for the minimap and the sim's autopilot)
   newRoute(x, z) {
+    if (!this.useRoute) return;
     const pts = [[x, z]];
     for (let i = this.next; i < this.gates.length; i++) pts.push(this.gates[i].p);
     const r = pts.length > 1 ? this.graph.routeVia(pts) : null;
@@ -122,14 +134,8 @@ export class Arcade {
       if (this.near <= RUSH.gateMiss && dist > this.near + 3) this.cross(this.near <= RUSH.gateExact ? 'exact' : this.near <= RUSH.gateGood ? 'good' : 'ok', ctx);
       // missed: came near the gate and drove off again, or reached the next gate
       else if ((this.near < RUSH.gateNear && dist > RUSH.gateFar) || (n && Math.hypot(ctx.x - n.p[0], ctx.z - n.p[1]) < RUSH.nextGateSkip)) this.cross('missed', ctx);
-      // the landmark card: cardAhead seconds of travel before the gate (at least 60 m)
-      const gg = this.gate;
-      if (gg && !gg.finish) {
-        const d = Math.hypot(ctx.x - gg.p[0], ctx.z - gg.p[1]);
-        if (d < Math.max(60, Math.max(v, RUSH.minSpeed) * RUSH.cardAhead) && (!this.card || this.card.id !== gg.id)) this.card = { id: gg.id, title: gg.title, text: gg.short, until: Infinity };
-      }
-      if (this.card && this.card.until < this.t) this.card = null;
     }
+    if (this.card && this.card.until < this.t) this.card = null;
     // off the planned route: recompute (no message, the line just changes)
     if (this.route && this.t - this.lastRoute > 2) {
       let best = Infinity;
@@ -152,7 +158,7 @@ export class Arcade {
     // the stake is banked here, whatever the precision
     this.pocket += this.stake + tips; this.stake = 0;
     if (this.par) this.timeLeft += time;
-    if (this.card && this.card.id === g.id) this.card.until = this.t + 1.5;
+    if (kind !== 'missed' && !g.finish) this.card = { id: g.id, title: g.title, text: g.short, until: this.t + RUSH.cardTime };   // the card of the place just passed
     this.events.push({ type: 'gate', index: i, kind, tips, time, title: g.title, finish: !!g.finish });
     this.next++;
     this.near = Infinity;
@@ -168,10 +174,11 @@ export class Arcade {
     const bonus = left * RUSH.finishBonus;
     this.pocket += bonus;
     if (state === 'timeout') this.stake = 0;   // the unbanked stake is lost
-    const tips = Math.round(this.pocket * 10) / 10;
-    let stars = 1; for (let k = 1; k < RUSH.stars.length; k++) if (tips >= RUSH.stars[k]) stars = k + 1;
+    const tips = Math.round(this.pocket);
+    let stars = 1; const scale = this.par ? this.par / RUSH.starsPar : 1;
+    for (let k = 1; k < RUSH.stars.length; k++) if (tips >= RUSH.stars[k] * scale) stars = k + 1;
     const count = (kind) => this.results.filter((r) => r === kind).length;
-    this.result = { state, tips, bonus: Math.round(bonus * 10) / 10, timeLeft: left, time: this.clock, maxKmh: Math.round(this.maxSpeed * 3.6), hits: this.hits,
+    this.result = { state, tips, bonus: Math.round(bonus), timeLeft: left, time: this.clock, maxKmh: Math.round(this.maxSpeed * 3.6), hits: this.hits,
       exact: count('exact'), good: count('good'), ok: count('ok'), missed: count('missed'), gates: this.gates.length, dist: this.dist, stars };
     this.card = null;
     this.events.push({ type: 'finish', result: this.result });

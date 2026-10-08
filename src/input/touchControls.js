@@ -21,6 +21,12 @@ const CSS = /* css */ `
 .tc-nitro::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: rgba(16, 22, 28, .75); }
 .tc-nitro.on::after { background: rgba(255, 140, 40, .6); }
 .tc-nitro .tc-lab { z-index: 1; font-size: 13px; }
+/* Crazy Tuk: the nitro never shares a place with the gas pedal. Pedal on: a shorter pedal with the nitro above it, a clear gap between;
+   auto-gas (no pedal): it takes the pedal's place, bigger */
+.tc-root.arc .tc-nitro { right: calc(var(--edge) + var(--k) * 12px); bottom: calc(18px + var(--k) * 142px); width: calc(var(--k) * 76px); height: calc(var(--k) * 76px); }
+.tc-root.arc .tc-gas { height: calc(var(--k) * 130px); }
+.tc-root.arc.auto .tc-nitro { right: var(--edge); bottom: calc(18px + var(--k) * 14px); width: calc(var(--k) * 104px); height: calc(var(--k) * 104px); }
+.tc-root.arc .tc-nitro .tc-lab { font-size: clamp(11px, calc(var(--k) * 15px), 15px); }
 .tc-zone { left: var(--edgeL); bottom: 18px; width: calc(var(--k) * 204px); height: calc(var(--k) * 96px); gap: 8px; }
 .tc-zone .tc-btn { position: static; flex: 1; height: 100%; font-size: 34px; pointer-events: none; }
 .tc-zone.slider { width: calc(var(--k) * 230px); height: calc(var(--k) * 64px); background: rgba(16, 22, 28, .5); border: 2px solid rgba(255, 255, 255, .5); border-radius: 32px; }
@@ -108,7 +114,8 @@ export class TouchControls {
     this.rects = null;
   }
   // Crazy Tuk: the throttle is automatic, the pedal is hidden (brake, handbrake and nitro stay)
-  setAutoGas(on) { this.autoGas = !!on; this.gasEl.style.display = on ? 'none' : ''; if (on) this.gas = 0; }
+  setAutoGas(on) { this.autoGas = !!on; this.gasEl.style.display = on ? 'none' : ''; this.root.classList.toggle('auto', !!on); if (on) this.gas = 0; }
+  setArcade(on) { this.root.classList.toggle('arc', !!on); if (!on) this.setAutoGas(false); }
   setVisible(v) { this.visible = v; this.root.style.display = v ? '' : 'none'; this.look.style.display = v ? '' : 'none'; if (!v) this.releaseAll(); }
 
   // ---------------------------------------------------------------- pointers

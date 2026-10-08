@@ -4,6 +4,7 @@ export class Horn {
     this.ctx = null;
     this.gain = null;
     this.on = false;
+    this.muted = false;   // the "Звук" setting
   }
 
   // Needs a user gesture (click / Enter VR) before sound can play.
@@ -29,8 +30,9 @@ export class Horn {
   set(on) {
     if (!this.ctx || on === this.on) return;
     this.on = on;
-    this.gain.gain.setTargetAtTime(on ? 0.16 : 0, this.ctx.currentTime, 0.015);
+    this.gain.gain.setTargetAtTime(on && !this.muted ? 0.16 : 0, this.ctx.currentTime, 0.015);
   }
+  setMuted(m) { this.muted = !!m; if (this.ctx && this.on && m) this.gain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.015); }
 }
 
 // Tourists' "ой!" (tour + nitro): short synthesized voices, one per tourist, staggered a little. Each is a
@@ -38,7 +40,7 @@ export class Horn {
 // from "o" to "i", with a quick attack and decay. Uses the horn's audio context (unlocked by a gesture).
 export function shout(horn, count = 2) {
   const ctx = horn && horn.ctx;
-  if (!ctx || ctx.state !== 'running') return;
+  if (!ctx || ctx.state !== 'running' || horn.muted) return;
   const out = ctx.createGain();
   out.gain.value = 0.5;
   out.connect(ctx.destination);

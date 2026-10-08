@@ -37,7 +37,9 @@ export class DesktopHud {
   }
 
   // heading-up map in the corner (desktop only), ~10 Hz from main
-  drawMap(visible, x, z, heading, target, route) {
+  // gates (Crazy Tuk): { list: [{ x, z }] the gates still ahead, next: index in the list } - small marks, the next one bigger and
+  // blinking, on the rim when it is out of the disc. No route line there: the player picks the streets.
+  drawMap(visible, x, z, heading, target, route, gates = null) {
     this.canvas.style.display = visible && this.showMap ? 'block' : 'none';
     if (!visible || !this.showMap) return;
     const g = this.g, S = this.canvas.width, R = this.minimap.rect, radius = this.minimap.radius;
@@ -57,7 +59,35 @@ export class DesktopHud {
       g.beginPath(); route.forEach(([px, pz], i) => (i ? g.lineTo(px, pz) : g.moveTo(px, pz))); g.stroke();
     }
     if (target) { g.fillStyle = '#ff4020'; g.beginPath(); g.arc(target.x, target.z, 9, 0, Math.PI * 2); g.fill(); }
+    const blink = performance.now() % 700 < 440;
+    if (gates) {
+      const m = 0.35 / scale;   // keeps the marks the same size on screen whatever the radius
+      gates.list.forEach((p, i) => {
+        if (i === gates.next) return;
+        g.fillStyle = 'rgba(255,209,102,0.95)'; g.strokeStyle = '#10161c'; g.lineWidth = 2 * m;
+        g.beginPath(); g.arc(p.x, p.z, 11 * m, 0, Math.PI * 2); g.fill(); g.stroke();
+      });
+      const n = gates.list[gates.next];
+      if (n) {
+        g.strokeStyle = '#10161c'; g.lineWidth = 3 * m;
+        g.fillStyle = blink ? '#ff4020' : '#ffd166';
+        g.beginPath(); g.arc(n.x, n.z, 20 * m, 0, Math.PI * 2); g.fill(); g.stroke();
+        g.strokeStyle = blink ? 'rgba(255,64,32,0.8)' : 'rgba(255,209,102,0.0)'; g.lineWidth = 4 * m;
+        g.beginPath(); g.arc(n.x, n.z, 34 * m, 0, Math.PI * 2); g.stroke();
+      }
+    }
     g.restore();
+    if (gates && gates.list[gates.next]) {
+      // the next gate outside the disc: a blinking arrow on the rim
+      const n = gates.list[gates.next], dx = n.x - x, dz = n.z - z, c = Math.cos(heading), sn = Math.sin(heading);
+      const sx = dx * c - dz * sn, sy = dx * sn + dz * c, d = Math.hypot(sx, sy) * scale;
+      if (d > S / 2 - 14) {
+        const a = Math.atan2(sy, sx), rr = S / 2 - 14;
+        g.save(); g.translate(S / 2 + Math.cos(a) * rr, S / 2 + Math.sin(a) * rr); g.rotate(a);
+        g.fillStyle = blink ? '#ff4020' : '#ffd166'; g.strokeStyle = '#10161c'; g.lineWidth = 2;
+        g.beginPath(); g.moveTo(10, 0); g.lineTo(-7, 8); g.lineTo(-7, -8); g.closePath(); g.fill(); g.stroke(); g.restore();
+      }
+    }
     // player arrow + rim
     g.fillStyle = '#3388ff'; g.strokeStyle = '#111';
     g.beginPath(); g.moveTo(S / 2, S / 2 - 12); g.lineTo(S / 2 + 8, S / 2 + 9); g.lineTo(S / 2 - 8, S / 2 + 9); g.closePath(); g.fill(); g.stroke();
