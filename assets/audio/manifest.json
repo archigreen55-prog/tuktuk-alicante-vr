@@ -1,6 +1,102 @@
 {
-  "sfx": {},
+  "sfx": {
+    "horn": [
+      "sfx/horn-1.m4a",
+      "sfx/horn-2.m4a"
+    ],
+    "hit.light": [
+      "sfx/hit-light-1.m4a",
+      "sfx/hit-light-2.m4a"
+    ],
+    "hit.medium": [
+      "sfx/hit-medium-1.m4a",
+      "sfx/hit-medium-2.m4a"
+    ],
+    "hit.heavy": [
+      "sfx/hit-heavy-1.m4a",
+      "sfx/hit-heavy-2.m4a"
+    ],
+    "smash.c": [
+      "sfx/smash-c-1.m4a",
+      "sfx/smash-c-2.m4a"
+    ],
+    "smash.b": [
+      "sfx/smash-b-1.m4a",
+      "sfx/smash-b-2.m4a"
+    ],
+    "smash.t": [
+      "sfx/smash-t-1.m4a",
+      "sfx/smash-t-2.m4a"
+    ],
+    "smash.u": [
+      "sfx/smash-u-1.m4a",
+      "sfx/smash-u-2.m4a"
+    ],
+    "gate.exact": [
+      "sfx/gate-exact-1.m4a"
+    ],
+    "gate.good": [
+      "sfx/gate-good-1.m4a"
+    ],
+    "gate.ok": [
+      "sfx/gate-ok-1.m4a"
+    ],
+    "combo": [
+      "sfx/combo-1.m4a"
+    ],
+    "nearmiss": [
+      "sfx/nearmiss-1.m4a"
+    ],
+    "drift.end": [
+      "sfx/drift-end-1.m4a"
+    ],
+    "tourist.scream": [
+      "sfx/tourist-scream-1.m4a"
+    ],
+    "tourist.gasp": [
+      "sfx/tourist-gasp-1.m4a"
+    ]
+  },
   "loops": {},
   "music": {},
-  "credits": []
+  "credits": [
+    "«Car horn beep beep two beeps honk honk»: AmishRob, CC0, https://freesound.org/s/423990/",
+    "«Bike Horn 2»: Stickinthemud, CC BY 4.0, https://freesound.org/s/27881/ (потрібна подяка за ліцензією)",
+    "«Impact Sounds»: Kenney, CC0, https://kenney.nl/assets/impact-sounds",
+    "«Interface Sounds»: Kenney, CC0, https://kenney.nl/assets/interface-sounds",
+    "«Roller Coaster Screams»: Marcy13, CC BY 4.0, https://freesound.org/s/635383/ (потрібна подяка за ліцензією)",
+    "«Shocked gasp»: GentlemanWalrus, CC0, https://freesound.org/s/180005/"
+  ],
+  "gain": {
+    "horn": 1,
+    "hit.light": 0.8,
+    "hit.medium": 0.9,
+    "hit.heavy": 1,
+    "smash.c": 0.8,
+    "smash.b": 0.85,
+    "smash.t": 0.9,
+    "smash.u": 0.8,
+    "gate.exact": 0.55,
+    "gate.good": 0.5,
+    "gate.ok": 0.45,
+    "combo": 0.5,
+    "nearmiss": 0.55,
+    "drift.end": 0.5,
+    "tourist.scream": 1,
+    "tourist.gasp": 1
+  },
+  "attribution": [
+    {
+      "title": "Bike Horn 2",
+      "author": "Stickinthemud",
+      "license": "CC BY 4.0",
+      "url": "https://freesound.org/s/27881/"
+    },
+    {
+      "title": "Roller Coaster Screams",
+      "author": "Marcy13",
+      "license": "CC BY 4.0",
+      "url": "https://freesound.org/s/635383/"
+    }
+  ]
 }

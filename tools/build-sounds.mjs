@@ -63,9 +63,10 @@ if (wantC) {
         try {
           if (slot.kind === 'loop') {
             let trim = null, note = 'ціле';
-            if (c.auto === 'steady') { const seg = findSteady(decodePcm(src), 22050, { min: slotId === 'engine' ? 3 : 2, max: slotId === 'engine' ? 5 : 3.5 }); if (seg) { trim = [+seg.from.toFixed(2), +seg.to.toFixed(2)]; note = `рівна ділянка ${trim[0]}–${trim[1]} с`; } else note = 'рівної ділянки не знайдено: взято початок'; }
+            if (c.auto === 'steady') { const seg = findSteady(decodePcm(src), 22050, { min: slotId === 'engine' ? 4 : 3, max: slotId === 'engine' ? 6 : 5 }); if (seg) { trim = [+seg.from.toFixed(2), +seg.to.toFixed(2)]; note = `рівна ділянка ${trim[0]}–${trim[1]} с`; } else note = 'рівної ділянки не знайдено: взято початок'; }
             if (!trim) trim = [0, 6];
-            const file = `${slotId}/${id}.m4a`; await makeLoop(src, path.join(CAND, file), { trim }); entry.candidates.push({ id, file, ...base, note }); n++;
+            const file = `${slotId}/${id}.m4a`, r = await makeLoop(src, path.join(CAND, file), { trim });
+            entry.candidates.push({ id, file, ...base, note: `${note}${r.tiles > 1 ? `; запис короткий, повторено ${r.tiles} разів` : ''}; цикл ${r.length.toFixed(1)} с` }); n++;
           } else if (c.bursts) {
             const bursts = findBursts(decodePcm(src), 22050, { n: c.bursts, min: c.min || 0.6, max: c.max || 2.5 });
             if (!bursts.length) throw new Error('голосних фрагментів не знайдено');

@@ -6,26 +6,25 @@
     "sources: freesound (id) або kenney (сторінка пакета; файли вибираються шаблоном `ключ:шаблон*`). license: перевірено власником 09.10.2026."
   ],
   "sources": {
-    "fs423990": { "type": "freesound", "id": 423990, "name": "Horn (car horn)", "author": "AmishRob", "license": "CC0" },
-    "fs27881": { "type": "freesound", "id": 27881, "name": "Horn", "author": "Stickinthemud", "license": "CC BY 4.0", "attribution": true },
-    "fs635383": { "type": "freesound", "id": 635383, "name": "Scream", "author": "Marcy13", "license": "CC BY 4.0", "attribution": true },
-    "fs180005": { "type": "freesound", "id": 180005, "name": "Oh / gasp", "author": "GentlemanWalrus", "license": "CC0" },
-    "fs177754": { "type": "freesound", "id": 177754, "name": "Tuk tuk engine", "author": "kyles", "license": "CC0" },
-    "fs177577": { "type": "freesound", "id": 177577, "name": "Tuk tuk engine 2", "author": "kyles", "license": "CC0" },
-    "fs658928": { "type": "freesound", "id": 658928, "name": "Piaggio Ape engine", "author": "uniuniversal", "license": "CC0" },
-    "fs614627": { "type": "freesound", "id": 614627, "name": "Tire squeal", "author": "johnnydekk", "license": "CC0" },
-    "fs536769": { "type": "freesound", "id": 536769, "name": "Tire squeal 2", "author": "egomassive", "license": "CC0" },
-    "fs339132": { "type": "freesound", "id": 339132, "name": "Horn 3", "author": "IndigoRay", "license": "CC0" },
-    "fs869026": { "type": "freesound", "id": 869026, "name": "Horn 4", "author": "Userlover", "license": "CC0" },
-    "fs182474": { "type": "freesound", "id": 182474, "name": "Horn 5", "author": "keweldog", "license": "CC0" },
-    "fs60013": { "type": "freesound", "id": 60013, "name": "Nitro / jet", "author": "qubodup", "license": "CC0" },
-    "fs381275": { "type": "freesound", "id": 381275, "name": "Laughter", "author": "spets880", "license": "CC0" },
-    "fs859265": { "type": "freesound", "id": 859265, "name": "Laughter 2", "author": "SPAudiobooks", "license": "CC0" },
-    "fs333405": { "type": "freesound", "id": 333405, "name": "Woo!", "author": "jayfrosting", "license": "CC0" },
+    "fs423990": { "type": "freesound", "id": 423990, "name": "Car horn beep beep two beeps honk honk", "author": "AmishRob", "license": "CC0" },
+    "fs27881": { "type": "freesound", "id": 27881, "name": "Bike Horn 2", "author": "Stickinthemud", "license": "CC BY 4.0", "attribution": true },
+    "fs635383": { "type": "freesound", "id": 635383, "name": "Roller Coaster Screams", "author": "Marcy13", "license": "CC BY 4.0", "attribution": true },
+    "fs180005": { "type": "freesound", "id": 180005, "name": "Shocked gasp", "author": "GentlemanWalrus", "license": "CC0" },
+    "fs177754": { "type": "freesound", "id": 177754, "name": "Freesound #177754", "author": "kyles", "license": "CC0" },
+    "fs177577": { "type": "freesound", "id": 177577, "name": "Freesound #177577", "author": "kyles", "license": "CC0" },
+    "fs658928": { "type": "freesound", "id": 658928, "name": "Freesound #658928", "author": "uniuniversal", "license": "CC0" },
+    "fs614627": { "type": "freesound", "id": 614627, "name": "Freesound #614627", "author": "johnnydekk", "license": "CC0" },
+    "fs536769": { "type": "freesound", "id": 536769, "name": "Freesound #536769", "author": "egomassive", "license": "CC0" },
+    "fs339132": { "type": "freesound", "id": 339132, "name": "Freesound #339132", "author": "IndigoRay", "license": "CC0" },
+    "fs869026": { "type": "freesound", "id": 869026, "name": "Freesound #869026", "author": "Userlover", "license": "CC0" },
+    "fs182474": { "type": "freesound", "id": 182474, "name": "Freesound #182474", "author": "keweldog", "license": "CC0" },
+    "fs60013": { "type": "freesound", "id": 60013, "name": "Freesound #60013", "author": "qubodup", "license": "CC0" },
+    "fs381275": { "type": "freesound", "id": 381275, "name": "Freesound #381275", "author": "spets880", "license": "CC0" },
+    "fs859265": { "type": "freesound", "id": 859265, "name": "Freesound #859265", "author": "SPAudiobooks", "license": "CC0" },
+    "fs333405": { "type": "freesound", "id": 333405, "name": "Cheer 1 short", "author": "jayfrosting", "license": "CC0" },
     "kenney-impact": { "type": "kenney", "page": "https://kenney.nl/assets/impact-sounds", "name": "Impact Sounds", "author": "Kenney", "license": "CC0" },
     "kenney-interface": { "type": "kenney", "page": "https://kenney.nl/assets/interface-sounds", "name": "Interface Sounds", "author": "Kenney", "license": "CC0" },
-    "kenney-scifi": { "type": "kenney", "page": "https://kenney.nl/assets/sci-fi-sounds", "name": "Sci-fi Sounds", "author": "Kenney", "license": "CC0" },
-    "kenney-voice": { "type": "kenney", "page": "https://kenney.nl/assets/voiceover-pack", "name": "Voiceover Pack", "author": "Kenney", "license": "CC0" }
+    "kenney-scifi": { "type": "kenney", "page": "https://kenney.nl/assets/sci-fi-sounds", "name": "Sci-fi Sounds", "author": "Kenney", "license": "CC0" }
   },
 
   "_slots": "gain: гучність слота в грі (1 = як у файлі після вирівнювання), gate/hit/комбо тихіші за клаксон і туристів, двигун фоном",
@@ -53,12 +52,12 @@
     "tourist.cheer": { "title": "Турист: «Wooo!»", "kind": "sfx", "gain": 1 }
   },
 
-  "_approved": "частина А: ставиться в гру одразу. pick: скільки файлів за шаблоном (за алфавітом). Шаблони Kenney попередні: після `fetch-sounds --list` уточнюються за назвами файлів.",
+  "_approved": "частина А: ставиться в гру одразу. pick: скільки файлів за шаблоном (за алфавітом). Шаблони Kenney уточнено за справжніми списками файлів (`fetch-sounds --list`, 09.10.2026).",
   "approved": [
     { "slot": "horn", "src": "fs423990", "max": 1.4 },
     { "slot": "horn", "src": "fs27881", "max": 1.4 },
     { "slot": "hit.light", "src": "kenney-impact:impactSoft_medium_*", "pick": 2 },
-    { "slot": "hit.medium", "src": "kenney-impact:impactGeneric_light_*", "pick": 2 },
+    { "slot": "hit.medium", "src": "kenney-impact:impactPunch_medium_*", "pick": 2 },
     { "slot": "hit.heavy", "src": "kenney-impact:impactMetal_heavy_*", "pick": 2 },
     { "slot": "smash.c", "src": "kenney-impact:impactTin_medium_*", "pick": 2 },
     { "slot": "smash.b", "src": "kenney-impact:impactMetal_medium_*", "pick": 2 },
@@ -81,6 +80,6 @@
     "horn": [ { "src": "fs339132" }, { "src": "fs869026" }, { "src": "fs182474" } ],
     "nitro": [ { "src": "fs60013", "auto": "steady" }, { "src": "kenney-scifi:thrusterFire_*", "pick": 1, "auto": "steady" }, { "src": "kenney-scifi:spaceEngineLow_*", "pick": 1, "auto": "steady" }, { "src": "kenney-scifi:engineCircular_*", "pick": 1, "auto": "steady" } ],
     "tourist.laugh": [ { "src": "fs381275", "bursts": 1 }, { "src": "fs859265", "bursts": 3, "min": 1, "max": 3 } ],
-    "tourist.cheer": [ { "src": "fs333405", "bursts": 1, "min": 0.4, "max": 1.5 }, { "src": "kenney-voice:*", "pick": 4 } ]
+    "tourist.cheer": [ { "src": "fs333405", "bursts": 1, "min": 0.4, "max": 1.5 } ]
   }
 }

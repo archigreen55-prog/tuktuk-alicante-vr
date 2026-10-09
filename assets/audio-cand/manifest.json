@@ -1,0 +1,247 @@
+{
+ "schema": 1,
+ "slots": {
+  "engine": {
+   "title": "Двигун (цикл, тон і гучність від швидкості)",
+   "kind": "loop",
+   "cfg": {
+    "kmh": [
+     0,
+     150
+    ],
+    "rate": [
+     0.7,
+     1.9
+    ],
+    "gain": [
+     0.1,
+     0.26
+    ]
+   },
+   "gain": 1,
+   "candidates": [
+    {
+     "id": "fs177754",
+     "file": "engine/fs177754.m4a",
+     "name": "Freesound #177754",
+     "author": "kyles",
+     "license": "CC0",
+     "url": "https://freesound.org/s/177754/",
+     "attribution": false,
+     "note": "рівна ділянка 45.7–51.7 с; цикл 5.6 с"
+    },
+    {
+     "id": "fs177577",
+     "file": "engine/fs177577.m4a",
+     "name": "Freesound #177577",
+     "author": "kyles",
+     "license": "CC0",
+     "url": "https://freesound.org/s/177577/",
+     "attribution": false,
+     "note": "рівна ділянка 42.4–47.4 с; цикл 4.6 с"
+    },
+    {
+     "id": "fs658928",
+     "file": "engine/fs658928.m4a",
+     "name": "Freesound #658928",
+     "author": "uniuniversal",
+     "license": "CC0",
+     "url": "https://freesound.org/s/658928/",
+     "attribution": false,
+     "note": "рівна ділянка 188.8–192.8 с; цикл 3.6 с"
+    }
+   ]
+  },
+  "squeal": {
+   "title": "Вереск шин (цикл, від бокового ковзання)",
+   "kind": "loop",
+   "cfg": {
+    "slip": [
+     2.5,
+     9
+    ],
+    "gain": [
+     0,
+     0.5
+    ]
+   },
+   "gain": 1,
+   "candidates": [
+    {
+     "id": "fs614627",
+     "file": "squeal/fs614627.m4a",
+     "name": "Freesound #614627",
+     "author": "johnnydekk",
+     "license": "CC0",
+     "url": "https://freesound.org/s/614627/",
+     "attribution": false,
+     "note": "рівна ділянка 18.5–21.5 с; цикл 2.6 с"
+    },
+    {
+     "id": "fs536769",
+     "file": "squeal/fs536769.m4a",
+     "name": "Freesound #536769",
+     "author": "egomassive",
+     "license": "CC0",
+     "url": "https://freesound.org/s/536769/",
+     "attribution": false,
+     "note": "рівної ділянки не знайдено: взято початок; запис короткий, повторено 2 разів; цикл 3.4 с"
+    }
+   ]
+  },
+  "horn": {
+   "title": "Клаксон",
+   "kind": "sfx",
+   "gain": 1,
+   "candidates": [
+    {
+     "id": "fs339132",
+     "file": "horn/fs339132.m4a",
+     "name": "Freesound #339132",
+     "author": "IndigoRay",
+     "license": "CC0",
+     "url": "https://freesound.org/s/339132/",
+     "attribution": false,
+     "note": "цілий файл, не довший за 3 с"
+    },
+    {
+     "id": "fs869026",
+     "file": "horn/fs869026.m4a",
+     "name": "Freesound #869026",
+     "author": "Userlover",
+     "license": "CC0",
+     "url": "https://freesound.org/s/869026/",
+     "attribution": false,
+     "note": "цілий файл, не довший за 3 с"
+    },
+    {
+     "id": "fs182474",
+     "file": "horn/fs182474.m4a",
+     "name": "Freesound #182474",
+     "author": "keweldog",
+     "license": "CC0",
+     "url": "https://freesound.org/s/182474/",
+     "attribution": false,
+     "note": "цілий файл, не довший за 3 с"
+    }
+   ]
+  },
+  "nitro": {
+   "title": "Нітро (цикл, поки горить)",
+   "kind": "loop",
+   "cfg": {
+    "gain": [
+     0,
+     0.4
+    ]
+   },
+   "gain": 1,
+   "candidates": [
+    {
+     "id": "fs60013",
+     "file": "nitro/fs60013.m4a",
+     "name": "Freesound #60013",
+     "author": "qubodup",
+     "license": "CC0",
+     "url": "https://freesound.org/s/60013/",
+     "attribution": false,
+     "note": "рівної ділянки не знайдено: взято початок; запис короткий, повторено 7 разів; цикл 2.6 с"
+    },
+    {
+     "id": "kenney-scifi-thrusterFire_000",
+     "file": "nitro/kenney-scifi-thrusterFire_000.m4a",
+     "name": "Sci-fi Sounds: thrusterFire_000.ogg",
+     "author": "Kenney",
+     "license": "CC0",
+     "url": "https://kenney.nl/assets/sci-fi-sounds",
+     "attribution": false,
+     "note": "рівна ділянка 0–5 с; цикл 4.6 с"
+    },
+    {
+     "id": "kenney-scifi-spaceEngineLow_000",
+     "file": "nitro/kenney-scifi-spaceEngineLow_000.m4a",
+     "name": "Sci-fi Sounds: spaceEngineLow_000.ogg",
+     "author": "Kenney",
+     "license": "CC0",
+     "url": "https://kenney.nl/assets/sci-fi-sounds",
+     "attribution": false,
+     "note": "рівна ділянка 0–5 с; цикл 4.6 с"
+    },
+    {
+     "id": "kenney-scifi-engineCircular_000",
+     "file": "nitro/kenney-scifi-engineCircular_000.m4a",
+     "name": "Sci-fi Sounds: engineCircular_000.ogg",
+     "author": "Kenney",
+     "license": "CC0",
+     "url": "https://kenney.nl/assets/sci-fi-sounds",
+     "attribution": false,
+     "note": "рівна ділянка 0–5 с; цикл 4.6 с"
+    }
+   ]
+  },
+  "tourist.laugh": {
+   "title": "Турист: сміх",
+   "kind": "sfx",
+   "gain": 1,
+   "candidates": [
+    {
+     "id": "fs381275-b1",
+     "file": "tourist.laugh/fs381275-b1.m4a",
+     "name": "Freesound #381275 (фрагмент 1: 1.74–2.34 с)",
+     "author": "spets880",
+     "license": "CC0",
+     "url": "https://freesound.org/s/381275/",
+     "attribution": false,
+     "note": "вирізано за гучністю, -4.9 дБ"
+    },
+    {
+     "id": "fs859265-b1",
+     "file": "tourist.laugh/fs859265-b1.m4a",
+     "name": "Freesound #859265 (фрагмент 1: 3.24–4.24 с)",
+     "author": "SPAudiobooks",
+     "license": "CC0",
+     "url": "https://freesound.org/s/859265/",
+     "attribution": false,
+     "note": "вирізано за гучністю, -6.8 дБ"
+    },
+    {
+     "id": "fs859265-b2",
+     "file": "tourist.laugh/fs859265-b2.m4a",
+     "name": "Freesound #859265 (фрагмент 2: 0.24–1.24 с)",
+     "author": "SPAudiobooks",
+     "license": "CC0",
+     "url": "https://freesound.org/s/859265/",
+     "attribution": false,
+     "note": "вирізано за гучністю, -8.8 дБ"
+    },
+    {
+     "id": "fs859265-b3",
+     "file": "tourist.laugh/fs859265-b3.m4a",
+     "name": "Freesound #859265 (фрагмент 3: 3.59–4.59 с)",
+     "author": "SPAudiobooks",
+     "license": "CC0",
+     "url": "https://freesound.org/s/859265/",
+     "attribution": false,
+     "note": "вирізано за гучністю, -9.1 дБ"
+    }
+   ]
+  },
+  "tourist.cheer": {
+   "title": "Турист: «Wooo!»",
+   "kind": "sfx",
+   "gain": 1,
+   "candidates": [
+    {
+     "id": "fs333405-b1",
+     "file": "tourist.cheer/fs333405-b1.m4a",
+     "name": "Cheer 1 short (фрагмент 1: 0–1.5 с)",
+     "author": "jayfrosting",
+     "license": "CC0",
+     "url": "https://freesound.org/s/333405/",
+     "attribution": false,
+     "note": "вирізано за гучністю, -7.2 дБ"
+    }
+   ]
+  }
+ }
+}

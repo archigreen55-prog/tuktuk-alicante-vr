@@ -12,3 +12,6 @@ assets/models/src/
 
 # downloaded sound sources (tools/fetch-sounds.mjs): re-fetchable, not kept in git
 assets/audio-src/dl/
+# raw sound files handed over on the sounds-incoming branch (not kept in main)
+assets/audio-src/incoming/
+assets/audio-src/map.generated.json
