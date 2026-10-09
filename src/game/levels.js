@@ -16,6 +16,12 @@ export const LEVEL = {
   titleMax: 40,
 };
 
+// the rules of a "stay-on-road" level ("Не з'їжджай з дороги", 0.17.0): `rules` of the level file may override each
+//   margin: m beyond the edge of the road surface (the street's width by class, route.js ROAD_HALF) that still counts as the road
+//   grace: s outside before it counts;  timePenalty: extra seconds of the clock lost per second outside;  burn: share of the stake burnt per second outside
+export const STAY = { margin: 1.0, grace: 0.5, timePenalty: 2, burn: 0.25 };
+export const stayRules = (level) => ({ ...STAY, ...Object.fromEntries(Object.entries(level.rules || {}).filter(([k, v]) => k in STAY && Number.isFinite(v))) });
+
 // the name in a language; falls back to uk, then any, then the id
 export function levelTitle(level, lang = 'uk') {
   const t = level && level.title;
@@ -62,6 +68,10 @@ export function validateLevel(level, { places = null } = {}) {
   const t = level.time || {};
   if (t.mode !== 'auto' && t.mode !== 'manual') er.push('час: mode має бути auto або manual');
   if (t.mode === 'manual' && !(t.par >= 20 && t.par <= 3600)) er.push('час уручну: від 20 до 3600 секунд');
+  if ((level.type || 'standard') === 'stay-on-road') {
+    const r = level.rules || {};
+    for (const [k, lo, hi] of [['margin', 0, 4], ['grace', 0, 5], ['timePenalty', 0, 10], ['burn', 0, 1]]) if (k in r && !(r[k] >= lo && r[k] <= hi)) er.push(`правило ${k}: від ${lo} до ${hi}`);
+  }
   const items = level.items || [], gates = gatesOf(level);
   if (gates.length < LEVEL.minGates) er.push(`воріт ${gates.length}: потрібно щонайменше ${LEVEL.minGates}`);
   if (gates.length > LEVEL.maxGates) er.push(`воріт ${gates.length}: не більше ${LEVEL.maxGates}`);

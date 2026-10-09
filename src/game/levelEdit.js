@@ -1,7 +1,7 @@
 // The model of the level editor (0.16.0): a level being edited with undo / redo, snapping of points to the road and the rules of
 // docs/plan-level-editor.md. No DOM and no three.js: the editor's interface (src/ui/levelEditor.js) and the tests (tools/test-level-edit.mjs) use it.
 // Items are indexed as in level.items (gates and via points together); the LAST gate is the finish and stays last.
-import { LEVEL, validateLevel, gatesOf } from './levels.js';
+import { LEVEL, STAY, validateLevel, gatesOf } from './levels.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -151,7 +151,15 @@ export class LevelDoc {
       lv.time = mode === 'manual' ? { mode: 'manual', par: Math.max(20, Math.min(3600, Math.round(par) || 300)) } : { mode: 'auto', par: null };
     });
   }
-  setType(type) { return this.edit((lv) => { if (LEVEL.types.includes(type)) lv.type = type; }); }
+  setType(type) {
+    return this.edit((lv) => {
+      if (!LEVEL.types.includes(type)) return;
+      lv.type = type;
+      if (type === 'stay-on-road' && !(lv.rules && Number.isFinite(lv.rules.margin))) lv.rules = { ...lv.rules, margin: STAY.margin };
+    });
+  }
+  // rules of the type (stay-on-road: margin, grace, timePenalty, burn): merged into level.rules
+  setRules(rules) { return this.edit((lv) => { lv.rules = { ...lv.rules, ...rules }; }); }
   // the start: a place or a point with the heading; the finish at the same place if it was at the old start
   setStart(start) { return this.edit((lv) => { lv.start = clone(start); }); }
   // the finish where the start is (a place gate when the start is a place)

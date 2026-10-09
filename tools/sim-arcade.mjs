@@ -9,6 +9,7 @@ import { TukTukPhysics, ARCADE } from '../src/vehicle/physics.js';
 import { RoadGraph, polylineDistance } from '../src/game/route.js';
 import { Arcade, RUSH } from '../src/game/arcade.js';
 import { buildWorld } from './sim-tour.mjs';
+import { driveGraph } from '../src/game/pathfind.js';
 
 // Pursuit with memory: the progress along the line only moves forward (a window around the last position), so a route
 // that passes the same street twice (out to a gate and back) does not snap the target to the later pass.
@@ -41,7 +42,8 @@ const spec = JSON.parse(await readFile('data/tour.json', 'utf8'));
 const LEVELS = {};
 for (const row of JSON.parse(await readFile('data/levels/index.json', 'utf8')).levels) LEVELS[row.id] = JSON.parse(await readFile(`data/levels/${row.file}`, 'utf8'));
 export async function loadLevelFile(path) { const lv = JSON.parse(await readFile(path, 'utf8')); LEVELS[lv.id] = lv; return lv.id; }
-const WORLD = { places: city.tour.places, spec };
+let dropped = []; try { dropped = JSON.parse(await readFile('data/drive-graph.json', 'utf8')).dropped; } catch { /* the full graph then */ }
+const WORLD = { places: city.tour.places, spec, drive: driveGraph(city, dropped) };   // drive: the streets a tuk-tuk can drive (stay-on-road levels)
 let parFile = {}; try { parFile = JSON.parse(await readFile('data/arcade-par.json', 'utf8')); } catch { /* none yet */ }
 const DT = 1 / 72;
 const PAR_MARGIN = 1.3;   // par = the normal autopilot's time × this (a person brakes more and hits more than the autopilot)
@@ -250,6 +252,7 @@ if (process.argv[1] && process.argv[1].endsWith('sim-arcade.mjs')) {
     console.log(`\n--- ${style}: ${run.state} after ${run.clock.toFixed(1)} s (sim ${(s.t).toFixed(0)} s) ---`);
     if (r) console.log(`tips ${r.tips} € (finish bonus ${r.bonus}, ${r.stars}★), time left ${r.timeLeft.toFixed(1)} s, gates exact ${r.exact} / good ${r.good} / ok ${r.ok} / missed ${r.missed} of ${r.gates}, max ${r.maxKmh} km/h`);
     if (s.driftN) console.log(`drifts: ${s.driftN}`);
+    if (run.stay) console.log(`stay on the road: off ${run.off.count} times, ${run.off.secs.toFixed(1)} s, burnt ${run.off.burnt.toFixed(1)} €`);
     console.log(`skill: near misses ${run.nearMisses}, drift ${run.driftSecs.toFixed(1)} s in ${run.dr.count} slides (best ${run.dr.best.toFixed(1)} s), ${run.skillTips.toFixed(0)} € of the tips`);
     console.log(`speed: avg ${s.avgV.toFixed(0)} km/h, min after start ${s.minV.toFixed(0)}, below 60 km/h ${s.below60.toFixed(1)} s; wall hits ${s.hitsHard} (run counted ${run.hits}), stuck resets ${s.stuck}, anti-stuck ${s.reverts}, distance ${(run.dist / 1000).toFixed(2)} km`);
     console.log(s.gatesLog.join('\n'));

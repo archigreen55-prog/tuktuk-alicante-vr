@@ -26,6 +26,11 @@ const CSS = `
 .ah-bonus.bad { color: #ff7a5c; }
 .ah-bonus.show { animation: ah-bonus 1.6s ease-out forwards; }
 @keyframes ah-bonus { 0% { opacity: 0; transform: translateY(8px) scale(.7); } 12% { opacity: 1; transform: none; } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
+.ah-off { position: absolute; inset: 0; box-shadow: inset 0 0 70px 26px rgba(255, 40, 20, .8); opacity: 0; transition: opacity .12s; pointer-events: none; }
+.ah-off.on { opacity: 1; animation: ah-offp .5s ease-in-out infinite alternate; }
+@keyframes ah-offp { to { box-shadow: inset 0 0 90px 36px rgba(255, 40, 20, .95); } }
+.ah-offtxt { position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%); font: 900 26px/1 system-ui, sans-serif; color: #fff; text-shadow: 0 2px 6px #b00, 0 0 3px #000; opacity: 0; transition: opacity .12s; white-space: nowrap; }
+.ah-offtxt.on { opacity: 1; }
 .ah-white { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
 .ah-white.go { animation: ah-white .3s ease-out; }
 @keyframes ah-white { 0% { opacity: .45; } 100% { opacity: 0; } }
@@ -62,6 +67,7 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
   const gate = el('div', 'ah-gate', '', root);
   const speed = showSpeed ? el('div', 'ah-speed', null, root) : null; const speedNum = speed ? el('b', null, '0', speed) : null; if (speed) el('span', null, 'км/год', speed);
   const card = el('div', 'ah-card', null, root); const cardT = el('div', 't', '', card), cardF = el('div', 'f', '', card);
+  const off = el('div', 'ah-off', null, root), offTxt = el('div', 'ah-offtxt', 'З ДОРОГИ! Повертайся на вулицю', root);
   const white = el('div', 'ah-white', null, root);
   const flash = el('div', 'ah-flash', null, root);
   const count = el('div', 'ah-count', '3', root);
@@ -70,13 +76,14 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
   const set = (node, text) => { if (last[node.className] !== text) { node.textContent = text; last[node.className] = text; } };
 
   return {
-    show(on) { root.classList.toggle('on', !!on); if (!on) { sum.style.display = 'none'; card.classList.remove('show'); cardId = null; } },
+    show(on) { root.classList.toggle('on', !!on); if (!on) { sum.style.display = 'none'; card.classList.remove('show'); cardId = null; off.classList.remove('on'); offTxt.classList.remove('on'); } },
     setCountdown(n) { count.style.display = n == null ? 'none' : 'block'; if (n != null) count.textContent = n > 0 ? String(n) : 'ЇДЬ!'; },
-    // s: { timeLeft, pocket, stake, combo, kmh, gateIndex, gateCount, gateTitle, card: { id, title, text } | null }
+    // s: { timeLeft, pocket, stake, combo, kmh, gateIndex, gateCount, gateTitle, off (outside the road of a stay-on-road level), card: { id, title, text } | null }
     update(s) {
       const tl = Math.max(0, s.timeLeft);
       set(clockEl, isFinite(tl) ? `${Math.floor(tl / 60)}:${String(Math.floor(tl % 60)).padStart(2, '0')}` : '--:--');
       clockEl.classList.toggle('low', tl < 10 && isFinite(tl));
+      if (off.classList.contains('on') !== !!s.off) { off.classList.toggle('on', !!s.off); offTxt.classList.toggle('on', !!s.off); }
       set(pocket, euro(s.pocket)); set(stake, s.stake > 0.5 ? ` +${euro(s.stake)} на кону` : ''); set(combo, s.combo > 1 ? `×${s.combo}` : '');
       set(gate, s.gateTitle ? `${s.gateIndex + 1}/${s.gateCount} · ${s.gateTitle}${s.gateDist != null ? ' · ' + (s.gateDist < 1000 ? Math.round(s.gateDist / 10) * 10 + ' м' : (s.gateDist / 1000).toFixed(1) + ' км') : ''}` : '');
       if (speedNum) set(speedNum, String(Math.round(Math.abs(s.kmh))));
@@ -117,6 +124,7 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
       row('Час', fmtClock(r.time) + (r.state === 'finished' ? ` · лишилось ${Math.round(r.timeLeft)} с → +${euro(r.bonus)}` : ''));
       row('Ворота', `точно ${r.exact} · добре ${r.good} · є ${r.ok} · пропущено ${r.missed} з ${r.gates}`);
       row('Максимум', `${r.maxKmh} км/год`); row('Удари', String(r.hits));
+      if (r.offRoad) row('З дороги', `${r.offRoad} разів · ${r.offRoadSecs} с · згоріло ${euro(r.offRoadBurnt)}`);
       if (r.nearMisses || r.driftSecs || r.smashed) row('Майстерність', `розбито ${r.smashed || 0} · майже зачепив ${r.nearMisses} · дрифт ${r.driftSecs} с → ${euro(r.skillTips)}`); row('Шлях', `${(r.dist / 1000).toFixed(1)} км`);
       const gl = el('div', 'gates', null, c);
       for (const g of gates) { const d = el('div', 'g ' + (g.kind || 'missed'), null, gl); el('b', null, g.title, d); el('i', null, (KIND[g.kind] || 'не дістались') + (g.text ? ' · ' : ''), d); d.append(g.text || ''); }

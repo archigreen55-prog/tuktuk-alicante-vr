@@ -161,7 +161,6 @@ if (!city.tour) tourError = tourError || 'city.json без даних туру (
 // Crazy Tuk: the one-line facts (edited by hand) and the par times (tools/sim-arcade.mjs --write); both optional
 let arcadeFacts = null, arcadeSmash = {}, driveDropped = [];
 try { arcadeFacts = await (await fetch(`data/arcade-facts.json?t=${Date.now()}`, { cache: 'no-store' })).json(); } catch (e) { console.warn(`data/arcade-facts.json: ${e.message}`); }
-if (editorEnabled(params)) { try { const dg = await (await fetch(`data/drive-graph.json?v=${VERSION}`)).json(); if (dg.edges === city.tour.graph.e.length / 3) driveDropped = dg.dropped; } catch (e) { console.warn(`data/drive-graph.json: ${e.message}`); } }   // only the editor needs it
 try { arcadeSmash = await (await fetch(`data/smashables.json?v=${VERSION}`)).json(); } catch (e) { console.warn(`data/smashables.json: ${e.message}`); }
 // Crazy Tuk levels (data/levels/index.json -> <id>.json, src/game/levels.js); the three tours of data/tour.json when they cannot be loaded
 // builtinLevels: the files of data/levels; mineLevels: the owner's own levels from the editor (this device only, localStorage); levels: what can be chosen to play
@@ -186,6 +185,7 @@ async function loadLevels() {
 }
 await loadLevels();
 const editorOn = editorEnabled(params);
+if (editorEnabled(params) || levels.some((l) => l.type === 'stay-on-road')) { try { const dg = await (await fetch(`data/drive-graph.json?v=${VERSION}`)).json(); if (dg.edges === city.tour.graph.e.length / 3) driveDropped = dg.dropped; } catch (e) { console.warn(`data/drive-graph.json: ${e.message}`); } }   // the editor and the stay-on-road levels need it (45 numbers)
 if (tourError) console.warn(tourError);
 // terrain heights (data/terrain.bin, IGN MDT05): the ground, the roads and the physics read one grid
 let terrain = null;
@@ -410,12 +410,14 @@ function startTour() {
 }
 // ---------- Crazy Tuk ----------
 let trialLevel = null;   // the level of the editor's test drive (not a record run): restarts replay it until another level is chosen
+let driveG = null;
+const getDrive = () => driveG || (driveG = driveGraph(city, driveDropped));   // the streets a tuk-tuk can drive (for the stay-on-road levels)
 const arcadeBestKey = () => `arcade.best.${run ? run.level.id : levelId}`;
 function startArcade() {
   if (!tourSpec || !graph) { flash(tourError || 'Тур недоступний', 5, '#ff7a5c'); return false; }
   const level = trialLevel || levelById(levelId);
   if (!level) { flash('Crazy Tuk: рівень не знайдено', 5, '#ff7a5c'); return false; }
-  try { run = new Arcade(level, { places: city.tour.places, spec: tourSpec, graph }, { facts: arcadeFacts && arcadeFacts.uk, useRoute: false }); run.trial = !!trialLevel; run.estimatePar(); } catch (e) {
+  try { run = new Arcade(level, { places: city.tour.places, spec: tourSpec, graph, drive: level.type === 'stay-on-road' ? getDrive() : null }, { facts: arcadeFacts && arcadeFacts.uk, useRoute: false }); run.trial = !!trialLevel; run.estimatePar(); } catch (e) {
     run = null; flash(`Crazy Tuk: ${e.message}`, 6, '#ff7a5c'); console.warn(e); return false;
   }
   tour = null; tourists.dispose();
@@ -474,6 +476,7 @@ function handleRunEvents() {
     frameTag += `${ev.type}${ev.kind ? ':' + ev.kind : ''} `;
     if (ev.type === 'gate') { if (arcadeFx) { arcadeFx.beacon.flash(run.gates[ev.index], ev.kind, groundY(run.gates[ev.index].p[0], run.gates[ev.index].p[1])); arcadeHud.flashScreen(); } arcadeHud.flashGate(ev); arcadeHud.bonusTime(ev.time); arcadeSound.gate(ev.kind); if (ev.kind !== 'missed') buzz(40); if (ev.kind === 'exact') passengers('cheer'); else if (ev.kind === 'good') passengers('laugh'); }
     else if (ev.type === 'hit') { arcadeHud.flashText(ev.burnt > 0.5 ? `Удар! −${euroWhole(ev.burnt)}` : 'Удар!'); passengers('gasp'); }
+    else if (ev.type === 'offRoad') { arcadeHud.flashText(ev.on ? 'З дороги!' : 'Знову на дорозі', ev.on ? '#ff5a3c' : '#9be08a'); if (ev.on) { buzz(60); arcadeSound.play('hit.light', {}, 0.3); passengers('gasp', 2.5); } }
     else if (ev.type === 'nearMiss') { arcadeHud.pop(`Майже зачепив! +${euroWhole(ev.tips)}${run.combo > 1 ? ' · ×' + run.combo : ''}`, '#9fe0ff'); arcadeSound.play('nearmiss', {}, 0.4); passengers(Math.random() < 0.5 ? 'gasp' : 'laugh', 2.5); }
     else if (ev.type === 'drift') { arcadeHud.pop(`Дрифт ${ev.secs.toFixed(1)} с! +${euroWhole(ev.tips)}${run.combo > 1 ? ' · ×' + run.combo : ''}`, '#ffb36b'); arcadeSound.play('drift.end', {}, 0.4); passengers(ev.secs > 2 ? 'scream' : 'laugh'); }
     else if (ev.type === 'combo' && ev.combo >= 3) { arcadeSound.play('combo', {}, 1); }
@@ -648,7 +651,7 @@ function tryLevel(lv) {   // the editor's test drive: this level, no record; res
 if (editorOn && tourSpec && graph) {
   levelEditor = createLevelEditor({
     fullMap, graph, places: city.tour.places, spec: tourSpec, facts: arcadeFacts && arcadeFacts.uk,
-    drive: driveGraph(city, driveDropped), clear: (x, z, r) => world.penetration(x, z, r) === 0,
+    drive: getDrive(), clear: (x, z, r) => world.penetration(x, z, r) === 0,
     builtin: () => builtinLevels, mine: mineLevels,
     saveMine: (list) => saveMine(list), tryLevel, getTuk: () => ({ x: phys.x, z: phys.z, heading: phys.heading }),
     onChange: (lv, list) => {
@@ -977,7 +980,7 @@ function frame(now, xrFrame) {
     else if (touch) touch.setNitro({ state: phys.nitro.active ? 'active' : phys.nitro.charge < 1 ? 'charge' : 'ready', level: phys.nitro.active ? 1 - phys.nitro.t / TUNING.nitroTime : phys.nitro.charge, left: Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge) });
     if (run) {
       const g = run.gate;
-      arcadeHud.update({ timeLeft: run.timeLeft, pocket: run.pocket, stake: run.stake, combo: run.combo, kmh: phys.forwardSpeed * 3.6, card: run.card,
+      arcadeHud.update({ timeLeft: run.timeLeft, pocket: run.pocket, stake: run.stake, combo: run.combo, kmh: phys.forwardSpeed * 3.6, card: run.card, off: run.off.on && run.state === 'running',
         gateIndex: run.next, gateCount: run.gates.length, gateTitle: g ? (g.finish ? 'Фініш: ' + g.title : g.title) : '', gateDist: g ? Math.hypot(g.p[0] - phys.x, g.p[1] - phys.z) : null });
     }
     dashMs = performance.now() - dashStart;

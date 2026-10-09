@@ -6,6 +6,9 @@
 // speed class (edge flags bits 1-3) -> typical driving speed, m/s: primary/secondary, service and
 // links, tertiary, residential, living street
 export const CLASS_SPEED = [8, 7, 6.5, 5.5, 4];
+// half width of the road surface by the same class (the map draws primary / secondary 12 / 10 m, service 4, tertiary 8, residential 6.5, living street 5):
+// the "stay on the road" levels (0.17.0) allow the tuk-tuk's axis this far from the street's axis plus the level's margin
+export const ROAD_HALF = [5.5, 2.5, 4, 3.25, 2.5];
 const TURN_ANGLE = 50 * Math.PI / 180;  // a heading change above this over ~15 m counts as a turn
 const TURN_TIME = 3;                     // s added per turn to the estimate
 const CELL = 40;                         // m, grid for nearest-edge queries
@@ -17,7 +20,7 @@ export class RoadGraph {
     this.x = new Float64Array(n); this.z = new Float64Array(n);
     for (let i = 0; i < n; i++) { this.x[i] = g.n[i * 2]; this.z[i] = g.n[i * 2 + 1]; }
     const m = g.e.length / 3;
-    this.ea = new Int32Array(m); this.eb = new Int32Array(m); this.eow = new Uint8Array(m);
+    this.ea = new Int32Array(m); this.eb = new Int32Array(m); this.eow = new Uint8Array(m); this.ecls = new Uint8Array(m);
     this.elen = new Float64Array(m); this.etime = new Float64Array(m);
     this.out = Array.from({ length: n }, () => []); // [edge, toNode] pairs usable from a node
     let minX = Infinity, minZ = Infinity;
@@ -26,7 +29,7 @@ export class RoadGraph {
     this.grid = new Map();
     for (let k = 0; k < m; k++) {
       const a = g.e[k * 3], b = g.e[k * 3 + 1], f = g.e[k * 3 + 2];
-      this.ea[k] = a; this.eb[k] = b; this.eow[k] = f & 1;
+      this.ea[k] = a; this.eb[k] = b; this.eow[k] = f & 1; this.ecls[k] = Math.min(CLASS_SPEED.length - 1, f >> 1);
       const len = Math.hypot(this.x[b] - this.x[a], this.z[b] - this.z[a]);
       this.elen[k] = len;
       this.etime[k] = len / CLASS_SPEED[Math.min(CLASS_SPEED.length - 1, f >> 1)];
@@ -44,6 +47,7 @@ export class RoadGraph {
     }
     this.nodeCount = n; this.edgeCount = m;
   }
+  roadHalf(k) { return ROAD_HALF[this.ecls[k]]; }   // m: half the width of the road surface of edge k
   cellX(x) { return Math.floor((x - this.gx0) / CELL); }
   cellZ(z) { return Math.floor((z - this.gz0) / CELL); }
 

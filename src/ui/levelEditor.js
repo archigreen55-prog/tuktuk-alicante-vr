@@ -137,6 +137,9 @@ export function createLevelEditor(opts) {
         g.beginPath(); pts.forEach(([x, z], i) => (i ? g.lineTo(x, z) : g.moveTo(x, z)));
         g.setLineDash([9 / s, 7 / s]); g.lineWidth = 2.5 / s; g.strokeStyle = 'rgba(30, 70, 160, .8)'; g.stroke(); g.setLineDash([]);
       }
+      // the corridor of a stay-on-road level: where the tuk-tuk may drive
+      const cr = getCheck().corridor;
+      if (doc.level.type === 'stay-on-road' && cr.length) { g.lineCap = 'round'; for (const c of cr) { g.beginPath(); g.moveTo(c[0], c[1]); g.lineTo(c[2], c[3]); g.lineWidth = c[4]; g.strokeStyle = 'rgba(46, 160, 80, .26)'; g.stroke(); } g.lineCap = 'butt'; }
       // a gate is a line across the road
       items().forEach((it, i) => {
         if (it.k !== 'gate') return;
@@ -285,8 +288,16 @@ export function createLevelEditor(opts) {
     // type
     el('h4', null, 'Тип рівня', p);
     const ts = el('select', null, null, p);
-    for (const [v, t, dis] of [['standard', 'Звичайний: ворота, швидкість, чайові'], ['stay-on-road', 'Не з\'їжджай з дороги (скоро)', true], ['stunt', 'Гори / Каскадер (польоти, пізніше)', true]]) { const o = new Option(t, v); o.disabled = !!dis; ts.add(o); }
+    for (const [v, t, dis] of [['standard', 'Звичайний: ворота, швидкість, чайові'], ['stay-on-road', 'Не з\'їжджай з дороги: вихід за вулицю карається'], ['stunt', 'Гори / Каскадер (польоти, пізніше)', true]]) { const o = new Option(t, v); o.disabled = !!dis; ts.add(o); }
     ts.value = lv.type || 'standard'; ts.addEventListener('change', () => doc.setType(ts.value));
+    if (lv.type === 'stay-on-road') {
+      const r = { margin: 1, grace: 0.5, timePenalty: 2, burn: 0.25, ...lv.rules };
+      el('div', 'le-note', 'Поза дорогою (вісь тук-тука далі від краю асфальту вулиці, ніж допуск): годинник іде швидше, чайові «на кону» горять, комбо скидається, екран червоніє. Зелена смуга на карті: де можна їхати.', p);
+      for (const [k, label, min, max, step] of [['margin', 'Допуск за край дороги, м', 0, 4, 0.5], ['grace', 'Пільга перед штрафом, с', 0, 5, 0.1], ['timePenalty', 'Штраф часу, с за кожну секунду поза дорогою', 0, 10, 0.5], ['burn', 'Чайові на кону горять, частка за секунду', 0, 1, 0.05]]) {
+        const lab = el('label', null, label, p), inp = el('input', null, null, lab); inp.type = 'number'; inp.min = min; inp.max = max; inp.step = step; inp.value = r[k];
+        inp.addEventListener('change', () => { const v = parseFloat(inp.value); if (Number.isFinite(v)) doc.setRules({ [k]: Math.max(min, Math.min(max, v)) }); });
+      }
+    }
     // time
     el('h4', null, 'Час на проїзд', p);
     const est = (() => { const len = doc.routeLength(); return len ? { len, par: Math.round(len * 0.06) } : null; })();

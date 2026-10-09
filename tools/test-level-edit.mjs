@@ -95,6 +95,48 @@ for (const t of spec.tours) { const c = checkLevel(new LevelDoc(levelFromTour(sp
   check(/далеко від дороги/.test(txt(1)), 'a gate far from any road is flagged', txt(1));
   check(/ближче 25 м/.test(txt(3)), 'two gates 10 m apart: the second is flagged', txt(3));
 }
+// ---- stay-on-road: the rule in Arcade, the corridor in the checks ----
+{
+  const shortLv = JSON.parse(await readFile('data/levels/short.json', 'utf8'));
+  const stayLv = (rules = {}, type = 'stay-on-road') => ({ ...JSON.parse(JSON.stringify(shortLv)), type, rules });
+  check(validateLevel(stayLv({ margin: 1 }), { places: city.tour.places }).length === 0, 'a stay-on-road level is valid');
+  check(validateLevel(stayLv({ margin: 9 }), { places: city.tour.places }).some((t) => /margin/.test(t)), 'margin out of range is refused');
+  check(validateLevel(stayLv({}, 'stunt'), { places: city.tour.places }).length === 0, 'the types stay in the format');
+  const dd = new LevelDoc(stayLv(), ctx); dd.setType('standard'); dd.setType('stay-on-road');
+  check(dd.level.rules.margin === 1, 'choosing the type puts the default margin into the rules', JSON.stringify(dd.level.rules));
+  // a point on a residential street and one beside it
+  const e = graph.nearestEdge(468, 191, 80), a = graph.ea[e.e], b = graph.eb[e.e];
+  const dx = graph.x[b] - graph.x[a], dz = graph.z[b] - graph.z[a], l = Math.hypot(dx, dz), nx = -dz / l, nz = dx / l, half = graph.roadHalf(e.e);
+  const feed = (run, x, z, secs) => { const ev = []; for (let t = 0; t < secs; t += 1 / 72) { run.update({ dt: 1 / 72, x, z, speed: 22, impact: 0, contact: false, blocked: false, nitroActive: false, clearance: null, drifting: false }); ev.push(...run.events); } return ev; };
+  const mk = (lv) => new Arcade(lv, { places: city.tour.places, spec, graph, drive }, { facts, useRoute: false });
+  const run = mk(stayLv({ margin: 1 })); run.par = 300; run.timeLeft = 100; run.begin(e.x, e.z);
+  check(feed(run, e.x, e.z, 2).every((q) => q.type !== 'offRoad') && !run.off.on, 'on the axis of the street: nothing happens');
+  const out = [e.x + nx * (half + 1 + 2.5), e.z + nz * (half + 1 + 2.5)];   // 2.5 m beyond the corridor
+  run.stake = 10; const t0 = run.timeLeft, ev1 = feed(run, out[0], out[1], 0.3);
+  check(!ev1.some((q) => q.type === 'offRoad') && !run.off.on, 'outside for 0.3 s: still within the grace (0.5 s)');
+  const ev2 = feed(run, out[0], out[1], 1.7), st1 = run.stake;
+  check(ev2.some((q) => q.type === 'offRoad' && q.on) && run.off.on && run.off.count === 1, 'outside longer: off the road (one event)');
+  const spent = t0 - run.timeLeft;   // 2.0 s of the clock + 2 s per second outside after the grace
+  check(spent > 2 + 2 * 1.4 && spent < 2 + 2 * 1.6 + 0.1, 'the clock runs 3x faster while outside', spent.toFixed(2) + ' s of the clock in 2.0 s');
+  check(st1 < 10 * Math.exp(-0.25 * 1.4) * 1.05 && st1 > 10 * Math.exp(-0.25 * 1.6) * 0.9, 'the stake burns 25 % per second', `10 -> ${st1.toFixed(2)}`);
+  check(run.combo === 1, 'the combo is reset');
+  const ev3 = feed(run, e.x, e.z, 0.3);
+  check(ev3.some((q) => q.type === 'offRoad' && !q.on) && !run.off.on, 'back on the street: the event ends');
+  run.finish('finished'); check(run.result.offRoad === 1 && run.result.offRoadSecs > 1.3 && run.result.offRoadBurnt > 0, 'the result counts it', JSON.stringify([run.result.offRoad, run.result.offRoadSecs, run.result.offRoadBurnt]));
+  // the same on a standard level: nothing
+  const st = mk(stayLv({}, 'standard')); st.par = 300; st.timeLeft = 100; st.begin(e.x, e.z);
+  check(feed(st, out[0], out[1], 2).every((q) => q.type !== 'offRoad') && st.off.count === 0, 'a standard level has no such rule');
+  // a wide road gives a wider corridor than a narrow one
+  check(graph.roadHalf(0) > 0 && [0, 1, 2, 3, 4].every((k) => k < 5), 'road widths by class exist');
+  // the editor's check: the corridor is drawn along the way, a gate outside it is reported
+  const sd = new LevelDoc(stayLv({ margin: 1 }), ctx), cs = checkLevel(sd, pctx);
+  check(cs.corridor.length > 50 && cs.corridor.every((c) => c[4] > 4), 'the corridor follows the way', `${cs.corridor.length} pieces`);
+  const gi = sd.items.findIndex((q) => q.k === 'gate'), keep = JSON.stringify(sd.items[gi]);
+  sd.items[gi] = { k: 'gate', p: [out[0], out[1]] };
+  const cs2 = checkLevel(sd, pctx); check((cs2.items.get(gi) || []).some((t) => /коридором/.test(t)), 'a gate outside the corridor is flagged', (cs2.items.get(gi) || []).join(' | '));
+  sd.items[gi] = JSON.parse(keep);
+  check(checkLevel(new LevelDoc(stayLv({ margin: 1 }, 'standard'), ctx), pctx).corridor.length === 0, 'a standard level has no corridor');
+}
 // ---- handing a level over: code and back ----
 {
   const castle = JSON.parse(await readFile('data/levels/castle.json', 'utf8'));

@@ -3,6 +3,7 @@
 // banked at every gate; a wall hit burns part of the stake; the clock counts down and every gate adds time.
 // No three.js here: tools/sim-arcade.mjs drives the same class in Node.
 import { sideNormal } from './tour.js';
+import { stayRules } from './levels.js';
 
 export const RUSH = {
   minSpeed: 60 / 3.6,                 // m/s: below this nothing is earned (the auto-throttle keeps it unless braking)
@@ -63,6 +64,8 @@ export class Arcade {
     });
     if (!this.gates.length) throw new Error('у рівні немає воріт');
     this.par = par || (level.time && level.time.par) || null;
+    // "stay on the road": leaving the street's corridor costs time and stake (world.drive: the graph without undrivable edges, else the full one)
+    this.stay = level.type === 'stay-on-road' ? stayRules(level) : null; this.drive = world.drive || world.graph;
     this.reset();
   }
 
@@ -77,6 +80,7 @@ export class Arcade {
     this.timeLeft = this.par ? this.par * RUSH.startShare : Infinity;
     this.fareAcc = 0; this.near = Infinity; this.lastX = null; this.lastZ = null;
     this.maxSpeed = 0; this.hits = 0; this.stuckT = 0; this.slowT = 0; this.dist = 0;
+    this.off = { t: 0, on: false, outside: false, count: 0, secs: 0, burnt: 0, probe: 0, dist: 0, limit: 0 };   // off the road (stay-on-road levels)
     this.smashCount = 0; this.smashTips = 0; this.nm = { t: 0, since: 0, count: 0, last: -9 }; this.dr = { t: 0, count: 0, best: 0 }; this.nearMisses = 0; this.driftSecs = 0; this.skillTips = 0;
     this.events = [];
     this.route = null; this.routeVersion = (this.routeVersion || 0) + 1; this.lastRoute = -1e9; this.offT = 0;
@@ -133,6 +137,24 @@ export class Arcade {
     if (this.par) {
       this.timeLeft -= dt;
       if (this.timeLeft <= 0) { this.timeLeft = 0; this.finish('timeout'); return; }
+    }
+    // --- stay-on-road: the clock and the stake pay for every second outside the street's corridor ---
+    if (this.stay) {
+      const S = this.stay, o = this.off;
+      if ((o.probe -= dt) <= 0) {
+        o.probe = 0.06;
+        const e = this.drive.nearestEdge(ctx.x, ctx.z, 60);
+        o.dist = e ? e.d : Infinity; o.limit = e ? this.drive.roadHalf(e.e) + S.margin : 0; o.outside = !e || e.d > o.limit;
+      }
+      if (o.outside) {
+        o.t += dt;
+        if (!o.on && o.t >= S.grace) { o.on = true; o.count++; this.combo = 1; this.events.push({ type: 'offRoad', on: true }); }
+      } else if (o.t > 0 || o.on) { if (o.on) this.events.push({ type: 'offRoad', on: false, secs: o.t }); o.on = false; o.t = 0; }
+      if (o.on) {
+        o.secs += dt;
+        if (this.par) { this.timeLeft = Math.max(0, this.timeLeft - S.timePenalty * dt); if (this.timeLeft <= 0) { this.finish('timeout'); return; } }
+        const burn = this.stake * S.burn * dt; this.stake -= burn; o.burnt += burn;
+      }
     }
     // --- fares: every tipEvery metres at speed, × combo; below minSpeed nothing, and the combo fades ---
     const f = speedFactor(kmh);
@@ -243,7 +265,7 @@ export class Arcade {
     let stars = 1; const scale = this.par ? this.par / RUSH.starsPar : 1;
     for (let k = 1; k < RUSH.stars.length; k++) if (tips >= RUSH.stars[k] * scale) stars = k + 1;
     const count = (kind) => this.results.filter((r) => r === kind).length;
-    this.result = { state, tips, bonus: Math.round(bonus), nearMisses: this.nearMisses, smashed: this.smashCount, smashTips: Math.round(this.smashTips), driftSecs: Math.round(this.driftSecs * 10) / 10, skillTips: Math.round(this.skillTips), timeLeft: left, time: this.clock, maxKmh: Math.round(this.maxSpeed * 3.6), hits: this.hits,
+    this.result = { state, tips, bonus: Math.round(bonus), offRoad: this.off.count, offRoadSecs: Math.round(this.off.secs * 10) / 10, offRoadBurnt: Math.round(this.off.burnt), nearMisses: this.nearMisses, smashed: this.smashCount, smashTips: Math.round(this.smashTips), driftSecs: Math.round(this.driftSecs * 10) / 10, skillTips: Math.round(this.skillTips), timeLeft: left, time: this.clock, maxKmh: Math.round(this.maxSpeed * 3.6), hits: this.hits,
       exact: count('exact'), good: count('good'), ok: count('ok'), missed: count('missed'), gates: this.gates.length, dist: this.dist, stars };
     this.card = null;
     this.events.push({ type: 'finish', result: this.result });

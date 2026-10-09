@@ -5,6 +5,7 @@
 // and steep paths of OSM, 45 of 3032 edges); the list is data/drive-graph.json (tools/make-drivegraph.mjs), one-way streets are ignored
 // (a Crazy Tuk player drives as he wants).
 import { RoadGraph } from './route.js';
+import { stayRules } from './levels.js';
 
 export const PATH = {
   detour: 1.35, devDeg: 60,         // a leg needs via points when the way is this much longer than the straight line, or starts this far off the straight direction
@@ -38,20 +39,21 @@ export function viasFromPath(path, A, B) {
 export function analyseLeg(dg, A, B) {
   const straight = Math.hypot(B[0] - A[0], B[1] - A[1]);
   const r = dg.routeVia([A, B]);
-  if (!r) return { reach: false, len: 0, straight, dev: 0, need: false, vias: [] };
+  if (!r) return { reach: false, len: 0, straight, dev: 0, need: false, vias: [], path: null };
   const path = r.pts, len = pathLength(path);
   let acc = 0, q = path[path.length - 1];
   for (let i = 1; i < path.length; i++) { acc += Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]); if (acc > 100) { q = path[i]; break; } }
   const a1 = Math.atan2(q[0] - A[0], q[1] - A[1]), a2 = Math.atan2(B[0] - A[0], B[1] - A[1]);
   const dev = Math.abs(Math.atan2(Math.sin(a1 - a2), Math.cos(a1 - a2))) * 180 / Math.PI;
   const need = len > PATH.detour * straight || dev > PATH.devDeg;
-  return { reach: true, len, straight, dev, need, vias: need ? viasFromPath(path, A, B) : [] };
+  return { reach: true, len, straight, dev, need, vias: need ? viasFromPath(path, A, B) : [], path };
 }
 
 // doc: LevelDoc; ctx: { drive: driveGraph(...), clear(x, z, r) -> bool (free of walls with clearance r) }
 // -> { level: [text], items: Map(index -> [text]), suggestions: [{ at, vias, text }], len (m of the way through the gates), legs: [{ at, ...analyseLeg }] }
 export function checkLevel(doc, ctx) {
-  const out = { level: [], items: new Map(), suggestions: [], len: 0, legs: [] };
+  const out = { level: [], items: new Map(), suggestions: [], len: 0, legs: [], corridor: [] };
+  const stay = doc.level.type === 'stay-on-road' ? stayRules(doc.level) : null;
   const add = (i, t) => { const a = out.items.get(i) || []; a.push(t); out.items.set(i, a); };
   const start = doc.startPoint(); if (!start) return out;
   // gates: on free ground, near a drivable street, not too close to each other
@@ -62,6 +64,7 @@ export function checkLevel(doc, ctx) {
     if (ctx.clear && !ctx.clear(p[0], p[1], PATH.clearR)) add(i, 'ворота стоять у стіні або будівлі: перетягни на дорогу');
     const e = ctx.drive.nearestEdge(p[0], p[1], 400);
     if (!e || e.d > PATH.roadMax) add(i, `далеко від дороги${e ? ` (${Math.round(e.d)} м)` : ''}: перетягни ближче до вулиці`);
+    else if (stay) { const lim = ctx.drive.roadHalf(e.e) + stay.margin; if (e.d > lim) add(i, `ворота поза коридором дороги: ${e.d.toFixed(1)} м від осі вулиці, допуск ${lim.toFixed(1)} м`); }
   });
   for (let a = 0; a < gates.length; a++) for (let b = a + 1; b < gates.length; b++) {
     if (Math.hypot(gates[a].p[0] - gates[b].p[0], gates[a].p[1] - gates[b].p[1]) < PATH.gateGap) { add(gates[b].i, `ближче ${PATH.gateGap} м до воріт ${doc.gateNumber(gates[a].i)}: наступні ворота цей проїзд «пропустять»`); }
@@ -74,6 +77,11 @@ export function checkLevel(doc, ctx) {
     const p = doc.pointOf(it); if (!p) return;
     const leg = analyseLeg(ctx.drive, prev, p), direct = prevGate && it.k === 'gate';
     out.legs.push({ at: i, ...leg, direct });
+    // the corridor of a stay-on-road level: the way of this leg, each piece as wide as the street it runs on (+ the margin)
+    if (stay && leg.path) for (let q = 1; q < leg.path.length; q++) {
+      const a = leg.path[q - 1], b = leg.path[q], e = ctx.drive.nearestEdge((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 30);
+      out.corridor.push([a[0], a[1], b[0], b[1], 2 * ((e ? ctx.drive.roadHalf(e.e) : 3) + stay.margin)]);
+    }
     if (!leg.reach) add(i, 'недосяжні з попередньої точки по вулицях: перевір, чи не стоїть точка на сходах або за муром');
     else {
       out.len += leg.len;
