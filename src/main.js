@@ -9,6 +9,11 @@ import { loadModels, modelCreditLine } from './city/models.js';
 import { CollisionWorld, KIND } from './vehicle/collision.js';
 import { TukTukPhysics, TUNING, ARCADE } from './vehicle/physics.js';
 import { Arcade } from './game/arcade.js';
+import { levelFromTour, validateLevel, levelTitle, LEVEL } from './game/levels.js';
+import { loadMine, saveMine } from './game/levelStore.js';
+import { editorEnabled } from './game/editorAccess.js';
+import { driveGraph } from './game/pathfind.js';
+import { createLevelEditor } from './ui/levelEditor.js';
 import { ArcadeCam } from './game/arcadeCam.js';
 import { ArcadeFx } from './game/arcadeFx.js';
 import { Smashables, SMASH_TYPES } from './game/smashables.js';
@@ -154,11 +159,33 @@ try {
 } catch (e) { tourError = `data/tour.json не завантажився: ${e.message}`; }
 if (!city.tour) tourError = tourError || 'city.json без даних туру (node tools/build-city.mjs)';
 // Crazy Tuk: the one-line facts (edited by hand) and the par times (tools/sim-arcade.mjs --write); both optional
-let arcadeFacts = null, arcadePar = {}, arcadeVia = {}, arcadeSmash = {};
+let arcadeFacts = null, arcadeSmash = {}, driveDropped = [];
 try { arcadeFacts = await (await fetch(`data/arcade-facts.json?t=${Date.now()}`, { cache: 'no-store' })).json(); } catch (e) { console.warn(`data/arcade-facts.json: ${e.message}`); }
+if (editorEnabled(params)) { try { const dg = await (await fetch(`data/drive-graph.json?v=${VERSION}`)).json(); if (dg.edges === city.tour.graph.e.length / 3) driveDropped = dg.dropped; } catch (e) { console.warn(`data/drive-graph.json: ${e.message}`); } }   // only the editor needs it
 try { arcadeSmash = await (await fetch(`data/smashables.json?v=${VERSION}`)).json(); } catch (e) { console.warn(`data/smashables.json: ${e.message}`); }
-try { arcadeVia = await (await fetch(`data/arcade-via.json?v=${VERSION}`)).json(); } catch (e) { console.warn(`data/arcade-via.json: ${e.message}`); }
-try { arcadePar = await (await fetch(`data/arcade-par.json?v=${VERSION}`)).json(); } catch (e) { console.warn(`data/arcade-par.json: ${e.message}`); }
+// Crazy Tuk levels (data/levels/index.json -> <id>.json, src/game/levels.js); the three tours of data/tour.json when they cannot be loaded
+// builtinLevels: the files of data/levels; mineLevels: the owner's own levels from the editor (this device only, localStorage); levels: what can be chosen to play
+const builtinLevels = [], levels = [];
+let mineLevels = [];
+const rebuildLevels = () => { levels.length = 0; levels.push(...builtinLevels, ...mineLevels.filter((l) => !validateLevel(l, { places: city.tour && city.tour.places }).length)); };
+async function loadLevels() {
+  try {
+    const idx = await (await fetch(`data/levels/index.json?v=${VERSION}`)).json();
+    for (const row of idx.levels || []) {
+      try {
+        const lv = await (await fetch(`data/levels/${row.file || row.id + '.json'}?v=${VERSION}`)).json();
+        const er = validateLevel(lv, { places: city.tour && city.tour.places });
+        if (er.length) { console.warn(`рівень ${row.id}: ${er.join('; ')}`); continue; }
+        builtinLevels.push(lv);
+      } catch (e) { console.warn(`рівень ${row.id}: ${e.message}`); }
+    }
+  } catch (e) { console.warn(`data/levels/index.json: ${e.message}`); }
+  if (!builtinLevels.length && tourSpec) for (const t of tourSpec.tours) { try { builtinLevels.push(levelFromTour(tourSpec, t.id)); } catch (e) { console.warn(e.message); } }
+  mineLevels = loadMine();
+  rebuildLevels();
+}
+await loadLevels();
+const editorOn = editorEnabled(params);
 if (tourError) console.warn(tourError);
 // terrain heights (data/terrain.bin, IGN MDT05): the ground, the roads and the physics read one grid
 let terrain = null;
@@ -259,6 +286,9 @@ let mapOn = loadSetting('minimap', true) !== false;
 let gameMode = benchOn ? 'free' : ['free', 'tour', 'arcade'].includes(params.get('mode')) ? params.get('mode') : loadSetting('mode', 'tour');
 let tourId = params.get('tour') || loadSetting('tourId', 'short');
 if (tourSpec && !tourSpec.tours.some((t) => t.id === tourId)) tourId = tourSpec.tours[0]?.id;
+let levelId = params.get('level') || params.get('tour') || loadSetting('arcade.level', 'short');   // the Crazy Tuk level (?tour= still works: the three tours are levels with the same ids)
+if (!levels.some((l) => l.id === levelId)) levelId = levels[0] ? levels[0].id : null;
+const levelById = (id) => levels.find((l) => l.id === id) || null;
 let tour = null, freeConfirm = -1e9;
 // Crazy Tuk (docs/plan-arcade.md): the run, its countdown before the start, the sounds and the HTML interface
 let run = null, runCountdown = 0, runRestartAt = -1e9;
@@ -379,10 +409,13 @@ function startTour() {
   return true;
 }
 // ---------- Crazy Tuk ----------
-const arcadeBestKey = () => `arcade.best.${tourId}`;
+let trialLevel = null;   // the level of the editor's test drive (not a record run): restarts replay it until another level is chosen
+const arcadeBestKey = () => `arcade.best.${run ? run.level.id : levelId}`;
 function startArcade() {
   if (!tourSpec || !graph) { flash(tourError || 'Тур недоступний', 5, '#ff7a5c'); return false; }
-  try { run = new Arcade(tourSpec, city.tour, graph, tourId, { par: arcadePar[tourId] || null, facts: arcadeFacts && arcadeFacts.uk, useRoute: false, vias: arcadeVia[tourId] || null }); run.estimatePar(); } catch (e) {
+  const level = trialLevel || levelById(levelId);
+  if (!level) { flash('Crazy Tuk: рівень не знайдено', 5, '#ff7a5c'); return false; }
+  try { run = new Arcade(level, { places: city.tour.places, spec: tourSpec, graph }, { facts: arcadeFacts && arcadeFacts.uk, useRoute: false }); run.trial = !!trialLevel; run.estimatePar(); } catch (e) {
     run = null; flash(`Crazy Tuk: ${e.message}`, 6, '#ff7a5c'); console.warn(e); return false;
   }
   tour = null; tourists.dispose();
@@ -401,7 +434,7 @@ function startArcade() {
   { const fx = -Math.sin(phys.heading), fz = -Math.cos(phys.heading); tourists.setup(2, [phys.x, phys.z], [fx, fz]); tourists.live = true; tourists.seatAll(); tourists.visible = true; }   // two passengers on the back seat who feel the ride
   if (params.get('smash') !== '0') {
     if (!smash) smash = new Smashables(scene, groundY);
-    const frac = parseFloat(params.get('smash')), all = arcadeSmash[tourId] || [];   // ?smash=0.5: half of the things (the frame-rate test: fewer or none)
+    const frac = parseFloat(params.get('smash')), all = arcadeSmash[run.level.id] || [];   // ?smash=0.5: half of the things (the frame-rate test: fewer or none)
     smash.load(frac > 0 && frac < 1 ? all.filter((_, i) => (i * frac) % 1 < frac) : all); smash.enable(true); smash.reset();
   }
   if (!arcadeFx) { arcadeFx = new ArcadeFx(scene); arcadeFx.precompile(renderer, scene, camera); }   // compile the shaders now, not in the middle of the first drift
@@ -410,6 +443,7 @@ function startArcade() {
   return true;
 }
 function leaveArcade() {
+  trialLevel = null;
   if (!run && phys.T === TUNING) return;
   run = null; phys.T = TUNING; phys.hit = null; phys.nitro.charge = 1; phys.nitro.active = false;
   arcadeHud.show(false); arcadeSound.setOn(false);
@@ -446,10 +480,10 @@ function handleRunEvents() {
     else if (ev.type === 'stuck') { resetToRoad(); comfort.flashBlack(0.25); arcadeHud.flashText('Назад на дорогу −3 с'); arcadeHud.bonusTime(-3); }
     else if (ev.type === 'finish') {
       const r = ev.result, b = loadSetting(arcadeBestKey(), null);
-      const isRecord = !b || r.tips > b.tips;
+      const isRecord = !run.trial && (!b || r.tips > b.tips);
       if (isRecord) saveSetting(arcadeBestKey(), { tips: r.tips, stars: r.stars, time: Math.round(r.time) });
       updateBestLabel();
-      arcadeHud.summary(r, { gates: run.gates.map((g, i) => ({ title: g.title, text: g.short, kind: run.results[i] })), best: b, isRecord, tourTitle: run.def.title || tourId });
+      arcadeHud.summary(r, { gates: run.gates.map((g, i) => ({ title: g.title, text: g.short, kind: run.results[i] })), best: b, isRecord, tourTitle: (run.trial ? 'Пробний заїзд · ' : '') + levelTitle(run.level) });
       if (window.__onArcadeFinish) window.__onArcadeFinish(r);
     }
   }
@@ -597,6 +631,7 @@ if (stress > 1) showStats = tuk.dashboard.showFps = true;
 // ---------- loop ----------
 let acc = 0, last = performance.now(), mapTimer = 0, gpuLatest = null;
 // the full-screen map: opened by a tap / click on the minimap (or M); the game stands still while it is open
+let levelEditor = null;
 const fullMap = createFullMap({
   city, graph, getTour: () => tour || arcadeAsTour(), getTrail: () => (tour || run ? trail : null),
   getTuk: () => ({ x: phys.x, z: phys.z, heading: phys.heading }),
@@ -604,6 +639,31 @@ const fullMap = createFullMap({
   canOpen: () => !renderer.xr.isPresenting && !(rotateGuard && rotateGuard.portrait),
 });
 { const mm = $('miniMap'); if (mm) { mm.style.cursor = 'pointer'; mm.addEventListener('click', () => fullMap.open()); } }
+// the level editor: only for the owner (src/game/editorAccess.js); not even created for anybody else
+function tryLevel(lv) {   // the editor's test drive: this level, no record; restarts replay it until another level is chosen
+  trialLevel = lv;
+  if (gameMode === 'arcade') startArcade(); else setGameMode('arcade');
+  flash('Пробний заїзд. Назад до редактора: меню ≡ → «Редактор рівнів» (на ПК: клавіша E)', 6, '#9fe0ff');
+}
+if (editorOn && tourSpec && graph) {
+  levelEditor = createLevelEditor({
+    fullMap, graph, places: city.tour.places, spec: tourSpec, facts: arcadeFacts && arcadeFacts.uk,
+    drive: driveGraph(city, driveDropped), clear: (x, z, r) => world.penetration(x, z, r) === 0,
+    builtin: () => builtinLevels, mine: mineLevels,
+    saveMine: (list) => saveMine(list), tryLevel, getTuk: () => ({ x: phys.x, z: phys.z, heading: phys.heading }),
+    onChange: (lv, list) => {
+      mineLevels = list; rebuildLevels();
+      if (trialLevel && lv && trialLevel.id === lv.id) trialLevel = lv;
+      if (!levelById(levelId)) levelId = levels[0] ? levels[0].id : null;
+      fillLevelSel();
+    },
+  });
+  addEventListener('keydown', (e) => {
+    if (e.code !== 'KeyE' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || (e.target && /^(input|select|textarea)$/i.test(e.target.tagName))) return;
+    if (levelEditor.isOpen) return;
+    e.preventDefault(); levelEditor.open();
+  });
+}
 const rotateGuard = IS_PHONE ? installRotateGuard() : null;
 const clock = { t: 0 };
 const arcadeCam = new ArcadeCam();
@@ -963,7 +1023,19 @@ const modeSel = $('mode'), tourSel = $('tourSel');
 for (const t of tourSpec?.tours || []) tourSel.add(new Option(t.title || t.id, t.id));
 tourSel.value = tourId;
 modeSel.value = gameMode;
-const syncModeUi = () => { vrButton.style.display = gameMode === 'arcade' ? 'none' : ''; $('manualGasRow').style.display = gameMode === 'arcade' && !IS_PHONE ? '' : 'none'; };
+const levelSel = $('levelSel');
+const levelName = (l) => (l.mine ? '✎ ' : '') + levelTitle(l);
+function fillLevelSel() { levelSel.textContent = ''; for (const l of levels) levelSel.add(new Option(levelName(l), l.id)); levelSel.value = levelId || ''; }
+fillLevelSel();
+levelSel.addEventListener('change', () => setLevel(levelSel.value));
+// the Crazy Tuk level: chosen on the start screen (PC) or in the phone's menu; in a run it starts the level at once
+function setLevel(id) {
+  if (!levelById(id)) return false;
+  trialLevel = null; levelId = id; saveSetting('arcade.level', id); levelSel.value = id; updateBestLabel();
+  if (run) startArcade();
+  return true;
+}
+const syncModeUi = () => { $('levelRow').style.display = gameMode === 'arcade' && !IS_PHONE ? '' : 'none'; $('tourLbl').style.display = tourSel.style.display = gameMode === 'arcade' ? 'none' : ''; vrButton.style.display = gameMode === 'arcade' ? 'none' : ''; $('manualGasRow').style.display = gameMode === 'arcade' && !IS_PHONE ? '' : 'none'; };
 modeSel.addEventListener('change', () => { setGameMode(modeSel.value); syncModeUi(); });
 // settings kept for every viewer: auto-gas (Crazy Tuk), sound, music (the phone's menu rows and these PC checkboxes use the same keys)
 function applyAutoGas() { $('autoGas').checked = !manualGas(); if (touch && run) touch.setAutoGas(!manualGas()); }
@@ -1050,7 +1122,7 @@ if (touch) {
       setPaused: (p) => { paused = p; if (!p) last = performance.now(); },
       resetToRoad: () => { resetToRoad(); flash('Повернулись на дорогу', 2); },
       restartTour: () => { if (run) startArcade(); else if (gameMode !== 'tour') setGameMode('tour'); else startTour(); },
-      startArcade: () => setGameMode('arcade'), applyAutoGas, applySound,
+      startArcade: () => setGameMode('arcade'), applyAutoGas, applySound, levels: () => levels.map((l) => [l.id, levelName(l)]), editorEnabled: () => !!levelEditor, openEditor: () => { if (levelEditor) levelEditor.open(); }, level: () => levelId, setLevel,
       newTour: () => tourButton(),
       freeRide: () => setGameMode('free'),
       hasTour: () => !!tour || !!run, isArcade: () => !!run, hasTourSpec: () => !!(tourSpec && graph),
@@ -1070,4 +1142,4 @@ if (touch) {
 if (params.has('autostart')) start();   // after the phone interface exists (it hides the start screen's parts)
 
 // test / debugging hook
-window.__game = { get run() { return run; }, get smash() { return smash; }, smashPop, get fx() { return arcadeFx; }, arcadeSound, tourists, debugWalls, arcadeCam, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { get run() { return run; }, levels, setLevel, get levelEditor() { return levelEditor; }, get mineLevels() { return mineLevels; }, fullMap, tryLevel, get levelId() { return levelId; }, validateLevel, LEVEL, get smash() { return smash; }, smashPop, get fx() { return arcadeFx; }, arcadeSound, tourists, debugWalls, arcadeCam, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };

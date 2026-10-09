@@ -8,6 +8,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { buildWorld } from './sim-tour.mjs';
 import { Terrain } from '../src/city/terrain.js';
 import { RoadGraph } from '../src/game/route.js';
+import { viasFromPath } from '../src/game/pathfind.js';
 
 const city = JSON.parse(await readFile('data/city.json', 'utf8'));
 const spec = JSON.parse(await readFile('data/tour.json', 'utf8'));
@@ -85,14 +86,6 @@ function astar(A, B) {
   const path = []; for (let c = t0; c >= 0; c = prev[c]) path.push([cx(c % W), cz((c / W) | 0)]);
   return path.reverse();
 }
-// Douglas-Peucker
-function simplify(pts, eps) {
-  const keep = new Uint8Array(pts.length); keep[0] = keep[pts.length - 1] = 1;
-  const rec = (a, b) => { let best = -1, bd = 0; for (let i = a + 1; i < b; i++) { const d = distSeg(pts[i], pts[a], pts[b]); if (d > bd) { bd = d; best = i; } } if (bd > eps) { keep[best] = 1; rec(a, best); rec(best, b); } };
-  rec(0, pts.length - 1); return pts.filter((_, i) => keep[i]);
-}
-function distSeg(p, a, b) { const ex = b[0] - a[0], ez = b[1] - a[1], l2 = ex * ex + ez * ez || 1; let t = ((p[0] - a[0]) * ex + (p[1] - a[1]) * ez) / l2; t = Math.max(0, Math.min(1, t)); return Math.hypot(p[0] - a[0] - ex * t, p[1] - a[1] - ez * t); }
-
 const out = {}; let any = false;
 for (const tour of spec.tours) {
   const ids = tour.route.map((r) => r.stop || r.pass).concat([tour.start]);
@@ -114,10 +107,7 @@ for (const tour of spec.tours) {
     const need = path && (plen > 1.35 * straight || dev > 60);
     let vias = [];
     if (need) {
-      let pts = simplify(path, 25).slice(1, -1).filter((p) => Math.hypot(p[0] - A[0], p[1] - A[1]) > 40 && Math.hypot(p[0] - B[0], p[1] - B[1]) > 40);
-      // thin out: no two vias closer than 45 m
-      const thin = []; for (const p of pts) if (!thin.length || Math.hypot(p[0] - thin[thin.length - 1][0], p[1] - thin[thin.length - 1][1]) > 60) thin.push(p);
-      vias = thin.slice(0, 8).map((p) => [Math.round(p[0]), Math.round(p[1])]);
+      vias = viasFromPath(path, A, B);   // the same rule as the level editor's suggestions (src/game/pathfind.js)
       any = true; (out[tour.id] ||= {})[finish ? id + ':finish' : id] = vias;
     }
     console.log(`${(finish ? 'FINISH ' : '').padEnd(7)}${id.padEnd(12)} straight ${straight.toFixed(0).padStart(4)} m  start ${dev.toFixed(0).padStart(3)}° off  way ${path ? plen.toFixed(0).padStart(4) + ' m (x' + (plen / straight).toFixed(2) + ', ' + how + ')' : 'NO WAY'}  ${need ? 'vias: ' + JSON.stringify(vias) : '-'}`);

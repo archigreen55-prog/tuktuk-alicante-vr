@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "short",
+  "title": {"uk":"Короткий тур","en":"Short tour","es":"Tour corto"},
+  "type": "standard",
+  "start": {"place":"melia"},
+  "time": {"mode":"auto","par":309},
+  "items": [
+    {"k":"via","p":[585,123]},
+    {"k":"gate","place":"explanada"},
+    {"k":"via","p":[493,83]},
+    {"k":"gate","place":"townHall"},
+    {"k":"gate","place":"santaMaria"},
+    {"k":"gate","place":"postiguet"},
+    {"k":"via","p":[530,119]},
+    {"k":"via","p":[457,49]},
+    {"k":"via","p":[248,172]},
+    {"k":"via","p":[94,-151]},
+    {"k":"via","p":[34,-241]},
+    {"k":"gate","place":"mercado"},
+    {"k":"via","p":[34,-241]},
+    {"k":"via","p":[94,-151]},
+    {"k":"via","p":[248,172]},
+    {"k":"via","p":[457,49]},
+    {"k":"via","p":[530,119]},
+    {"k":"gate","place":"melia","finish":true}
+  ],
+  "rules": {},
+  "extras": {}
+}

@@ -37,6 +37,11 @@ import { Terrain } from '../src/city/terrain.js';
 const city = JSON.parse(await readFile('data/city.json', 'utf8'));
 const terrain = city.meta.terrain ? Terrain.fromBin(city.meta.terrain, (await readFile(city.meta.terrain.file)).buffer.slice(0)) : null;
 const spec = JSON.parse(await readFile('data/tour.json', 'utf8'));
+// levels: by id from data/levels/index.json, or a path to a level file (node tools/sim-arcade.mjs data/levels-submitted/x.json)
+const LEVELS = {};
+for (const row of JSON.parse(await readFile('data/levels/index.json', 'utf8')).levels) LEVELS[row.id] = JSON.parse(await readFile(`data/levels/${row.file}`, 'utf8'));
+export async function loadLevelFile(path) { const lv = JSON.parse(await readFile(path, 'utf8')); LEVELS[lv.id] = lv; return lv.id; }
+const WORLD = { places: city.tour.places, spec };
 let parFile = {}; try { parFile = JSON.parse(await readFile('data/arcade-par.json', 'utf8')); } catch { /* none yet */ }
 const DT = 1 / 72;
 const PAR_MARGIN = 1.3;   // par = the normal autopilot's time × this (a person brakes more and hits more than the autopilot)
@@ -113,8 +118,9 @@ export function simulate(tourId, style, { par = null, log = false, onStep = null
   const phys = new TukTukPhysics(world, city.start, bounds, terrain, ARCADE);
   phys.nitro.charge = 0.5;
   const graph = new RoadGraph(city.tour.graph);
-  const run = new Arcade(spec, city.tour, graph, tourId, { par });
-  // start: the tour's spawn place, facing the first gate's road
+  // par: null = no clock (the run that measures the par); a number = the clock; the level's own par is not used here
+  const run = new Arcade({ ...LEVELS[tourId], time: { mode: 'auto', par } }, { ...WORLD, graph });
+  // start: the level's spawn place, facing the first gate's road
   const cands = run.start.back && run.start.back.length ? run.start.back.map(([x, z, heading]) => ({ x, z, heading })) : [{ x: city.start.x, z: city.start.z, heading: city.start.heading }];
   const spawn = cands.find((c) => phys.fits(c.x, c.z, c.heading)) || cands[0];
   phys.teleport(spawn.x, spawn.z, spawn.heading);
@@ -198,12 +204,13 @@ export function simulate(tourId, style, { par = null, log = false, onStep = null
   return { run, driftN, cornerT, r: run.result, t, below60, hitsHard, minV, avgV: sumV / Math.max(1, nV), stuck, reverts: phys.reverts || 0, gatesLog, cornerMin, cornersOf: (pts) => corners(pts, world) };
 }
 
-const [argTour = 'short', argStyle] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+let [argTour = 'short', argStyle] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+if (argTour.endsWith('.json') && process.argv[1] && process.argv[1].endsWith('sim-arcade.mjs')) argTour = await loadLevelFile(argTour);
 const wantPar = process.argv.includes('--par') || process.argv.includes('--write');
 const writePar = process.argv.includes('--write');
 if (process.argv[1] && process.argv[1].endsWith('sim-arcade.mjs') && process.argv.includes('--drift')) {
   // the handbrake against the brake: the same pro driver, per corner of 60°+ (35 m before to 35 m after the corner point)
-  const par = parFile[argTour] || null;
+  const par = parFile[argTour] || (LEVELS[argTour].time && LEVELS[argTour].time.par) || null;
   const a = simulate(argTour, 'pro', { par }), b = simulate(argTour, 'proDrift', { par });
   let ta = 0, tb = 0, n = 0, faster = 0; const rows = [];
   for (const [k, ea] of a.cornerT) { const eb = b.cornerT.get(k); if (!eb) continue; const da = ea.out - ea.in, db = eb.out - eb.in; ta += da; tb += db; n++; if (db < da - 0.05) faster++; rows.push(`${k.padEnd(10)} ${ea.deg.toFixed(0).padStart(3)}° R${ea.R.toFixed(1).padStart(5)}  brake ${da.toFixed(2)} s (${ea.hits} hits)   drift ${db.toFixed(2)} s (${eb.hits} hits)   ${(da - db >= 0 ? '-' : '+') + Math.abs(da - db).toFixed(2)} s`); }
@@ -218,7 +225,7 @@ if (process.argv[1] && process.argv[1].endsWith('sim-arcade.mjs')) {
   {
     const { world } = buildWorld();
     const graph = new RoadGraph(city.tour.graph);
-    const run = new Arcade(spec, city.tour, graph, argTour);
+    const run = new Arcade(LEVELS[argTour], { ...WORLD, graph });
     run.newRoute(run.start.p[0], run.start.p[1]);
     const cs = corners(run.route, world);
     let len = 0; for (let i = 1; i < run.route.length; i++) len += Math.hypot(run.route[i][0] - run.route[i - 1][0], run.route[i][1] - run.route[i - 1][1]);
@@ -230,7 +237,7 @@ if (process.argv[1] && process.argv[1].endsWith('sim-arcade.mjs')) {
     if (under.length) console.log('slowest: ' + cs.slice().sort((a, b) => a.vMax - b.vMax).slice(0, 5).map((c) => `#${c.i} ${c.vMax.toFixed(0)} km/h (R ${c.R.toFixed(1)}, ${c.deg.toFixed(0)}°)`).join(', '));
   }
   // 2. the runs; the par is the normal driver's time × PAR_MARGIN unless data/arcade-par.json has it
-  let par = parFile[argTour] || null;
+  let par = parFile[argTour] || (LEVELS[argTour].time && LEVELS[argTour].time.par) || null;
   if (!par || wantPar) {
     const n = simulate(argTour, 'normal'); par = Math.round(n.run.clock * PAR_MARGIN);
     console.log(`\npar: normal driver ${n.run.clock.toFixed(1)} s × ${PAR_MARGIN} = ${par} s  ->  data/arcade-par.json  {"${argTour}": ${par}}`);

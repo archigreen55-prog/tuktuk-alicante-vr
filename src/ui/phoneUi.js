@@ -85,6 +85,7 @@ export function createPhoneUi({ touch, api }) {
     { label: 'Режим керування', options: [['table', 'За столом'], ['vr', 'Як у VR (наступний етап)', true], ['tilt', 'Нахил телефона (наступний етап)', true]], get: () => 'table', set: () => {} },
     { label: 'Кермо', options: [['buttons', 'кнопки ◄ ►'], ['slider', 'повзунок']], get: () => settings.steer, set: (v) => { saveSetting('phone.steer', v); touch.setConfig({ steer: v }); } },
     { label: 'Газ', options: [['analog', 'плавний (чим вище палець)'], ['full', 'повний']], get: () => settings.gas, set: (v) => { saveSetting('phone.gas', v); touch.setConfig({ gas: v }); } },
+    { label: 'Рівень Crazy Tuk', options: () => (api.levels ? api.levels() : []), get: () => (api.level ? api.level() : ''), set: (v) => { if (api.setLevel) api.setLevel(v); } },
     { label: 'Автогаз (Crazy Tuk, ≈ 70 км/год)', check: true, get: () => loadSetting('arcade.manualGas', false) !== true, set: (v) => { saveSetting('arcade.manualGas', !v); api.applyAutoGas(); } },
     { label: 'Звук', check: true, get: () => loadSetting('sound.on', true) !== false, set: (v) => { saveSetting('sound.on', v); api.applySound(); } },
     { label: 'Музика', check: true, get: () => loadSetting('music.on', true) !== false, set: (v) => { saveSetting('music.on', v); api.applySound(); } },
@@ -93,13 +94,15 @@ export function createPhoneUi({ touch, api }) {
     { label: 'Вібрація (удари, нітро)', check: true, get: () => settings.vibrate, set: (v) => { saveSetting('phone.vibrate', v); touch.setConfig({ vibrate: v }); } },
     { label: 'Погляд сам повертається вперед', check: true, get: () => settings.lookReturn, set: (v) => { saveSetting('phone.lookReturn', v); touch.setConfig({ lookReturn: v }); } },
   ];
+  // the options of a row may be a function (the list of levels changes with the owner's levels)
+  const fillOptions = (input, d) => { input.textContent = ''; for (const [v, text, dis] of typeof d.options === 'function' ? d.options() : d.options) { const o = new Option(text, v); o.disabled = !!dis; input.add(o); } };
   const addRow = (parent, d) => {
     const label = el('label', 'ph-only-label', null, parent); label.append(d.label);
     let input;
     if (d.check) { input = el('input', null, null, label); input.type = 'checkbox'; input.checked = !!d.get(); input.addEventListener('change', () => d.set(input.checked)); }
     else {
       input = el('select', null, null, label);
-      for (const [v, text, dis] of d.options) { const o = new Option(text, v); o.disabled = !!dis; input.add(o); }
+      fillOptions(input, d);
       input.value = String(d.get());
       input.addEventListener('change', () => d.set(isNaN(+input.value) ? input.value : +input.value));
     }
@@ -156,6 +159,7 @@ export function createPhoneUi({ touch, api }) {
   const tourBtn = act('Почати тур заново', () => { api.restartTour(); closeMenu(); });
   const arcadeBtn = act('Crazy Tuk', () => { api.startArcade(); closeMenu(); });
   act('Вільна їзда', () => { api.freeRide(); closeMenu(); });
+  const editorBtn = act('Редактор рівнів', () => { closeMenu(); if (api.openEditor) api.openEditor(); }); editorBtn.style.display = 'none';
   act('Діагностика і звіт', () => { closeMenu(); api.openDiagnostics(); });
   act('На весь екран ⛶', async () => { const r = await toggleFullscreen(); closeMenu(); if (r && !r.ok) flashToast(hintFor(r), 7000); });
   const installBtn = act('Встановити як застосунок', () => install(), left, 'ph-btn'); installBtn.style.display = 'none';
@@ -173,7 +177,8 @@ export function createPhoneUi({ touch, api }) {
     camSel.textContent = api.camLabel(); tiltBtn.textContent = api.tiltLabel(); mapBtn.textContent = api.mapOn() ? 'так' : 'ні';
     tourBtn.style.display = api.hasTourSpec() ? '' : 'none'; tourBtn.textContent = api.isArcade && api.isArcade() ? 'Забіг заново' : 'Почати тур заново';
     arcadeBtn.style.display = api.hasTourSpec() && !(api.isArcade && api.isArcade()) ? '' : 'none';
-    defs.forEach((d, i) => { if (!d.check) rowEls[i].value = String(d.get()); else rowEls[i].checked = !!d.get(); });
+    defs.forEach((d, i) => { if (!d.check) { if (typeof d.options === 'function') fillOptions(rowEls[i], d); rowEls[i].value = String(d.get()); } else rowEls[i].checked = !!d.get(); });
+    editorBtn.style.display = api.editorEnabled && api.editorEnabled() ? '' : 'none';
   }
   scrollHint(menu, () => ui.menuOpen);
   function closeMenu() { if (!ui.menuOpen) return; ui.menuOpen = false; menu.style.display = 'none'; api.setPaused(false); }

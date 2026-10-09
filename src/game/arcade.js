@@ -39,22 +39,30 @@ export const RUSH = {
 const speedFactor = (kmh) => { let f = 0; for (const [from, k] of RUSH.speedFactor) if (kmh >= from) f = k; return f; };
 
 export class Arcade {
-  // spec: data/tour.json; cityTour: city.json "tour"; graph: RoadGraph; tourId; par: ideal time (s, from the
-  // simulation; null = no clock, used by the simulation itself to measure the par)
-  // vias: { gateId: [[x, z], ...] } intermediate points before a gate (no grade; the arrow leads through them, e.g. round a dead end)
-  constructor(spec, cityTour, graph, tourId, { par = null, facts = null, useRoute = true, vias = null } = {}) {
-    this.spec = spec; this.graph = graph; this.useRoute = useRoute;   // the game draws no route (the player picks the streets); the simulation's autopilot needs one
-    this.def = spec.tours.find((t) => t.id === tourId) || spec.tours[0];
+  // level: a level of src/game/levels.js (data/levels/<id>.json); world: { places: city.json tour.places (the geometry of the places), spec: data/tour.json
+  // (the names of the places), graph: RoadGraph }; par: ideal time (s, from the simulation; null = the level's own, else estimatePar; the simulation itself
+  // passes null to measure it); facts: { placeId: one line }; useRoute: the simulation's autopilot needs a route, the game draws none
+  constructor(level, world, { par = null, facts = null, useRoute = true } = {}) {
+    this.level = level; this.graph = world.graph; this.useRoute = useRoute;   // the game draws no route (the player picks the streets); the simulation's autopilot needs one
+    const places = world.places, names = world.spec && world.spec.places || {};
     const place = (id) => {
-      const c = cityTour.places[id], s = spec.places[id];
+      const c = places[id], s = names[id];
       if (!c || !s) throw new Error(`місце "${id}" не знайдено`);
       return { id, ...c, title: s.title || id, short: facts && facts[id] || '' };
     };
-    this.start = place(this.def.start);
-    const ids = this.def.route.map((r) => r.stop || r.pass);
-    this.gates = ids.map((id) => gateOf(place(id))).concat([gateOf(this.start, true)]);
-    for (const g of this.gates) g.vias = (vias && vias[g.finish ? g.id + ':finish' : g.id] || vias && !g.finish && vias[g.id] || []).map((v) => ({ p: v.p || v, r: v.r || RUSH.viaReach }));
-    this.par = par;
+    const st = level.start || {};
+    this.start = st.place ? place(st.place) : freeStart(st);
+    this.gates = []; let vias = [];
+    level.items.forEach((it) => {
+      if (it.k === 'via') { vias.push({ p: [it.p[0], it.p[1]], r: it.r || RUSH.viaReach }); return; }
+      if (it.k !== 'gate') return;
+      const finish = it.finish === true, g = it.place
+        ? gateOf({ ...place(it.place), ...(it.fact ? { short: it.fact } : {}) }, finish)
+        : gateOf(freeGate(it, this.gates.length, this.graph, facts), finish);
+      g.vias = vias; vias = []; this.gates.push(g);
+    });
+    if (!this.gates.length) throw new Error('у рівні немає воріт');
+    this.par = par || (level.time && level.time.par) || null;
     this.reset();
   }
 
@@ -243,6 +251,20 @@ export class Arcade {
 }
 
 // a gate across the road at a place: p (road point), d (unit direction along the road), n (across), half width
+// a start given by a point: x, z, heading (the tuk-tuk looks along -sin, -cos)
+function freeStart({ x, z, heading }) {
+  return { id: 'start', title: 'Старт', short: '', p: [x, z], d: [-Math.sin(heading), -Math.cos(heading)], w: 6, look: [x - Math.sin(heading) * 20, z - Math.cos(heading) * 20], back: [[x, z, heading]] };
+}
+// a gate given by a point: across the road there (the direction of the nearest road, unless the level says it)
+function freeGate(it, i, graph, facts) {
+  let d = it.d;
+  if (!d && graph) {
+    const e = graph.nearestEdge(it.p[0], it.p[1], 60);
+    if (e) { const a = graph.ea[e.e], b = graph.eb[e.e], dx = graph.x[b] - graph.x[a], dz = graph.z[b] - graph.z[a], l = Math.hypot(dx, dz) || 1; d = [dx / l, dz / l]; }
+  }
+  d = d || [1, 0];
+  return { id: it.id || `g${i + 1}`, title: it.title || `Ворота ${i + 1}`, short: it.fact || '', p: [it.p[0], it.p[1]], d, w: it.w || 8, look: [it.p[0] - d[1] * 10, it.p[1] + d[0] * 10] };
+}
 function gateOf(place, finish = false) {
   const d = place.d, l = Math.hypot(d[0], d[1]) || 1;
   const dir = [d[0] / l, d[1] / l];

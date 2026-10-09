@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "levels": [
+    {
+      "id": "short",
+      "file": "short.json",
+      "builtin": true,
+      "type": "standard",
+      "gates": 6,
+      "title": {
+        "uk": "Короткий тур",
+        "en": "Short tour",
+        "es": "Tour corto"
+      }
+    },
+    {
+      "id": "castle",
+      "file": "castle.json",
+      "builtin": true,
+      "type": "standard",
+      "gates": 6,
+      "title": {
+        "uk": "30 хв: до замку",
+        "en": "30 min: to the castle",
+        "es": "30 min: al castillo"
+      }
+    },
+    {
+      "id": "full",
+      "file": "full.json",
+      "builtin": true,
+      "type": "standard",
+      "gates": 12,
+      "title": {
+        "uk": "Повний тур",
+        "en": "Full tour",
+        "es": "Tour completo"
+      }
+    }
+  ]
+}

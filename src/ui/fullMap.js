@@ -2,6 +2,8 @@
 // Drawn from the city vectors on one canvas at the device pixel ratio (crisp text and lines), only while open and only
 // when something changed: nothing runs while the map is closed. North is up.
 //   pan: one finger / mouse drag     zoom: two-finger pinch / wheel / + - buttons / double tap     "до мене": back to the tuk-tuk
+// The level editor (0.17.0, src/ui/levelEditor.js) works on this same map: openEditor(editor) hands it the pointer (drag of a point, taps) and two
+// drawing hooks; the tour, the trail and the route are not drawn then.
 // Layers: sea, parks, plazas, buildings (from 0.25 px/m), roads, the walked trail (grey), the planned rest of the tour
 // (arrows show the direction), the way to the next target (orange), places with names, the tuk-tuk with its heading.
 
@@ -32,6 +34,7 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
   let pinch = null, lastTap = 0, moved = 0;
   let plan = null, planVersion = -9, planNext = -9;   // remaining planned route, recomputed when the route or target changes
   let anim = null, pulse = 0;
+  let editor = null, drag = null, titleEl = null;   // the level editor (or null) and the pointer that drags one of its points
 
   // ------------------------------------------------------------------ static layers (Path2D in world metres)
   function build() {
@@ -60,7 +63,7 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     btn('fm-me', '◎ До мене', () => toMe());
     btn('fm-zin', '+', () => zoomAt(view.W / 2, view.H / 2, 1.6));
     btn('fm-zout', '−', () => zoomAt(view.W / 2, view.H / 2, 1 / 1.6));
-    const title = document.createElement('div'); title.className = 'fm-title'; title.textContent = 'Карта · гра на паузі'; root.appendChild(title);
+    titleEl = document.createElement('div'); titleEl.className = 'fm-title'; titleEl.textContent = 'Карта · гра на паузі'; root.appendChild(titleEl);
     document.body.appendChild(root);
     cv.addEventListener('pointerdown', onDown); cv.addEventListener('pointermove', onMove); cv.addEventListener('pointerup', onUp); cv.addEventListener('pointercancel', onUp);
     cv.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
@@ -96,11 +99,16 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     cv.setPointerCapture && (() => { try { cv.setPointerCapture(e.pointerId); } catch (_) { /* synthetic pointer */ } })();
     ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
     anim = null; moved = 0;
+    if (editor) {
+      if (drag !== null && ptrs.size >= 2) { editor.dragCancel(); drag = null; }   // a second finger: the map, not the point
+      else if (ptrs.size === 1) { const w = toWorld(e.clientX, e.clientY); if (editor.hit(w.x, w.z, e, view)) { drag = e.pointerId; return; } }
+    }
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; }
   }
   function onMove(e) {
     const p = ptrs.get(e.pointerId); if (!p) return;
     const ox = p.x, oy = p.y; p.x = e.clientX; p.y = e.clientY;
+    if (drag === e.pointerId) { const w = toWorld(e.clientX, e.clientY); moved += Math.abs(p.x - ox) + Math.abs(p.y - oy); editor.dragMove(w.x, w.z, e); invalidate(); return; }
     if (ptrs.size === 1) {
       view.cx -= (p.x - ox) / view.s; view.cz -= (p.y - oy) / view.s; moved += Math.abs(p.x - ox) + Math.abs(p.y - oy);
       clampView(); invalidate();
@@ -117,7 +125,9 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
   }
   function onUp(e) {
     const had = ptrs.delete(e.pointerId);
+    if (drag === e.pointerId) { drag = null; if (e.type === 'pointerup') editor.dragEnd(); else editor.dragCancel(); invalidate(); return; }
     if (ptrs.size < 2) pinch = null;
+    if (editor) { if (had && ptrs.size === 0 && moved < 10 && e.type === 'pointerup') { const w = toWorld(e.clientX, e.clientY); editor.tap(w.x, w.z, e); invalidate(); } return; }
     if (had && ptrs.size === 0 && moved < 10 && e.type === 'pointerup') {   // a tap; two quick taps zoom in
       const now = performance.now();
       if (now - lastTap < 320) { zoomAt(e.clientX, e.clientY, 2); lastTap = 0; } else lastTap = now;
@@ -166,8 +176,8 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     for (const k of kinds) stroke(built.roads.get(k), ROAD_W[k] || 5, COL.roadEdge, 2.6);
     for (const k of kinds) stroke(built.roads.get(k), (ROAD_W[k] || 5) - 1.2, k === 'pedestrian' ? COL.ped : COL.road, 1.4);
 
-    const tour = getTour(), tuk = getTuk();
-    const trail = getTrail();
+    const tour = editor ? null : getTour(), tuk = getTuk();
+    const trail = editor ? null : getTrail();
     // the walked trail: grey
     if (trail && trail.length > 1) {
       g.beginPath(); trail.forEach(([x, z], i) => (i ? g.lineTo(x, z) : g.moveTo(x, z)));
@@ -178,9 +188,11 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     if (rest && rest.length > 1) { pathLine(rest, 'rgba(46, 107, 214, .85)', 6); chevrons(rest, '#fff', 'rgba(46, 107, 214, .95)'); }
     if (tour && tour.route && tour.route.length > 1) { pathLine(tour.route, 'rgba(255, 150, 0, .95)', 8); chevrons(tour.route, '#fff', '#e07b00'); }
 
+    if (editor) editor.drawWorld(g, view);
     // screen-space layer: places, tuk-tuk, scale
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawPlaces(tour);
+    if (editor) editor.drawScreen(g, toScreen, view);
     drawTuk(tuk);
     drawScale();
   }
@@ -210,6 +222,7 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
   }
 
   const toScreen = (x, z) => [view.W / 2 + (x - view.cx) * view.s, view.H / 2 + (z - view.cz) * view.s];
+  const toWorld = (px, py) => { const r = cv.getBoundingClientRect(); return { x: view.cx + (px - r.left - view.W / 2) / view.s, z: view.cz + (py - r.top - view.H / 2) / view.s }; };
 
   function drawPlaces(tour) {
     const spec = tour && tour.spec;
@@ -285,9 +298,10 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     ensureDom();
     open = true; root.style.display = 'block';
     resize();
-    const t = getTuk();
-    view.cx = t.x; view.cz = t.z; view.s = Math.min(MAX_SCALE, Math.max(0.9, fitScale()));
-    clampView(); plan = null; anim = null; ptrs.clear(); pinch = null;
+    const t = (editor && editor.initialView && editor.initialView()) || getTuk();
+    view.cx = t.x; view.cz = t.z; view.s = Math.min(MAX_SCALE, Math.max(editor && t.s ? t.s : 0.9, fitScale()));
+    titleEl.textContent = editor ? editor.title || 'Редактор рівнів' : 'Карта · гра на паузі';
+    clampView(); plan = null; anim = null; ptrs.clear(); pinch = null; drag = null;
     setPaused(true);
     try { history.pushState({ fullMap: true }, ''); pushed = true; } catch (_) { pushed = false; }
     pulse = setInterval(() => invalidate(), 140);   // the pulsing ring of the next target
@@ -295,7 +309,8 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
   }
   function doClose(fromPop) {
     if (!open) return;
-    open = false; root.style.display = 'none'; ptrs.clear(); pinch = null; anim = null;
+    open = false; root.style.display = 'none'; ptrs.clear(); pinch = null; anim = null; drag = null;
+    if (editor) { const ed = editor; editor = null; if (ed.onClose) ed.onClose(); }
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
     clearInterval(pulse); pulse = 0;
     setPaused(false);
@@ -317,9 +332,24 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     else if (e.code === 'Escape' && open) { close(); e.preventDefault(); }
   });
 
-  return {
+  // the level editor: the same map with the editor's points on it (see the header)
+  const api = {
     open: doOpen, close, toggle: () => (open ? close() : doOpen()),
     get isOpen() { return open; },
     get view() { return view; },
+    get root() { return root; },
+    invalidate, toScreen, toWorld,
+    centerOn(x, z, s) { anim = { t0: performance.now(), from: { cx: view.cx, cz: view.cz, s: view.s }, to: { cx: x, cz: z, s: s || view.s } }; invalidate(); },
+    setTitle(text) { if (titleEl) titleEl.textContent = text; },
+    openEditor(ed) {
+      if (open || !canOpen()) return false;
+      ensureDom();
+      if (!ed.attached) { ed.attached = true; ed.attach(root, api); }
+      editor = ed; doOpen();
+      if (!open) editor = null;
+      return open;
+    },
+    get editing() { return !!editor; },
   };
+  return api;
 }
