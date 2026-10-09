@@ -5,11 +5,13 @@
 import * as THREE from 'three';
 
 const TYPES = {
-  c: { name: 'конус', radius: 0.28, tips: 1, slow: 0.992, pieces: 4, color: 0xff6a1a },
+  c: { name: 'конус', radius: 0.28, tips: 1, slow: 0.992, pieces: 5, color: 0xff6a1a },
   b: { name: 'смітник', radius: 0.38, tips: 2, slow: 0.97, pieces: 6, color: 0x2e7d4f },
   t: { name: 'столик', radius: 1.0, tips: 3, slow: 0.965, pieces: 9, color: 0xe9d8b8 },
   u: { name: 'парасоля', radius: 0.55, tips: 2, slow: 0.98, pieces: 6, color: 0xe63946 },
 };
+// colours of the pieces of each type, in turn: a cone breaks into orange chunks, a white stripe piece and a dark piece of the base
+const PIECE = { c: [0xff6a1a, 0xffffff, 0xff6a1a, 0x333333], b: [0x2e7d4f, 0x1b4d30], t: [0xf2e6d0, 0xb5532f, 0x333333], u: [0xe63946, 0xffffff] };
 const MAX_DEBRIS = 56, MIN_SPEED = 3, BODY_R = 0.72, CELL = 10;
 
 // low-poly models (metres), coloured by vertex colours, merged into one geometry per type
@@ -68,7 +70,8 @@ export class Smashables {
     this.mat = new THREE.MeshLambertMaterial({ vertexColors: true });
     this.items = []; this.meshes = {}; this.grid = new Map(); this.on = false;
     // debris: unit boxes, one instanced mesh, a pool
-    this.debris = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial(), MAX_DEBRIS);
+    // a shard: a squat four-sided tapered piece (a chunk of a cone, a splinter), not a ball or a cube
+    this.debris = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.3, 0.55, 1, 4), new THREE.MeshLambertMaterial(), MAX_DEBRIS);
     this.debris.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_DEBRIS * 3), 3);
     this.debris.frustumCulled = false;
     this.deb = Array.from({ length: MAX_DEBRIS }, () => ({ t: 9, life: 1, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, s: 0.1, rx: 0, ry: 0 }));
@@ -130,10 +133,10 @@ export class Smashables {
     for (let k = 0; k < T.pieces; k++) {
       const d = this.deb[this.di]; this.di = (this.di + 1) % MAX_DEBRIS;
       const a = Math.random() * 6.28, sp = 1.5 + Math.random() * 3.5;
-      d.t = 0; d.life = 1.2 + Math.random() * 0.8; d.x = it.x + (Math.random() - 0.5) * 0.4; d.y = y0 + Math.random() * 0.5; d.z = it.z + (Math.random() - 0.5) * 0.4;
+      d.t = 0; d.life = 0.55 + Math.random() * 0.35; d.x = it.x + (Math.random() - 0.5) * 0.4; d.y = y0 + Math.random() * 0.5; d.z = it.z + (Math.random() - 0.5) * 0.4;
       d.vx = vx * 0.7 + Math.cos(a) * sp; d.vy = 3 + Math.random() * 4; d.vz = vz * 0.7 + Math.sin(a) * sp;
-      d.s = 0.08 + Math.random() * (it.t === 't' ? 0.2 : 0.14); d.rx = Math.random() * 6; d.ry = Math.random() * 6;
-      this.col.setHex(it.t === 't' && k % 3 === 0 ? 0xb5532f : it.t === 'u' && k % 2 ? 0xffffff : T.color); this.debris.setColorAt(this.deb.indexOf(d), this.col);
+      d.s = (it.t === 'c' ? 0.1 : 0.08) + Math.random() * (it.t === 't' ? 0.2 : 0.12); d.rx = Math.random() * 6; d.ry = Math.random() * 6;
+      this.col.setHex(PIECE[it.t][k % PIECE[it.t].length]); this.debris.setColorAt(this.deb.indexOf(d), this.col);
     }
     this.debris.instanceColor.needsUpdate = true; this.smashed = (this.smashed || 0) + 1;
   }
@@ -145,7 +148,7 @@ export class Smashables {
       d.t += dt; d.vy -= 12 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.z += d.vz * dt;
       const g = this.groundY(d.x, d.z) + d.s * 0.5;
       if (d.y < g) { d.y = g; d.vy = -d.vy * 0.35; d.vx *= 0.6; d.vz *= 0.6; }
-      const k = Math.min(1, (d.life - d.t) / 0.4);
+      const k = Math.min(1, (d.life - d.t) / 0.25);
       D.position.set(d.x, d.y, d.z); D.rotation.set(d.t * d.rx * 3, d.t * d.ry * 3, 0); D.scale.setScalar(d.s * k); D.updateMatrix(); this.debris.setMatrixAt(i, D.matrix); any = true;
     }
     if (any) this.debris.instanceMatrix.needsUpdate = true;
