@@ -14,6 +14,7 @@ import { loadMine, saveMine } from './game/levelStore.js';
 import { editorEnabled } from './game/editorAccess.js';
 import { driveGraph } from './game/pathfind.js';
 import { createLevelEditor } from './ui/levelEditor.js';
+import { createSoundLab } from './ui/soundLab.js';
 import { ArcadeCam } from './game/arcadeCam.js';
 import { ArcadeFx } from './game/arcadeFx.js';
 import { Smashables, SMASH_TYPES } from './game/smashables.js';
@@ -296,7 +297,10 @@ let hornHeld = false;
 const smashPop = { n: 0, tips: 0, t: 0 };   // the smashes of the last half second are shown as one line
 let frameTag = '';   // what happened in this frame (gate, hit, drift...), for the slow-frame list of the diagnostics
 const arcadeSound = new ArcadeSound(horn);
-arcadeSound.init(VERSION);   // the sound files of assets/audio (manifest.json); none yet = silent
+// the CC BY works among the sounds must be credited (name, author, link, licence): a line in the credits at the bottom and in the phone menu
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const soundAttribution = () => { const a = arcadeSound.attribution; return a.length ? 'Звуки: ' + a.map((x) => `«${esc(x.title)}», ${esc(x.author)}, <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.license)}</a>`).join('; ') : ''; };
+arcadeSound.init(VERSION).then(() => { const line = soundAttribution(), at = document.getElementById('attr'); if (line && at) at.insertAdjacentHTML('beforeend', `<br>${line}`); });   // the sound files of assets/audio (manifest.json); none yet = silent
 const arcadeHud = createArcadeHud({ onAgain: () => startArcade(), onTour: () => setGameMode('tour'), bookLink: bookingLink('uk'), showSpeed: !IS_PHONE,
   onBookMissing: () => flash('Номер WhatsApp ще не вписано (src/config.js)', 4, '#ff9f43') });
 const trail = []; let trailLast = null;   // where the tuk-tuk has been during the tour (grey line on the full map)
@@ -634,7 +638,7 @@ if (stress > 1) showStats = tuk.dashboard.showFps = true;
 // ---------- loop ----------
 let acc = 0, last = performance.now(), mapTimer = 0, gpuLatest = null;
 // the full-screen map: opened by a tap / click on the minimap (or M); the game stands still while it is open
-let levelEditor = null;
+let levelEditor = null, soundLab = null;
 const fullMap = createFullMap({
   city, graph, getTour: () => tour || arcadeAsTour(), getTrail: () => (tour || run ? trail : null),
   getTuk: () => ({ x: phys.x, z: phys.z, heading: phys.heading }),
@@ -647,6 +651,14 @@ function tryLevel(lv) {   // the editor's test drive: this level, no record; res
   trialLevel = lv;
   if (gameMode === 'arcade') startArcade(); else setGameMode('arcade');
   flash('Пробний заїзд. Назад до редактора: меню ≡ → «Редактор рівнів» (на ПК: клавіша E)', 6, '#9fe0ff');
+}
+// the sound lab (menu ≡ -> «Звуки», PC: L): the candidates of assets/audio-cand, only on the owner's device (the editor key)
+if (editorOn) {
+  soundLab = createSoundLab({ version: VERSION, onOpen: () => { paused = true; arcadeSound.musicPlayer.setDuck(0); if (touch) touch.releaseAll(); }, onClose: () => { arcadeSound.musicPlayer.setDuck(1); if (!(phone && phone.menuOpen) && !fullMap.isOpen) { paused = false; last = performance.now(); } } });
+  addEventListener('keydown', (e) => {
+    if (e.code !== 'KeyL' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || (e.target && /^(input|select|textarea)$/i.test(e.target.tagName))) return;
+    e.preventDefault(); if (soundLab.isOpen) soundLab.close(); else soundLab.open();
+  });
 }
 if (editorOn && tourSpec && graph) {
   levelEditor = createLevelEditor({
@@ -853,7 +865,7 @@ function frame(now, xrFrame) {
         for (const h of hit) { const k = SMASH_TYPES[h.t].slow; phys.vx *= k; phys.vz *= k; }
         const tips = run.smashed(hit.map((h) => h.t));
         smashPop.n += hit.length; smashPop.tips += tips; smashPop.t = 0.5;
-        arcadeSound.play('smash', { gain: Math.min(1, 0.6 + hit.length * 0.15) }, 0.12); buzz(20 + 8 * hit.length);
+        arcadeSound.smash(hit[0].t, { gain: Math.min(1, 0.6 + hit.length * 0.15) }, 0.12); buzz(20 + 8 * hit.length);
         if (hit.some((h) => h.t === 't')) passengers('laugh', 2.5);
       }
     } else if (smash) smash.update(frameDt, phys.x, phys.z, phys.heading, 0, 0);
@@ -1125,7 +1137,7 @@ if (touch) {
       setPaused: (p) => { paused = p; if (!p) last = performance.now(); },
       resetToRoad: () => { resetToRoad(); flash('Повернулись на дорогу', 2); },
       restartTour: () => { if (run) startArcade(); else if (gameMode !== 'tour') setGameMode('tour'); else startTour(); },
-      startArcade: () => setGameMode('arcade'), applyAutoGas, applySound, levels: () => levels.map((l) => [l.id, levelName(l)]), editorEnabled: () => !!levelEditor, openEditor: () => { if (levelEditor) levelEditor.open(); }, level: () => levelId, setLevel,
+      startArcade: () => setGameMode('arcade'), applyAutoGas, applySound, levels: () => levels.map((l) => [l.id, levelName(l)]), editorEnabled: () => !!levelEditor, soundLabEnabled: () => !!soundLab, openSoundLab: () => { if (soundLab) soundLab.open(); }, openEditor: () => { if (levelEditor) levelEditor.open(); }, level: () => levelId, setLevel,
       newTour: () => tourButton(),
       freeRide: () => setGameMode('free'),
       hasTour: () => !!tour || !!run, isArcade: () => !!run, hasTourSpec: () => !!(tourSpec && graph),
@@ -1137,7 +1149,8 @@ if (touch) {
       mapOn: () => mapOn,
       openDiagnostics: () => { if (diagUI) diagUI.open(); },
       applyFov, applyRes, version: VERSION, onStarted: () => { if (diagUI) diagUI.setVisible(true); },
-      credit: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · рельєф © IGN (CNIG) · фото фасадів: <a href="assets/facades/CREDITS.md" target="_blank" rel="noopener">Wikimedia Commons</a> · 3D-скани: <a href="assets/models/CREDITS.md" target="_blank" rel="noopener">Sketchfab</a> · звуки й музика: <a href="assets/audio/CREDITS.md" target="_blank" rel="noopener">подяки</a> (музика Suno тестова, буде замінена)',
+      get credit() { return this.creditBase + (soundAttribution() ? '<br>' + soundAttribution() : ''); },
+      creditBase: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · рельєф © IGN (CNIG) · фото фасадів: <a href="assets/facades/CREDITS.md" target="_blank" rel="noopener">Wikimedia Commons</a> · 3D-скани: <a href="assets/models/CREDITS.md" target="_blank" rel="noopener">Sketchfab</a> · звуки й музика: <a href="assets/audio/CREDITS.md" target="_blank" rel="noopener">подяки</a> (музика Suno тестова, буде замінена)',
     },
   });
   phone.adaptStartScreen();
@@ -1145,4 +1158,4 @@ if (touch) {
 if (params.has('autostart')) start();   // after the phone interface exists (it hides the start screen's parts)
 
 // test / debugging hook
-window.__game = { get run() { return run; }, levels, setLevel, get levelEditor() { return levelEditor; }, get mineLevels() { return mineLevels; }, fullMap, tryLevel, get levelId() { return levelId; }, validateLevel, LEVEL, get smash() { return smash; }, smashPop, get fx() { return arcadeFx; }, arcadeSound, tourists, debugWalls, arcadeCam, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { get run() { return run; }, get soundLab() { return soundLab; }, levels, setLevel, get levelEditor() { return levelEditor; }, get mineLevels() { return mineLevels; }, fullMap, tryLevel, get levelId() { return levelId; }, validateLevel, LEVEL, get smash() { return smash; }, smashPop, get fx() { return arcadeFx; }, arcadeSound, tourists, debugWalls, arcadeCam, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };

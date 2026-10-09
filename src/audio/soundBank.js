@@ -7,7 +7,8 @@
 //   "sfx":   { "hit.light": ["sfx/hit1.m4a", "sfx/hit2.m4a"], "tourist.cheer": [...], "horn": [...], ... },   // one-shots, a random variant each time
 //   "loops": { "engine": { "file": "loops/engine.m4a", "kmh": [0, 150], "rate": [0.7, 1.9], "gain": [0.35, 0.7] }, ... },   // see arcadeSound.js
 //   "music": { "menu": "music/menu.m4a", "drive": ["music/drive-1.m4a", "music/drive-2.m4a"] },
-//   "credits": ["Назва: автор, ліцензія, посилання", ...]
+//   "gain": { "horn": 1, "gate.exact": 0.55, ... },   // the level of a one-shot slot (default 1)
+//   "credits": ["Назва: автор, ліцензія, посилання", ...], "attribution": [{ title, author, license, url }]   // the CC BY works, shown in the credits line
 // }
 export class SoundBank {
   constructor(horn, base = 'assets/audio/') {
@@ -25,6 +26,7 @@ export class SoundBank {
   }
   get ctx() { return this.horn && this.horn.ctx; }
   get credits() { return this.manifest.credits || []; }
+  get attribution() { return this.manifest.attribution || []; }
   get music() { return this.manifest.music || {}; }
   has(name) { return !!(this.manifest.sfx[name] && this.manifest.sfx[name].length); }
   hasLoop(name) { return !!(this.manifest.loops[name] && this.manifest.loops[name].file); }
@@ -52,7 +54,7 @@ export class SoundBank {
     const buf = this.buffers.get(list[Math.floor(Math.random() * list.length)]);
     if (!buf) return null;
     const src = ctx.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
-    const g = ctx.createGain(); g.gain.value = gain; src.connect(g).connect(this.master); src.start();
+    const g = ctx.createGain(); g.gain.value = gain * ((this.manifest.gain && this.manifest.gain[name]) ?? 1);   // manifest.gain: the level of the slot (the horn and the tourists loud, the chimes quieter) src.connect(g).connect(this.master); src.start();
     return src;
   }
 

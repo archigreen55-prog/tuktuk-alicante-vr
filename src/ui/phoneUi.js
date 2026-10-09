@@ -160,6 +160,7 @@ export function createPhoneUi({ touch, api }) {
   const arcadeBtn = act('Crazy Tuk', () => { api.startArcade(); closeMenu(); });
   act('Вільна їзда', () => { api.freeRide(); closeMenu(); });
   const editorBtn = act('Редактор рівнів', () => { closeMenu(); if (api.openEditor) api.openEditor(); }); editorBtn.style.display = 'none';
+  const soundBtn = act('Звуки', () => { if (api.openSoundLab) api.openSoundLab(); }); soundBtn.style.display = 'none';   // the sound lab: the owner's device only (the menu stays open under it)
   act('Діагностика і звіт', () => { closeMenu(); api.openDiagnostics(); });
   act('На весь екран ⛶', async () => { const r = await toggleFullscreen(); closeMenu(); if (r && !r.ok) flashToast(hintFor(r), 7000); });
   const installBtn = act('Встановити як застосунок', () => install(), left, 'ph-btn'); installBtn.style.display = 'none';
@@ -169,7 +170,8 @@ export function createPhoneUi({ touch, api }) {
   const tiltBtn = (() => { const label = el('label', null, null, right); label.append('Нахил кабіни'); const b = el('button', 'ph-btn', api.tiltLabel(), label); b.addEventListener('click', () => { api.cycleTilt(); b.textContent = api.tiltLabel(); }); return b; })();
   const mapBtn = (() => { const label = el('label', null, null, right); label.append('Мінікарта'); const b = el('button', 'ph-btn', api.mapOn() ? 'так' : 'ні', label); b.addEventListener('click', () => { api.toggleMap(); b.textContent = api.mapOn() ? 'так' : 'ні'; }); return b; })();
   const foot = el('div', 'foot', null, mcard);
-  foot.innerHTML = `${api.credit || ''}<br>версія ${api.version}`;
+  const footHtml = () => `${api.credit || ''}<br>версія ${api.version}`;
+  foot.innerHTML = footHtml();
 
   function openMenu() {
     if (!ui.started || ui.menuOpen) return;
@@ -178,6 +180,8 @@ export function createPhoneUi({ touch, api }) {
     tourBtn.style.display = api.hasTourSpec() ? '' : 'none'; tourBtn.textContent = api.isArcade && api.isArcade() ? 'Забіг заново' : 'Почати тур заново';
     arcadeBtn.style.display = api.hasTourSpec() && !(api.isArcade && api.isArcade()) ? '' : 'none';
     defs.forEach((d, i) => { if (!d.check) { if (typeof d.options === 'function') fillOptions(rowEls[i], d); rowEls[i].value = String(d.get()); } else rowEls[i].checked = !!d.get(); });
+    foot.innerHTML = footHtml();   // the sound credits arrive after the manifest
+    soundBtn.style.display = api.soundLabEnabled && api.soundLabEnabled() ? '' : 'none';
     editorBtn.style.display = api.editorEnabled && api.editorEnabled() ? '' : 'none';
   }
   scrollHint(menu, () => ui.menuOpen);

@@ -5,6 +5,7 @@
 //     { "src": "tuktuk.flac", "slot": "loops.engine", "trim": [12.0, 20.5], "cfg": { "kmh": [0, 150], "rate": [0.7, 1.9], "gain": [0.35, 0.7] },
 //       "credit": "Thailand tuk tuk…: kyles, CC0, https://freesound.org/…" },
 //     { "src": "horn.wav", "slot": "sfx.horn", "gain": -3, "credit": "…" },          // sfx.<name>: one variant; the same slot again = one more variant
+//     // also: "max": longest effect in s; "slotGain": the slot's level in the game (manifest.gain); "attribution": { title, author, license, url } for CC BY works
 //     { "src": "drive.mp3", "slot": "music.drive" }, { "src": "menu.mp3", "slot": "music.menu", "credit": "Suno (test)" } ] }
 // slots: sfx.<name> (see assets/audio/README.md), loops.<name> (engine | wind | squeal | nitro), music.menu, music.drive.
 // "trim": [from, to] seconds; "gain": dB after the loudness matching; "cfg": the loop's settings written into the manifest.
@@ -12,38 +13,31 @@ import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
+import { makeSfx, makeLoop, ff } from './lib/audio-ff.mjs';
 
 const SRC = 'assets/audio-src', OUT = 'assets/audio';
 const mapFile = process.argv[2] || `${SRC}/map.json`;
 if (!existsSync(mapFile)) { console.error(`нема ${mapFile}: див. коментар на початку tools/prepare-audio.mjs`); process.exit(1); }
 const map = JSON.parse(await readFile(mapFile, 'utf8'));
 const manifest = existsSync(`${OUT}/manifest.json`) ? JSON.parse(await readFile(`${OUT}/manifest.json`, 'utf8')) : {};
-for (const k of ['sfx', 'loops', 'music']) manifest[k] = {};   // rebuilt from the map every time: the map is the truth
-manifest.credits = [];
-const ff = (args) => { const r = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', ...args], { encoding: 'utf8' }); if (r.status !== 0) throw new Error(r.stderr || 'ffmpeg failed'); };
-const probe = (f) => Number(spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f], { encoding: 'utf8' }).stdout) || 0;
+for (const k of ['sfx', 'loops', 'music', 'gain']) manifest[k] = {};   // rebuilt from the map every time: the map is the truth
+manifest.credits = []; manifest.attribution = [];
 const counts = {};
-const LOOP_FADE = 0.4;
 
 for (const it of map.items) {
   const src = path.join(SRC, it.src); if (!existsSync(src)) { console.warn(`нема файлу ${src}`); continue; }
-  const [kind, name] = it.slot.split('.');
+  const dot = it.slot.indexOf('.'), kind = it.slot.slice(0, dot), name = it.slot.slice(dot + 1);   // sfx.hit.light -> kind sfx, name hit.light
   const trim = it.trim ? ['-ss', String(it.trim[0]), ...(it.trim[1] ? ['-to', String(it.trim[1])] : [])] : [];
   const gain = it.gain ? `,volume=${it.gain}dB` : '';
   const key = it.slot; counts[key] = (counts[key] || 0) + 1;
   if (kind === 'sfx') {
     const rel = `sfx/${name.replace(/\./g, '-')}-${counts[key]}.m4a`;
-    await mkdir(path.dirname(path.join(OUT, rel)), { recursive: true });
-    ff([...trim, '-i', src, '-ac', '1', '-ar', '44100', '-af', `silenceremove=start_periods=1:start_threshold=-50dB,loudnorm=I=-18:TP=-1.5:LRA=9${gain}`, '-c:a', 'aac', '-b:a', '64k', path.join(OUT, rel)]);
+    await makeSfx(src, path.join(OUT, rel), { trim: it.trim, gain: it.gain, max: it.max });
     (manifest.sfx[name] ||= []).push(rel);
+    if (it.slotGain != null) manifest.gain[name] = it.slotGain;
   } else if (kind === 'loops') {
-    const rel = `loops/${name}.m4a`; await mkdir(path.join(OUT, 'loops'), { recursive: true });
-    // seamless: the tail (LOOP_FADE s) is cross-faded into the head, so the file's end flows into its start
-    const tmp = path.join(OUT, 'loops', `_${name}.wav`);
-    ff([...trim, '-i', src, '-ac', '1', '-ar', '44100', '-af', `loudnorm=I=-20:TP=-1.5:LRA=9${gain}`, tmp]);
-    const L = probe(tmp);
-    ff(['-i', tmp, '-i', tmp, '-filter_complex', `[0:a]atrim=${(L - LOOP_FADE).toFixed(3)}:${L.toFixed(3)},asetpts=PTS-STARTPTS[t];[1:a]atrim=0:${(L - LOOP_FADE).toFixed(3)},asetpts=PTS-STARTPTS[a];[t][a]acrossfade=d=${LOOP_FADE}:c1=tri:c2=tri`, '-c:a', 'aac', '-b:a', '64k', path.join(OUT, rel)]);
-    await unlink(tmp);
+    const rel = `loops/${name}.m4a`;
+    await makeLoop(src, path.join(OUT, rel), { trim: it.trim, gain: it.gain });   // seamless: the tail is cross-faded into the head
     manifest.loops[name] = { file: rel, ...(it.cfg || {}) };
   } else if (kind === 'music') {
     const base = `music/${name}-${counts[key]}.m4a`;
@@ -51,7 +45,8 @@ for (const it of map.items) {
     ff([...trim, '-i', src, '-ac', '2', '-ar', '44100', '-af', `loudnorm=I=-16:TP=-1.5:LRA=11${gain}`, '-c:a', 'aac', '-b:a', '128k', path.join(OUT, base)]);
     if (name === 'menu') manifest.music.menu = base; else (manifest.music[name] ||= []).push(base);
   } else { console.warn(`невідомий слот ${it.slot}`); continue; }
-  if (it.credit) manifest.credits.push(it.credit);
+  if (it.credit && !manifest.credits.includes(it.credit)) manifest.credits.push(it.credit);
+  if (it.attribution && !manifest.attribution.some((a) => a.url === it.attribution.url)) manifest.attribution.push(it.attribution);   // CC BY works: shown in the game's credits line
   console.log(`${it.slot.padEnd(18)} <- ${it.src}`);
 }
 await writeFile(`${OUT}/manifest.json`, JSON.stringify(manifest, null, 2) + '\n');

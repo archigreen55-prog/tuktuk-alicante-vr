@@ -9,3 +9,6 @@ assets/facades/.check/
 # 3D model tool: KTX-Software downloaded by tools/prepare-model.mjs, source scans
 tools/.bin/
 assets/models/src/
+
+# downloaded sound sources (tools/fetch-sounds.mjs): re-fetchable, not kept in git
+assets/audio-src/dl/
