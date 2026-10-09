@@ -293,7 +293,7 @@ const levelById = (id) => levels.find((l) => l.id === id) || null;
 let tour = null, freeConfirm = -1e9;
 // Crazy Tuk (docs/plan-arcade.md): the run, its countdown before the start, the sounds and the HTML interface
 let run = null, runCountdown = 0, runRestartAt = -1e9;
-let hornHeld = false;
+let hornHeld = false, hornSynth = false;
 const smashPop = { n: 0, tips: 0, t: 0 };   // the smashes of the last half second are shown as one line
 let frameTag = '';   // what happened in this frame (gate, hit, drift...), for the slow-frame list of the diagnostics
 const arcadeSound = new ArcadeSound(horn);
@@ -780,7 +780,12 @@ function frame(now, xrFrame) {
   pedal += (input.brake - pedal) * (1 - Math.exp(-frameDt / 0.06));
   tuk.setPedal(pedal);
   // Crazy Tuk plays the horn from the sound files when there are some (the synthesized one stays for the tour and VR)
-  if (run && arcadeSound.has('horn')) { if (input.horn && !hornHeld) arcadeSound.play('horn'); hornHeld = input.horn; horn.set(false); } else { hornHeld = false; horn.set(input.horn); }
+  // the horn: the recorded one in Crazy Tuk when its file is decoded and plays; otherwise (no file, not decoded, the tour, free ride) the synthesized one, never silence
+  if (run && arcadeSound.canPlay('horn')) {
+    if (input.horn && !hornHeld) hornSynth = !arcadeSound.play('horn');   // the sample did not start: the synthesized horn for this press
+    hornHeld = input.horn; if (!input.horn) hornSynth = false;
+    horn.set(hornSynth && input.horn);
+  } else { hornHeld = false; hornSynth = false; horn.set(input.horn); }
   if (window.__autopilot) window.__autopilot(input, phys, clock.t);
   input.cruiseKmh = 0; input.slideBoost = false;
   if (run) {
@@ -1158,4 +1163,4 @@ if (touch) {
 if (params.has('autostart')) start();   // after the phone interface exists (it hides the start screen's parts)
 
 // test / debugging hook
-window.__game = { get run() { return run; }, get soundLab() { return soundLab; }, levels, setLevel, get levelEditor() { return levelEditor; }, get mineLevels() { return mineLevels; }, fullMap, tryLevel, get levelId() { return levelId; }, validateLevel, LEVEL, get smash() { return smash; }, smashPop, get fx() { return arcadeFx; }, arcadeSound, tourists, debugWalls, arcadeCam, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { get run() { return run; }, horn, get soundLab() { return soundLab; }, levels, setLevel, get levelEditor() { return levelEditor; }, get mineLevels() { return mineLevels; }, fullMap, tryLevel, get levelId() { return levelId; }, validateLevel, LEVEL, get smash() { return smash; }, smashPop, get fx() { return arcadeFx; }, arcadeSound, tourists, debugWalls, arcadeCam, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };

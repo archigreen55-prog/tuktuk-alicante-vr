@@ -29,6 +29,8 @@ export class SoundBank {
   get attribution() { return this.manifest.attribution || []; }
   get music() { return this.manifest.music || {}; }
   has(name) { return !!(this.manifest.sfx[name] && this.manifest.sfx[name].length); }
+  // the slot can sound right now: a file of it is decoded and the context runs (has() only says the manifest lists one)
+  ready(name) { const ctx = this.ctx, list = this.manifest.sfx[name]; return !!(ctx && ctx.state === 'running' && this.master && list && list.some((f) => this.buffers.has(f))); }
   hasLoop(name) { return !!(this.manifest.loops[name] && this.manifest.loops[name].file); }
 
   // decode every effect and loop (call when the context runs; safe to call again)
@@ -51,10 +53,12 @@ export class SoundBank {
   play(name, { gain = 1, rate = 1 } = {}) {
     const ctx = this.ctx, list = this.manifest.sfx[name];
     if (!ctx || ctx.state !== 'running' || !this.master || this.muted || !list || !list.length) return null;
-    const buf = this.buffers.get(list[Math.floor(Math.random() * list.length)]);
-    if (!buf) return null;
+    const ok = list.filter((f) => this.buffers.has(f));   // a variant that failed to decode is skipped, not played as silence
+    if (!ok.length) return null;
+    const buf = this.buffers.get(ok[Math.floor(Math.random() * ok.length)]);
     const src = ctx.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
-    const g = ctx.createGain(); g.gain.value = gain * ((this.manifest.gain && this.manifest.gain[name]) ?? 1);   // manifest.gain: the level of the slot (the horn and the tourists loud, the chimes quieter) src.connect(g).connect(this.master); src.start();
+    const g = ctx.createGain(); g.gain.value = gain * ((this.manifest.gain && this.manifest.gain[name]) ?? 1);   // manifest.gain: the level of the slot (the horn and the tourists loud, the chimes quieter)
+    src.connect(g).connect(this.master); src.start();
     return src;
   }
 

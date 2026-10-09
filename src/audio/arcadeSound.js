@@ -37,6 +37,8 @@ export class ArcadeSound {
   get credits() { return this.bank.credits; }
   get attribution() { return this.bank.attribution; }
   has(name) { return this.bank.has(name); }
+  // the slot sounds if played now (the mode is on, the sound is on, a file is decoded)
+  canPlay(name) { return this.on && this.sound && this.bank.ready(name); }   // (not `ready`: that is the flag of the loops)
 
   // the loops are made once the context runs and the files are decoded
   build() {
