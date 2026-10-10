@@ -470,15 +470,17 @@ function arcadeAsTour() {
 }
 // the passengers: a body reaction + a voice from the sound bank (one voice per ~1.5 s, `gap` s for the rare ones)
 let passengersAt = -9;
-function passengers(kind, gap = 1.5) {
+// voice: the sound to play (default the same as the body's reaction); null = the body only, no voice
+function passengers(kind, gap = 1.5, voice = kind) {
   tourists.react(kind);
-  if (clock.t - passengersAt < gap) return;
-  passengersAt = clock.t; arcadeSound.play('tourist.' + kind);
+  if (!voice || clock.t - passengersAt < gap) return;
+  passengersAt = clock.t; arcadeSound.play('tourist.' + voice);
 }
 function handleRunEvents() {
   for (const ev of run.events) {
     frameTag += `${ev.type}${ev.kind ? ':' + ev.kind : ''} `;
-    if (ev.type === 'gate') { if (arcadeFx) { arcadeFx.beacon.flash(run.gates[ev.index], ev.kind, groundY(run.gates[ev.index].p[0], run.gates[ev.index].p[1])); arcadeHud.flashScreen(); } arcadeHud.flashGate(ev); arcadeHud.bonusTime(ev.time); arcadeSound.gate(ev.kind); if (ev.kind !== 'missed') buzz(40); if (ev.kind === 'exact') passengers('cheer'); else if (ev.kind === 'good') passengers('laugh'); }
+    // an exact gate: the cheer, or the scream while there is no cheer file
+    if (ev.type === 'gate') { if (arcadeFx) { arcadeFx.beacon.flash(run.gates[ev.index], ev.kind, groundY(run.gates[ev.index].p[0], run.gates[ev.index].p[1])); arcadeHud.flashScreen(); } arcadeHud.flashGate(ev); arcadeHud.bonusTime(ev.time); arcadeSound.gate(ev.kind); if (ev.kind !== 'missed') buzz(40); if (ev.kind === 'exact') passengers('cheer', 1.5, arcadeSound.has('tourist.cheer') ? 'cheer' : 'scream'); else if (ev.kind === 'good') passengers('laugh'); }
     else if (ev.type === 'hit') { arcadeHud.flashText(ev.burnt > 0.5 ? `Удар! −${euroWhole(ev.burnt)}` : 'Удар!'); passengers('gasp'); }
     else if (ev.type === 'offRoad') { arcadeHud.flashText(ev.on ? 'З дороги!' : 'Знову на дорозі', ev.on ? '#ff5a3c' : '#9be08a'); if (ev.on) { buzz(60); arcadeSound.play('hit.light', {}, 0.3); passengers('gasp', 2.5); } }
     else if (ev.type === 'nearMiss') { arcadeHud.pop(`Майже зачепив! +${euroWhole(ev.tips)}${run.combo > 1 ? ' · ×' + run.combo : ''}`, '#9fe0ff'); arcadeSound.play('nearmiss', {}, 0.4); passengers(Math.random() < 0.5 ? 'gasp' : 'laugh', 2.5); }
@@ -818,7 +820,7 @@ function frame(now, xrFrame) {
   if (phys.nitro.uses > nitroUses) {
     nitroUses = phys.nitro.uses; nitroStarted = true;
     if (!tour && !run) flash(`НІТРО! до ${TUNING.nitroMaxKmh} км/год`, 1.5, '#ff9f43');
-    if (run) { arcadeSound.play('nitro.start'); passengers('scream', 3); }
+    if (run) { arcadeSound.play('nitro.start'); passengers('scream', 3, null); }   // nitro: the passengers flinch, but no scream (the owner: it sounds awful there)
     if (inVR) xrIn.pulse('right', 0.5, 120); else buzz(70);
   } else if (nitroPress && !phys.nitro.active && !run) {
     if (phys.nitro.charge < 1) flash(`Нітро заряджається: ${Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge)} с`, 1.5, '#9fb3c8');
