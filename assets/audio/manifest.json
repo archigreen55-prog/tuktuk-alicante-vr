@@ -4,17 +4,35 @@
       "sfx/horn-1.m4a",
       "sfx/horn-2.m4a"
     ],
+    "drift.end": [
+      "sfx/drift-end-1.m4a"
+    ],
+    "tourist.gasp": [
+      "sfx/tourist-gasp-1.m4a"
+    ],
+    "gate.exact": [
+      "sfx/gate-exact-1.m4a"
+    ],
+    "gate.good": [
+      "sfx/gate-good-1.m4a"
+    ],
+    "gate.ok": [
+      "sfx/gate-ok-1.m4a"
+    ],
+    "combo": [
+      "sfx/combo-1.m4a"
+    ],
+    "nitro.start": [
+      "sfx/nitro-start-1.m4a"
+    ],
     "hit.light": [
-      "sfx/hit-light-1.m4a",
-      "sfx/hit-light-2.m4a"
+      "sfx/hit-light-1.m4a"
     ],
     "hit.medium": [
-      "sfx/hit-medium-1.m4a",
-      "sfx/hit-medium-2.m4a"
+      "sfx/hit-medium-1.m4a"
     ],
     "hit.heavy": [
-      "sfx/hit-heavy-1.m4a",
-      "sfx/hit-heavy-2.m4a"
+      "sfx/hit-heavy-1.m4a"
     ],
     "smash.c": [
       "sfx/smash-c-1.m4a",
@@ -32,58 +50,43 @@
       "sfx/smash-u-1.m4a",
       "sfx/smash-u-2.m4a"
     ],
-    "gate.exact": [
-      "sfx/gate-exact-1.m4a"
-    ],
-    "gate.good": [
-      "sfx/gate-good-1.m4a"
-    ],
-    "gate.ok": [
-      "sfx/gate-ok-1.m4a"
-    ],
-    "combo": [
-      "sfx/combo-1.m4a"
-    ],
     "nearmiss": [
       "sfx/nearmiss-1.m4a"
-    ],
-    "drift.end": [
-      "sfx/drift-end-1.m4a"
-    ],
-    "tourist.scream": [
-      "sfx/tourist-scream-1.m4a"
-    ],
-    "tourist.gasp": [
-      "sfx/tourist-gasp-1.m4a"
     ]
   },
   "loops": {},
-  "music": {},
+  "music": {
+    "menu": "music/menu-1.m4a",
+    "drive": [
+      "music/drive-1.m4a"
+    ]
+  },
   "credits": [
     "«Car horn beep beep two beeps honk honk»: AmishRob, CC0, https://freesound.org/s/423990/",
     "«Bike Horn 2»: Stickinthemud, CC BY 4.0, https://freesound.org/s/27881/ (потрібна подяка за ліцензією)",
-    "«Impact Sounds»: Kenney, CC0, https://kenney.nl/assets/impact-sounds",
     "«Interface Sounds»: Kenney, CC0, https://kenney.nl/assets/interface-sounds",
-    "«Roller Coaster Screams»: Marcy13, CC BY 4.0, https://freesound.org/s/635383/ (потрібна подяка за ліцензією)",
-    "«Shocked gasp»: GentlemanWalrus, CC0, https://freesound.org/s/180005/"
+    "«Shocked gasp»: GentlemanWalrus, CC0, https://freesound.org/s/180005/",
+    "«Ретро-звуки Crazy Tuk»: згенеровано кодом (tools/make-retro-sounds.mjs), CC0, tools/make-retro-sounds.mjs",
+    "«Sole de Julio»: музика автора проєкту, зроблена в Suno (безкоштовний тариф); ТЕСТОВА, до релізу буде замінена",
+    "«Rumba de la Carrera»: музика автора проєкту, зроблена в Suno (безкоштовний тариф); ТЕСТОВА, до релізу буде замінена"
   ],
   "gain": {
     "horn": 1,
-    "hit.light": 0.8,
-    "hit.medium": 0.9,
-    "hit.heavy": 1,
-    "smash.c": 0.8,
-    "smash.b": 0.85,
-    "smash.t": 0.9,
-    "smash.u": 0.8,
-    "gate.exact": 0.55,
-    "gate.good": 0.5,
-    "gate.ok": 0.45,
-    "combo": 0.5,
-    "nearmiss": 0.55,
     "drift.end": 0.5,
-    "tourist.scream": 1,
-    "tourist.gasp": 1
+    "tourist.gasp": 1,
+    "gate.exact": 0.9,
+    "gate.good": 0.9,
+    "gate.ok": 0.9,
+    "combo": 1,
+    "nitro.start": 1,
+    "hit.light": 1,
+    "hit.medium": 1,
+    "hit.heavy": 1,
+    "smash.c": 1,
+    "smash.b": 1,
+    "smash.t": 1,
+    "smash.u": 1,
+    "nearmiss": 1
   },
   "attribution": [
     {
@@ -91,12 +94,6 @@
       "author": "Stickinthemud",
       "license": "CC BY 4.0",
       "url": "https://freesound.org/s/27881/"
-    },
-    {
-      "title": "Roller Coaster Screams",
-      "author": "Marcy13",
-      "license": "CC BY 4.0",
-      "url": "https://freesound.org/s/635383/"
     }
   ]
 }

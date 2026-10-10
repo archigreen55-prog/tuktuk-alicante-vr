@@ -10,9 +10,10 @@ export const probe = (f) => Number(spawnSync('ffprobe', ['-v', 'error', '-show_e
 const trimArgs = (trim) => (trim ? ['-ss', String(trim[0]), ...(trim[1] ? ['-to', String(trim[1])] : [])] : []);
 
 // opts: { trim: [from, to], gain: dB after the matching, max: longest result in s }
-export async function makeSfx(src, out, { trim = null, gain = 0, max = 0 } = {}) {
+// norm: loudness matching (recordings); false for the generated sounds, which are already at the peak and too short for loudnorm
+export async function makeSfx(src, out, { trim = null, gain = 0, max = 0, norm = true } = {}) {
   await mkdir(path.dirname(out), { recursive: true });
-  ff([...trimArgs(trim), '-i', src, ...(max ? ['-t', String(max)] : []), '-ac', '1', '-ar', '44100', '-af', `silenceremove=start_periods=1:start_threshold=-50dB,loudnorm=I=-18:TP=-1.5:LRA=9${gain ? `,volume=${gain}dB` : ''}${max ? `,afade=t=out:st=${Math.max(0, max - 0.15)}:d=0.15` : ''}`, '-c:a', 'aac', '-b:a', '64k', out]);
+  ff([...trimArgs(trim), '-i', src, ...(max ? ['-t', String(max)] : []), '-ac', '1', '-ar', '44100', '-af', `${norm ? 'silenceremove=start_periods=1:start_threshold=-50dB,loudnorm=I=-18:TP=-1.5:LRA=9' : 'volume=-1.5dB'}${gain ? `,volume=${gain}dB` : ''}${max ? `,afade=t=out:st=${Math.max(0, max - 0.15)}:d=0.15` : ''}`, '-c:a', 'aac', '-b:a', '64k', out]);
 }
 export async function makeLoop(src, out, { trim = null, gain = 0, minLen = 2.8 } = {}) {
   await mkdir(path.dirname(out), { recursive: true });

@@ -30,7 +30,7 @@ export class Tour {
   constructor(spec, cityTour, graph, tourId) {
     this.spec = spec;
     this.graph = graph;
-    this.def = spec.tours.find((t) => t.id === tourId) || spec.tours[0];
+    this.def = spec.tours.find((x) => x.id === tourId) || spec.tours[0];
     const place = (id) => {
       const c = cityTour.places[id], s = spec.places[id];
       if (!c || !s) throw new Error(`місце "${id}" не знайдено${c ? '' : ' в city.json (запусти node tools/build-city.mjs)'}`);

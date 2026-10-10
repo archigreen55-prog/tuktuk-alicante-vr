@@ -384,7 +384,31 @@ for (const e of E) {
   }
 }
 const inRect = (p, m = 0) => p[0] >= RECT.minX - m && p[0] <= RECT.maxX + m && p[1] >= RECT.minZ - m && p[1] <= RECT.maxZ + m;
-const palms = treePts.filter((p) => inRect(p) && !inMount(p) && !inAnyBuilding(p));
+// 0.19.1: no tree on a carriageway. A tree inside a driveable road's width is moved to the nearer pavement (1.5 m past the kerb);
+// one within 0.8 m of the centre line (a median row the game has no median for) is dropped.
+const DRIVE_K = new Set(['primary', 'primary_link', 'secondary', 'secondary_link', 'tertiary', 'tertiary_link', 'residential', 'unclassified', 'living_street', 'service', 'busway']);
+const treeStats = { moved: 0, dropped: 0 };
+function offCarriageway(p) {
+  let best = null;
+  for (const r of roads) {
+    if (!DRIVE_K.has(r.k)) continue;
+    const q = r.p;
+    for (let i = 0; i + 3 < q.length; i += 2) {
+      const ax = q[i], az = q[i + 1], bx = q[i + 2], bz = q[i + 3], ex = bx - ax, ez = bz - az, l2 = ex * ex + ez * ez || 1;
+      const t = Math.max(0, Math.min(1, ((p[0] - ax) * ex + (p[1] - az) * ez) / l2)), cx = ax + ex * t, cz = az + ez * t;
+      const dist = Math.hypot(p[0] - cx, p[1] - cz), over = r.w / 2 + 0.3 - dist;
+      if (over > 0 && (!best || over > best.over)) { const L = Math.hypot(ex, ez) || 1; best = { over, dist, r, nx: -ez / L, nz: ex / L, cx, cz };
+        if (((p[0] - cx) * best.nx + (p[1] - cz) * best.nz) < 0) { best.nx = -best.nx; best.nz = -best.nz; } }   // the normal points to the tree's side
+    }
+  }
+  if (!best) return p;
+  if (best.dist < 0.8) { treeStats.dropped++; return null; }
+  const d = best.r.w / 2 + 1.5, moved = [best.cx + best.nx * d, best.cz + best.nz * d];
+  if (inAnyBuilding(moved)) { treeStats.dropped++; return null; }
+  treeStats.moved++; return moved;
+}
+const palms = treePts.filter((p) => inRect(p) && !inMount(p) && !inAnyBuilding(p)).map(offCarriageway).filter(Boolean);
+console.log(`trees: ${palms.length} kept; moved off a road ${treeStats.moved}, dropped (median or into a building) ${treeStats.dropped}`);
 
 // ---------- sea from natural=coastline ----------
 let sea = null, seaSource = 'manual', seaNote = '';

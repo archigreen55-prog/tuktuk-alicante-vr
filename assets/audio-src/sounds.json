@@ -3,83 +3,474 @@
     "Єдине джерело правди про звуки Crazy Tuk. tools/fetch-sounds.mjs скачує джерела в assets/audio-src/dl/ (не в git), tools/build-sounds.mjs збирає:",
     "  approved   -> assets/audio/ (звуки в грі, через tools/prepare-audio.mjs) + подяки;",
     "  candidates -> assets/audio-cand/ (для «Звуків» у меню ≡ на пристрої з ключем редактора).",
-    "sources: freesound (id) або kenney (сторінка пакета; файли вибираються шаблоном `ключ:шаблон*`). license: перевірено власником 09.10.2026."
+    "sources: freesound (id) або kenney (сторінка пакета; файли вибираються шаблоном `ключ:шаблон*`). license: перевірено власником 09.10.2026.",
+    "retro (0.19.1): звуки, згенеровані кодом у assets/audio-src/retro/ (node tools/make-retro-sounds.mjs); approved з \"norm\": false не вирівнюються за гучністю (вони вже на піку)."
   ],
   "sources": {
-    "fs423990": { "type": "freesound", "id": 423990, "name": "Car horn beep beep two beeps honk honk", "author": "AmishRob", "license": "CC0" },
-    "fs27881": { "type": "freesound", "id": 27881, "name": "Bike Horn 2", "author": "Stickinthemud", "license": "CC BY 4.0", "attribution": true },
-    "fs635383": { "type": "freesound", "id": 635383, "name": "Roller Coaster Screams", "author": "Marcy13", "license": "CC BY 4.0", "attribution": true },
-    "fs180005": { "type": "freesound", "id": 180005, "name": "Shocked gasp", "author": "GentlemanWalrus", "license": "CC0" },
-    "fs177754": { "type": "freesound", "id": 177754, "name": "Freesound #177754", "author": "kyles", "license": "CC0" },
-    "fs177577": { "type": "freesound", "id": 177577, "name": "Freesound #177577", "author": "kyles", "license": "CC0" },
-    "fs658928": { "type": "freesound", "id": 658928, "name": "Freesound #658928", "author": "uniuniversal", "license": "CC0" },
-    "fs614627": { "type": "freesound", "id": 614627, "name": "Freesound #614627", "author": "johnnydekk", "license": "CC0" },
-    "fs536769": { "type": "freesound", "id": 536769, "name": "Freesound #536769", "author": "egomassive", "license": "CC0" },
-    "fs339132": { "type": "freesound", "id": 339132, "name": "Freesound #339132", "author": "IndigoRay", "license": "CC0" },
-    "fs869026": { "type": "freesound", "id": 869026, "name": "Freesound #869026", "author": "Userlover", "license": "CC0" },
-    "fs182474": { "type": "freesound", "id": 182474, "name": "Freesound #182474", "author": "keweldog", "license": "CC0" },
-    "fs60013": { "type": "freesound", "id": 60013, "name": "Freesound #60013", "author": "qubodup", "license": "CC0" },
-    "fs381275": { "type": "freesound", "id": 381275, "name": "Freesound #381275", "author": "spets880", "license": "CC0" },
-    "fs859265": { "type": "freesound", "id": 859265, "name": "Freesound #859265", "author": "SPAudiobooks", "license": "CC0" },
-    "fs333405": { "type": "freesound", "id": 333405, "name": "Cheer 1 short", "author": "jayfrosting", "license": "CC0" },
-    "kenney-impact": { "type": "kenney", "page": "https://kenney.nl/assets/impact-sounds", "name": "Impact Sounds", "author": "Kenney", "license": "CC0" },
-    "kenney-interface": { "type": "kenney", "page": "https://kenney.nl/assets/interface-sounds", "name": "Interface Sounds", "author": "Kenney", "license": "CC0" },
-    "kenney-scifi": { "type": "kenney", "page": "https://kenney.nl/assets/sci-fi-sounds", "name": "Sci-fi Sounds", "author": "Kenney", "license": "CC0" }
+    "fs423990": {
+      "type": "freesound",
+      "id": 423990,
+      "name": "Car horn beep beep two beeps honk honk",
+      "author": "AmishRob",
+      "license": "CC0"
+    },
+    "fs27881": {
+      "type": "freesound",
+      "id": 27881,
+      "name": "Bike Horn 2",
+      "author": "Stickinthemud",
+      "license": "CC BY 4.0",
+      "attribution": true
+    },
+    "fs635383": {
+      "type": "freesound",
+      "id": 635383,
+      "name": "Roller Coaster Screams",
+      "author": "Marcy13",
+      "license": "CC BY 4.0",
+      "attribution": true
+    },
+    "fs180005": {
+      "type": "freesound",
+      "id": 180005,
+      "name": "Shocked gasp",
+      "author": "GentlemanWalrus",
+      "license": "CC0"
+    },
+    "fs177754": {
+      "type": "freesound",
+      "id": 177754,
+      "name": "Freesound #177754",
+      "author": "kyles",
+      "license": "CC0"
+    },
+    "fs177577": {
+      "type": "freesound",
+      "id": 177577,
+      "name": "Freesound #177577",
+      "author": "kyles",
+      "license": "CC0"
+    },
+    "fs658928": {
+      "type": "freesound",
+      "id": 658928,
+      "name": "Freesound #658928",
+      "author": "uniuniversal",
+      "license": "CC0"
+    },
+    "fs614627": {
+      "type": "freesound",
+      "id": 614627,
+      "name": "Freesound #614627",
+      "author": "johnnydekk",
+      "license": "CC0"
+    },
+    "fs536769": {
+      "type": "freesound",
+      "id": 536769,
+      "name": "Freesound #536769",
+      "author": "egomassive",
+      "license": "CC0"
+    },
+    "fs339132": {
+      "type": "freesound",
+      "id": 339132,
+      "name": "Freesound #339132",
+      "author": "IndigoRay",
+      "license": "CC0"
+    },
+    "fs869026": {
+      "type": "freesound",
+      "id": 869026,
+      "name": "Freesound #869026",
+      "author": "Userlover",
+      "license": "CC0"
+    },
+    "fs182474": {
+      "type": "freesound",
+      "id": 182474,
+      "name": "Freesound #182474",
+      "author": "keweldog",
+      "license": "CC0"
+    },
+    "fs60013": {
+      "type": "freesound",
+      "id": 60013,
+      "name": "Freesound #60013",
+      "author": "qubodup",
+      "license": "CC0"
+    },
+    "fs381275": {
+      "type": "freesound",
+      "id": 381275,
+      "name": "Freesound #381275",
+      "author": "spets880",
+      "license": "CC0"
+    },
+    "fs859265": {
+      "type": "freesound",
+      "id": 859265,
+      "name": "Freesound #859265",
+      "author": "SPAudiobooks",
+      "license": "CC0"
+    },
+    "fs333405": {
+      "type": "freesound",
+      "id": 333405,
+      "name": "Cheer 1 short",
+      "author": "jayfrosting",
+      "license": "CC0"
+    },
+    "kenney-impact": {
+      "type": "kenney",
+      "page": "https://kenney.nl/assets/impact-sounds",
+      "name": "Impact Sounds",
+      "author": "Kenney",
+      "license": "CC0"
+    },
+    "kenney-interface": {
+      "type": "kenney",
+      "page": "https://kenney.nl/assets/interface-sounds",
+      "name": "Interface Sounds",
+      "author": "Kenney",
+      "license": "CC0"
+    },
+    "kenney-scifi": {
+      "type": "kenney",
+      "page": "https://kenney.nl/assets/sci-fi-sounds",
+      "name": "Sci-fi Sounds",
+      "author": "Kenney",
+      "license": "CC0"
+    },
+    "retro": {
+      "type": "local",
+      "dir": "retro",
+      "name": "Ретро-звуки Crazy Tuk",
+      "author": "згенеровано кодом (tools/make-retro-sounds.mjs)",
+      "license": "CC0",
+      "url": "tools/make-retro-sounds.mjs"
+    }
   },
-
   "_slots": "gain: гучність слота в грі (1 = як у файлі після вирівнювання), gate/hit/комбо тихіші за клаксон і туристів, двигун фоном",
   "slots": {
-    "engine": { "title": "Двигун (цикл, тон і гучність від швидкості)", "kind": "loop", "cfg": { "kmh": [0, 150], "rate": [0.7, 1.9], "gain": [0.1, 0.26] } },
-    "squeal": { "title": "Вереск шин (цикл, від бокового ковзання)", "kind": "loop", "cfg": { "slip": [2.5, 9], "gain": [0, 0.5] } },
-    "nitro": { "title": "Нітро (цикл, поки горить)", "kind": "loop", "cfg": { "gain": [0, 0.4] } },
-    "horn": { "title": "Клаксон", "kind": "sfx", "gain": 1 },
-    "hit.light": { "title": "Удар легкий", "kind": "sfx", "gain": 0.8 },
-    "hit.medium": { "title": "Удар середній", "kind": "sfx", "gain": 0.9 },
-    "hit.heavy": { "title": "Удар важкий", "kind": "sfx", "gain": 1 },
-    "smash.c": { "title": "Розбито: конус", "kind": "sfx", "gain": 0.8 },
-    "smash.b": { "title": "Розбито: смітник", "kind": "sfx", "gain": 0.85 },
-    "smash.t": { "title": "Розбито: столик", "kind": "sfx", "gain": 0.9 },
-    "smash.u": { "title": "Розбито: парасоля", "kind": "sfx", "gain": 0.8 },
-    "gate.exact": { "title": "Ворота: точно", "kind": "sfx", "gain": 0.55 },
-    "gate.good": { "title": "Ворота: добре", "kind": "sfx", "gain": 0.5 },
-    "gate.ok": { "title": "Ворота: є", "kind": "sfx", "gain": 0.45 },
-    "combo": { "title": "Комбо", "kind": "sfx", "gain": 0.5 },
-    "nearmiss": { "title": "Майже зачепив", "kind": "sfx", "gain": 0.55 },
-    "drift.end": { "title": "Кінець дрифту", "kind": "sfx", "gain": 0.5 },
-    "tourist.scream": { "title": "Турист: крик", "kind": "sfx", "gain": 1 },
-    "tourist.gasp": { "title": "Турист: «ой»", "kind": "sfx", "gain": 1 },
-    "tourist.laugh": { "title": "Турист: сміх", "kind": "sfx", "gain": 1 },
-    "tourist.cheer": { "title": "Турист: «Wooo!»", "kind": "sfx", "gain": 1 }
+    "engine": {
+      "title": "Двигун (цикл, тон і гучність від швидкості)",
+      "kind": "loop",
+      "cfg": {
+        "kmh": [
+          0,
+          150
+        ],
+        "rate": [
+          0.7,
+          1.9
+        ],
+        "gain": [
+          0.1,
+          0.26
+        ]
+      }
+    },
+    "squeal": {
+      "title": "Вереск шин (цикл, від бокового ковзання)",
+      "kind": "loop",
+      "cfg": {
+        "slip": [
+          2.5,
+          9
+        ],
+        "gain": [
+          0,
+          0.5
+        ]
+      }
+    },
+    "nitro": {
+      "title": "Нітро (цикл, поки горить)",
+      "kind": "loop",
+      "cfg": {
+        "gain": [
+          0,
+          0.4
+        ]
+      }
+    },
+    "horn": {
+      "title": "Клаксон",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "hit.light": {
+      "title": "Удар легкий",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "hit.medium": {
+      "title": "Удар середній",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "hit.heavy": {
+      "title": "Удар важкий",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "smash.c": {
+      "title": "Розбито: конус",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "smash.b": {
+      "title": "Розбито: смітник",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "smash.t": {
+      "title": "Розбито: столик",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "smash.u": {
+      "title": "Розбито: парасоля",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "gate.exact": {
+      "title": "Ворота: точно",
+      "kind": "sfx",
+      "gain": 0.9
+    },
+    "gate.good": {
+      "title": "Ворота: добре",
+      "kind": "sfx",
+      "gain": 0.9
+    },
+    "gate.ok": {
+      "title": "Ворота: є",
+      "kind": "sfx",
+      "gain": 0.9
+    },
+    "combo": {
+      "title": "Комбо",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "nearmiss": {
+      "title": "Майже зачепив",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "drift.end": {
+      "title": "Кінець дрифту",
+      "kind": "sfx",
+      "gain": 0.5
+    },
+    "tourist.scream": {
+      "title": "Турист: крик",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "tourist.gasp": {
+      "title": "Турист: «ой»",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "tourist.laugh": {
+      "title": "Турист: сміх",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "tourist.cheer": {
+      "title": "Турист: «Wooo!»",
+      "kind": "sfx",
+      "gain": 1
+    },
+    "nitro.start": {
+      "title": "Нітро: старт",
+      "kind": "sfx",
+      "gain": 1
+    }
   },
-
   "_approved": "частина А: ставиться в гру одразу. pick: скільки файлів за шаблоном (за алфавітом). Шаблони Kenney уточнено за справжніми списками файлів (`fetch-sounds --list`, 09.10.2026).",
   "approved": [
-    { "slot": "horn", "src": "fs423990", "max": 1.4 },
-    { "slot": "horn", "src": "fs27881", "max": 1.4 },
-    { "slot": "hit.light", "src": "kenney-impact:impactSoft_medium_*", "pick": 2 },
-    { "slot": "hit.medium", "src": "kenney-impact:impactPunch_medium_*", "pick": 2 },
-    { "slot": "hit.heavy", "src": "kenney-impact:impactMetal_heavy_*", "pick": 2 },
-    { "slot": "smash.c", "src": "kenney-impact:impactTin_medium_*", "pick": 2 },
-    { "slot": "smash.b", "src": "kenney-impact:impactMetal_medium_*", "pick": 2 },
-    { "slot": "smash.t", "src": "kenney-impact:impactWood_heavy_*", "pick": 2 },
-    { "slot": "smash.u", "src": "kenney-impact:impactPlank_medium_*", "pick": 2 },
-    { "slot": "gate.exact", "src": "kenney-interface:confirmation_001*" },
-    { "slot": "gate.good", "src": "kenney-interface:confirmation_002*" },
-    { "slot": "gate.ok", "src": "kenney-interface:select_001*" },
-    { "slot": "combo", "src": "kenney-interface:maximize_004*" },
-    { "slot": "nearmiss", "src": "kenney-interface:pluck_001*" },
-    { "slot": "drift.end", "src": "kenney-interface:drop_002*" },
-    { "slot": "tourist.scream", "src": "fs635383" },
-    { "slot": "tourist.gasp", "src": "fs180005" }
+    {
+      "slot": "horn",
+      "src": "fs423990",
+      "max": 1.4
+    },
+    {
+      "slot": "horn",
+      "src": "fs27881",
+      "max": 1.4
+    },
+    {
+      "slot": "drift.end",
+      "src": "kenney-interface:drop_002*"
+    },
+    {
+      "slot": "tourist.gasp",
+      "src": "fs180005"
+    },
+    {
+      "slot": "gate.exact",
+      "src": "retro:coin",
+      "norm": false
+    },
+    {
+      "slot": "gate.good",
+      "src": "retro:beep-good",
+      "norm": false
+    },
+    {
+      "slot": "gate.ok",
+      "src": "retro:beep-ok",
+      "norm": false
+    },
+    {
+      "slot": "combo",
+      "src": "retro:combo",
+      "norm": false
+    },
+    {
+      "slot": "nitro.start",
+      "src": "retro:nitro",
+      "norm": false
+    },
+    {
+      "slot": "hit.light",
+      "src": "retro:boom-light",
+      "norm": false
+    },
+    {
+      "slot": "hit.medium",
+      "src": "retro:boom-medium",
+      "norm": false
+    },
+    {
+      "slot": "hit.heavy",
+      "src": "retro:boom-heavy",
+      "norm": false
+    },
+    {
+      "slot": "smash.c",
+      "src": "retro:crunch-c-*",
+      "norm": false,
+      "pick": 2
+    },
+    {
+      "slot": "smash.b",
+      "src": "retro:crunch-b-*",
+      "norm": false,
+      "pick": 2
+    },
+    {
+      "slot": "smash.t",
+      "src": "retro:crunch-t-*",
+      "norm": false,
+      "pick": 2
+    },
+    {
+      "slot": "smash.u",
+      "src": "retro:crunch-u-*",
+      "norm": false,
+      "pick": 2
+    },
+    {
+      "slot": "nearmiss",
+      "src": "retro:whistle",
+      "norm": false
+    }
   ],
-
   "_candidates": "частина Б: приміркова. auto: steady = знайти рівну ділянку й зробити цикл; bursts: N = вирізати N найгучніших фрагментів (min–max с)",
   "candidates": {
-    "engine": [ { "src": "fs177754", "auto": "steady" }, { "src": "fs177577", "auto": "steady" }, { "src": "fs658928", "auto": "steady" } ],
-    "squeal": [ { "src": "fs614627", "auto": "steady" }, { "src": "fs536769", "auto": "steady" } ],
-    "horn": [ { "src": "fs339132" }, { "src": "fs869026" }, { "src": "fs182474" } ],
-    "nitro": [ { "src": "fs60013", "auto": "steady" }, { "src": "kenney-scifi:thrusterFire_*", "pick": 1, "auto": "steady" }, { "src": "kenney-scifi:spaceEngineLow_*", "pick": 1, "auto": "steady" }, { "src": "kenney-scifi:engineCircular_*", "pick": 1, "auto": "steady" } ],
-    "tourist.laugh": [ { "src": "fs381275", "bursts": 1 }, { "src": "fs859265", "bursts": 3, "min": 1, "max": 3 } ],
-    "tourist.cheer": [ { "src": "fs333405", "bursts": 1, "min": 0.4, "max": 1.5 } ]
+    "engine": [
+      {
+        "src": "fs177754",
+        "auto": "steady"
+      },
+      {
+        "src": "fs177577",
+        "auto": "steady"
+      },
+      {
+        "src": "fs658928",
+        "auto": "steady"
+      }
+    ],
+    "squeal": [
+      {
+        "src": "fs614627",
+        "auto": "steady"
+      },
+      {
+        "src": "fs536769",
+        "auto": "steady"
+      }
+    ],
+    "horn": [
+      {
+        "src": "fs339132"
+      },
+      {
+        "src": "fs869026"
+      },
+      {
+        "src": "fs182474"
+      }
+    ],
+    "nitro": [
+      {
+        "src": "fs60013",
+        "auto": "steady"
+      },
+      {
+        "src": "kenney-scifi:thrusterFire_*",
+        "pick": 1,
+        "auto": "steady"
+      },
+      {
+        "src": "kenney-scifi:spaceEngineLow_*",
+        "pick": 1,
+        "auto": "steady"
+      },
+      {
+        "src": "kenney-scifi:engineCircular_*",
+        "pick": 1,
+        "auto": "steady"
+      }
+    ],
+    "tourist.laugh": [
+      {
+        "src": "fs381275",
+        "bursts": 1
+      },
+      {
+        "src": "fs859265",
+        "bursts": 3,
+        "min": 1,
+        "max": 3
+      }
+    ],
+    "tourist.cheer": [
+      {
+        "src": "fs333405",
+        "bursts": 1,
+        "min": 0.4,
+        "max": 1.5
+      }
+    ]
+  },
+  "_music": "Музика власника (Suno, безкоштовний тариф, ТЕСТОВА: до релізу буде замінена): файли в assets/audio-src/, build-sounds конвертує їх у assets/audio/music/*.m4a (стерео 128 кбіт/с, loudnorm −16 LUFS) і вписує в manifest.music. menu: заставка, відлік, підсумок; drive: під час їзди (список, по колу).",
+  "music": {
+    "menu": {
+      "src": "music-menu.mp3",
+      "title": "Sole de Julio"
+    },
+    "drive": [
+      {
+        "src": "music-drive-1.mp3",
+        "title": "Rumba de la Carrera"
+      }
+    ]
   }
 }

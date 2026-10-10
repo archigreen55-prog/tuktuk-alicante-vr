@@ -91,8 +91,8 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     clampView(); invalidate();
   }
   function toMe() {
-    const t = getTuk();
-    anim = { t0: performance.now(), from: { cx: view.cx, cz: view.cz, s: view.s }, to: { cx: t.x, cz: t.z, s: Math.max(view.s, 0.9) } };
+    const tk = getTuk();
+    anim = { t0: performance.now(), from: { cx: view.cx, cz: view.cz, s: view.s }, to: { cx: tk.x, cz: tk.z, s: Math.max(view.s, 0.9) } };
     invalidate();
   }
 
@@ -235,10 +235,10 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     const target = tour ? tour.target : null;
     for (const [id, pl] of Object.entries(city.tour.places)) {
       const title = (spec && spec.places[id] && spec.places[id].title) || pl.name || id;
-      const t = inTour.get(id);
+      const tk = inTour.get(id);
       const isStart = tour && tour.start.id === id;
       const isTarget = target && Math.hypot(target.x - pl.p[0], target.z - pl.p[1]) < 1;
-      rows.push({ id, title, p: pl.p, t, isStart, isTarget, pri: isTarget ? 0 : isStart ? 1 : t && t.kind === 'stop' ? 2 : t ? 3 : 4 });
+      rows.push({ id, title, p: pl.p, t: tk, isStart, isTarget, pri: isTarget ? 0 : isStart ? 1 : tk && tk.kind === 'stop' ? 2 : tk ? 3 : 4 });
     }
     rows.sort((a, b) => a.pri - b.pri);
     const stopNo = new Map(); let n = 0; for (const it of items) if (it.kind === 'stop') stopNo.set(it.place.id, ++n);
@@ -300,8 +300,8 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     ensureDom();
     open = true; root.style.display = 'block';
     resize();
-    const t = (editor && editor.initialView && editor.initialView()) || getTuk();
-    view.cx = t.x; view.cz = t.z; view.s = Math.min(MAX_SCALE, Math.max(editor && t.s ? t.s : 0.9, fitScale()));
+    const tk = (editor && editor.initialView && editor.initialView()) || getTuk();
+    view.cx = tk.x; view.cz = tk.z; view.s = Math.min(MAX_SCALE, Math.max(editor && tk.s ? tk.s : 0.9, fitScale()));
     titleEl.textContent = editor ? editor.title || t('map.editor') : t('map.title');
     clampView(); plan = null; anim = null; ptrs.clear(); pinch = null; drag = null;
     setPaused(true);

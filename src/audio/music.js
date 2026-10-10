@@ -2,7 +2,7 @@
 // release, see README "Credits and licences"). Plain <audio> elements with a cross-fade (two at a time), a track list that goes round
 // by itself, a "duck" for the pause menu, and the "Музика" switch. No file in the manifest = silence. Starts only after a tap.
 const FADE = 3;          // s of cross-fade between tracks / when the section changes
-const VOLUME = 0.55;     // the music's own level (the effects are not touched)
+const VOLUME = 0.32;     // the music's own level: quiet, in the background, under the reaction sounds (the effects are not touched)
 
 export class MusicPlayer {
   constructor() { this.tracks = {}; this.kind = null; this.cur = null; this.on = true; this.duck = 1; this.timer = 0; this.i = { drive: 0 }; this.fading = []; }
@@ -10,6 +10,7 @@ export class MusicPlayer {
   configure(music, base) { this.tracks = {}; for (const [k, v] of Object.entries(music || {})) this.tracks[k] = (Array.isArray(v) ? v : [v]).map((f) => base + f); }
   setOn(on) { this.on = !!on; if (!on) this.stopAll(); else if (this.kind) { const k = this.kind; this.kind = null; this.set(k); } }
   setDuck(d) { this.duck = d; this.apply(); }
+  report() { const n = Object.values(this.tracks).reduce((a, l) => a + l.length, 0); return `треків ${n}, зараз ${this.cur ? this.cur.kind : 'тиша'}${this.errors ? `, не завантажилось ${this.errors} (${this.lastError})` : ''}`; }
   // the section: 'menu' | 'drive' | null (silence)
   set(kind) {
     if (kind === this.kind) return;
@@ -22,6 +23,7 @@ export class MusicPlayer {
     const idx = (this.i[kind] = ((this.i[kind] ?? -1) + 1) % list.length);
     this.fadeOut();
     const el = new Audio(list[idx]); el.preload = 'auto'; el.loop = false;
+    el.addEventListener('error', () => { this.errors = (this.errors || 0) + 1; this.lastError = list[idx]; if (this.cur && this.cur.el === el) { this.cur = null; } }, { once: true });   // a missing file (the owner has not uploaded it yet): silence, noted for the report
     el.volume = 0; this.cur = { el, kind, vol: 0, target: 1, done: false };
     const p = el.play(); if (p && p.catch) p.catch(() => { /* no tap yet: it starts on the next call */ if (this.cur && this.cur.el === el) this.cur = null; });
     this.fading.push(this.cur);

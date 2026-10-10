@@ -24,4 +24,18 @@ check(places.every(([, p]) => p.title_en), 'every place has title_en', places.fi
 check(tour.reviews_en && Object.keys(tour.reviews).every((k) => Array.isArray(tour.reviews_en[k]) && tour.reviews_en[k].length === tour.reviews[k].length), 'reviews_en mirrors reviews');
 const facts = JSON.parse(readFileSync(new URL('../data/arcade-facts.json', import.meta.url), 'utf8'));
 check(places.every(([id]) => facts.uk[id] && facts.en[id]), 'arcade facts in uk and en for every place', places.filter(([id]) => !(facts.uk[id] && facts.en[id])).map(([id]) => id).join(','));
+
+// no local variable may be called t in a file that binds the translation function as t (0.19.0 bug: the full map's `const t = getTuk()`
+// shadowed it and t('map.title') threw)
+import { readdirSync, statSync } from 'node:fs';
+import path from 'node:path';
+const walk = (d) => readdirSync(d).flatMap((n) => { const p = path.join(d, n); return statSync(p).isDirectory() ? walk(p) : p.endsWith('.js') ? [p] : []; });
+const SHADOW = /(^|[^\w.])(?:const|let|var)\s+t\s*=|\(\s*t\s*\)\s*=>|\(\s*t\s*,|,\s*t\s*\)\s*(?:=>|\{)|for\s*\(\s*(?:const|let)\s+t\s+of|function\s*\w*\s*\(\s*t\s*[,)]/;
+const shadowed = [];
+for (const f of walk(new URL('../src', import.meta.url).pathname)) {
+  const src = readFileSync(f, 'utf8');
+  if (!/import\s*\{[^}]*\bt\s*(?:,|\})[^}]*\}\s*from\s*'[^']*i18n\.js'/.test(src)) continue;
+  src.split('\n').forEach((line, i) => { if (!/^\s*\/\//.test(line) && SHADOW.test(line)) shadowed.push(`${path.relative(process.cwd(), f)}:${i + 1}`); });
+}
+check(shadowed.length === 0, 'no local variable named t where t() is the translation', shadowed.join(', '));
 console.log(bad ? `${bad} FAILED` : 'ALL OK'); process.exit(bad ? 1 : 0);

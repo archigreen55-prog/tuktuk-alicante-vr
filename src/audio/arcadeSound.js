@@ -35,6 +35,7 @@ export class ArcadeSound {
     const k = this.musicPlayer.kind; if (k) { this.musicPlayer.kind = null; this.musicPlayer.set(k); }   // a section asked for before the manifest arrived
   }
   get credits() { return this.bank.credits; }
+  report() { return `режим ${this.on ? 'увімкнено' : 'вимкнено'} · звук ${this.sound ? 'так' : 'ні'} · музика ${this.music ? 'так' : 'ні'} (${this.musicPlayer.report()}) · ${this.bank.report()}`; }
   get attribution() { return this.bank.attribution; }
   has(name) { return this.bank.has(name); }
   // the slot sounds if played now (the mode is on, the sound is on, a file is decoded)

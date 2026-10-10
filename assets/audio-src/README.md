@@ -14,3 +14,11 @@
 
 Далі все роблю я: підключаю файл у `sounds.json`, збираю (`node tools/build-sounds.mjs`), перевіряю й випускаю нову версію.
 Технічні подробиці: [docs/sound-pipeline.md](../../docs/sound-pipeline.md).
+
+## Ретро-звуки (0.19.1)
+
+Звуки реакцій (ворота, комбо, нітро, удари, розбиті речі, «майже зачепив») генерує код: `node tools/make-retro-sounds.mjs` пише `retro/*.wav`, `node tools/build-sounds.mjs --approved` кладе їх у слоти (`sounds.json`, джерело `retro`, `"norm": false`). Щоб змінити характер звуку, правь формули в `tools/make-retro-sounds.mjs` і запусти обидві команди.
+
+## Музика
+
+`assets/audio/music/menu.mp3` і `drive-1.mp3` (див. `assets/audio/music/README.md`); шляхи задані в `sounds.json` → `music` і потрапляють у маніфест як є.

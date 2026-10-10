@@ -32,7 +32,7 @@ for (const it of map.items) {
   const key = it.slot; counts[key] = (counts[key] || 0) + 1;
   if (kind === 'sfx') {
     const rel = `sfx/${name.replace(/\./g, '-')}-${counts[key]}.m4a`;
-    await makeSfx(src, path.join(OUT, rel), { trim: it.trim, gain: it.gain, max: it.max });
+    await makeSfx(src, path.join(OUT, rel), { trim: it.trim, gain: it.gain, max: it.max, norm: it.norm !== false });
     (manifest.sfx[name] ||= []).push(rel);
     if (it.slotGain != null) manifest.gain[name] = it.slotGain;
   } else if (kind === 'loops') {
@@ -42,7 +42,7 @@ for (const it of map.items) {
   } else if (kind === 'music') {
     const base = `music/${name}-${counts[key]}.m4a`;
     await mkdir(path.join(OUT, 'music'), { recursive: true });
-    ff([...trim, '-i', src, '-ac', '2', '-ar', '44100', '-af', `loudnorm=I=-16:TP=-1.5:LRA=11${gain}`, '-c:a', 'aac', '-b:a', '128k', path.join(OUT, base)]);
+    ff([...trim, '-i', src, '-vn', '-ac', '2', '-ar', '44100', '-af', `loudnorm=I=-16:TP=-1.5:LRA=11${gain}`, '-c:a', 'aac', '-b:a', '128k', path.join(OUT, base)]);
     if (name === 'menu') manifest.music.menu = base; else (manifest.music[name] ||= []).push(base);
   } else { console.warn(`невідомий слот ${it.slot}`); continue; }
   if (it.credit && !manifest.credits.includes(it.credit)) manifest.credits.push(it.credit);

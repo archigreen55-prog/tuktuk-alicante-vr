@@ -151,14 +151,14 @@ export class TouchControls {
     const end = () => { this.gas = 0; id = null; el.classList.remove('on'); this.gasFill.style.height = '0'; };
     el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); capture(el, e.pointerId); id = e.pointerId; el.classList.add('on'); apply(e); });
     el.addEventListener('pointermove', (e) => { if (id === e.pointerId) apply(e); });
-    for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(t, (e) => { if (id === e.pointerId) end(); });
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(ev, (e) => { if (id === e.pointerId) end(); });
   }
   // a button that is active while a finger holds it
   bindHold(el, set, fill = false) {
     let id = null;
     const end = () => { id = null; el.classList.remove('on'); set(false); if (fill) this.brakeFill.style.height = '0'; };
     el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); capture(el, e.pointerId); id = e.pointerId; el.classList.add('on'); this.buzz(8); set(true); });
-    for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(t, (e) => { if (id === e.pointerId) end(); });
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(ev, (e) => { if (id === e.pointerId) end(); });
   }
   bindLook() {
     const L = this.look;
@@ -179,8 +179,8 @@ export class TouchControls {
       // a double tap = look straight ahead
       const now = e.timeStamp, moved = Math.hypot(e.clientX - d.x0, e.clientY - d.y0);
       if (e.type === 'pointerup' && now - d.t0 < 250 && moved < 12) {
-        const t = this.lastTap;
-        if (now - t.t < 320 && Math.hypot(e.clientX - t.x, e.clientY - t.y) < 40) { this.yaw = 0; this.pitch = 0; this.lastTap = { t: 0, x: 0, y: 0 }; this.buzz(8); }
+        const lt = this.lastTap;
+        if (now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 40) { this.yaw = 0; this.pitch = 0; this.lastTap = { t: 0, x: 0, y: 0 }; this.buzz(8); }
         else this.lastTap = { t: now, x: e.clientX, y: e.clientY };
       }
     };

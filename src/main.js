@@ -198,7 +198,7 @@ async function loadLevels() {
       } catch (e) { console.warn(`рівень ${row.id}: ${e.message}`); }
     }
   } catch (e) { console.warn(`data/levels/index.json: ${e.message}`); }
-  if (!builtinLevels.length && tourSpec) for (const t of tourSpec.tours) { try { builtinLevels.push(levelFromTour(tourSpec, t.id)); } catch (e) { console.warn(e.message); } }
+  if (!builtinLevels.length && tourSpec) for (const tr of tourSpec.tours) { try { builtinLevels.push(levelFromTour(tourSpec, tr.id)); } catch (e) { console.warn(e.message); } }
   mineLevels = loadMine();
   rebuildLevels();
 }
@@ -306,7 +306,7 @@ const hud = new DesktopHud(minimap);
 let mapOn = loadSetting('minimap', true) !== false;
 let gameMode = benchOn ? 'free' : ['free', 'tour', 'arcade'].includes(params.get('mode')) ? params.get('mode') : loadSetting('mode', 'tour');
 let tourId = params.get('tour') || loadSetting('tourId', 'short');
-if (tourSpec && !tourSpec.tours.some((t) => t.id === tourId)) tourId = tourSpec.tours[0]?.id;
+if (tourSpec && !tourSpec.tours.some((x) => x.id === tourId)) tourId = tourSpec.tours[0]?.id;
 let levelId = params.get('level') || params.get('tour') || loadSetting('arcade.level', 'short');   // the Crazy Tuk level (?tour= still works: the three tours are levels with the same ids)
 if (!levels.some((l) => l.id === levelId)) levelId = levels[0] ? levels[0].id : null;
 const levelById = (id) => levels.find((l) => l.id === id) || null;
@@ -318,7 +318,7 @@ const smashPop = { n: 0, tips: 0, t: 0 };   // the smashes of the last half seco
 let frameTag = '';   // what happened in this frame (gate, hit, drift...), for the slow-frame list of the diagnostics
 const arcadeSound = new ArcadeSound(horn);
 // the CC BY works among the sounds must be credited (name, author, link, licence): a line in the credits at the bottom and in the phone menu
-const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // Crazy Tuk's one-line facts in the language of the interface (arcade-facts.json has uk / en / es)
 const factsOf = (lang) => (arcadeFacts ? arcadeFacts[lang] || arcadeFacts.uk : null);
 const tourTitleOf = (tr) => (BUILTIN_TITLES[tr.id] ? BUILTIN_TITLES[tr.id] : { uk: tr.title || tr.id, en: tr.title_en || tr.title || tr.id });
@@ -522,12 +522,12 @@ function passengers(kind, gap = 1.5, voice = kind) {
 function handleRunEvents() {
   for (const ev of run.events) {
     frameTag += `${ev.type}${ev.kind ? ':' + ev.kind : ''} `;
-    // an exact gate: the cheer, or the scream while there is no cheer file
-    if (ev.type === 'gate') { if (arcadeFx) { arcadeFx.beacon.flash(run.gates[ev.index], ev.kind, groundY(run.gates[ev.index].p[0], run.gates[ev.index].p[1])); arcadeHud.flashScreen(); } arcadeHud.flashGate(ev); arcadeHud.bonusTime(ev.time); arcadeSound.gate(ev.kind); if (ev.kind === 'exact') driver.cheer(); else if (ev.kind === 'missed') driver.shake(); else driver.nod(); if (ev.kind !== 'missed') buzz(40); if (ev.kind === 'exact') passengers('cheer', 1.5, arcadeSound.has('tourist.cheer') ? 'cheer' : 'scream'); else if (ev.kind === 'good') passengers('laugh'); }
+    // an exact gate: the body cheer (a voice only once there is a cheer file; the scream is gone for good, 0.19.1)
+    if (ev.type === 'gate') { if (arcadeFx) { arcadeFx.beacon.flash(run.gates[ev.index], ev.kind, groundY(run.gates[ev.index].p[0], run.gates[ev.index].p[1])); arcadeHud.flashScreen(); } arcadeHud.flashGate(ev); arcadeHud.bonusTime(ev.time); arcadeSound.gate(ev.kind); if (ev.kind === 'exact') driver.cheer(); else if (ev.kind === 'missed') driver.shake(); else driver.nod(); if (ev.kind !== 'missed') buzz(40); if (ev.kind === 'exact') passengers('cheer', 1.5, arcadeSound.has('tourist.cheer') ? 'cheer' : null); else if (ev.kind === 'good') passengers('laugh'); }
     else if (ev.type === 'hit') { arcadeHud.flashText(ev.burnt > 0.5 ? t('ev.hitBurn', { v: euroWhole(ev.burnt) }) : t('ev.hit')); passengers('gasp'); driver.hit(ev.impact / 8); }
     else if (ev.type === 'offRoad') { arcadeHud.flashText(t(ev.on ? 'ev.offRoadOn' : 'ev.offRoadOff'), ev.on ? '#ff5a3c' : '#9be08a'); if (ev.on) { buzz(60); arcadeSound.play('hit.light', {}, 0.3); passengers('gasp', 2.5); driver.shake(); } }
     else if (ev.type === 'nearMiss') { arcadeHud.pop(t('ev.nearMiss', { v: euroWhole(ev.tips) }) + (run.combo > 1 ? ' · ×' + run.combo : ''), '#9fe0ff'); arcadeSound.play('nearmiss', {}, 0.4); passengers(Math.random() < 0.5 ? 'gasp' : 'laugh', 2.5); }
-    else if (ev.type === 'drift') { arcadeHud.pop(t('ev.drift', { s: ev.secs.toFixed(1), v: euroWhole(ev.tips) }) + (run.combo > 1 ? ' · ×' + run.combo : ''), '#ffb36b'); arcadeSound.play('drift.end', {}, 0.4); passengers(ev.secs > 2 ? 'scream' : 'laugh'); }
+    else if (ev.type === 'drift') { arcadeHud.pop(t('ev.drift', { s: ev.secs.toFixed(1), v: euroWhole(ev.tips) }) + (run.combo > 1 ? ' · ×' + run.combo : ''), '#ffb36b'); arcadeSound.play('drift.end', {}, 0.4); passengers('laugh'); }
     else if (ev.type === 'combo' && ev.combo >= 3) { arcadeSound.play('combo', {}, 1); }
     else if (ev.type === 'stuck') { resetToRoad(); comfort.flashBlack(0.25); arcadeHud.flashText(t('ev.stuck')); arcadeHud.bonusTime(-3); }
     else if (ev.type === 'finish') {
@@ -863,7 +863,7 @@ function frame(now, xrFrame) {
   if (phys.nitro.uses > nitroUses) {
     nitroUses = phys.nitro.uses; nitroStarted = true;
     if (!tour && !run) flash(t('msg.nitroTo', { v: TUNING.nitroMaxKmh }), 1.5, '#ff9f43');
-    if (run) { arcadeSound.play('nitro.start'); passengers('scream', 3, null); }   // nitro: the passengers flinch, but no scream (the owner: it sounds awful there)
+    if (run) { arcadeSound.play('nitro.start'); passengers('gasp', 3, null); }   // nitro: the passengers flinch, but no scream (the owner: it sounds awful there)
     if (inVR) xrIn.pulse('right', 0.5, 120); else buzz(70);
   } else if (nitroPress && !phys.nitro.active && !run) {
     if (phys.nitro.charge < 1) flash(t('msg.nitroCharge', { s: Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge) }), 1.5, '#9fb3c8');
@@ -1109,7 +1109,7 @@ function setLevel(id) {
   return true;
 }
 function setTour(id) {
-  if (!tourSpec || !tourSpec.tours.some((t) => t.id === id)) return false;
+  if (!tourSpec || !tourSpec.tours.some((x) => x.id === id)) return false;
   tourId = id; saveSetting('tourId', id); if (gameMode === 'tour') startTour(); updateBestLabel();
   return true;
 }
@@ -1146,6 +1146,7 @@ function play(mode, e) {
   if (phone && title.isOpen) phone.closeMenu();
   title.show(false);
   setGameMode(mode);   // a fresh start of the mode (the background tour had the tuk-tuk at the title spot)
+  if (mode !== 'arcade') arcadeSound.musicPlayer.set(null);   // the music is Crazy Tuk's (menu / drive); the tour and the free ride are quiet
   if (mode === 'tour' && tour) handleTourEvents();
   renderer.domElement.focus();
 }
@@ -1163,11 +1164,16 @@ Object.assign(G, {
   best: titleBest, hasTour: () => !!(tourSpec && graph), settingsDefs: () => (phone ? phone.settingsDefs : pcDefs),
   credit: () => t('credit.base') + (soundAttribution() ? '<br>' + soundAttribution() : ''),
 });
-title.onOpen = () => { titleAngle = 0; titleSpot(); if (rotateGuard) rotateGuard.quiet = true; $('attr').style.display = 'none'; };
+// on open: the menu track (Crazy Tuk keeps it on its countdown and summary)
+title.onOpen = () => { titleAngle = 0; titleSpot(); arcadeSound.musicPlayer.set('menu'); if (rotateGuard) rotateGuard.quiet = true; $('attr').style.display = 'none'; };
 title.onClose = () => { chaseInit = false; cab.snap = true; if (rotateGuard) rotateGuard.quiet = false; $('attr').style.display = ''; };
 $('attr').style.display = 'none';
 if (rotateGuard) rotateGuard.quiet = true;
 if (tourSpec && graph) titleSpot();
+// the menu music needs a tap first (autoplay): the first touch or key on the title starts it; the 'Музика' switch rules as usual
+arcadeSound.musicPlayer.set('menu');
+const musicNudge = () => { if (title.isOpen && !arcadeSound.musicPlayer.cur) { arcadeSound.musicPlayer.set(null); arcadeSound.musicPlayer.set('menu'); } };
+addEventListener('pointerdown', musicNudge, { capture: true }); addEventListener('keydown', musicNudge, { capture: true });
 title.onLang = () => { placeCredits(); if (tour && gameMode === 'tour' && tour.state === 'waiting') { startTour(); if (title.isOpen) titleSpot(); } $('attr').innerHTML = t('credit.base') + (soundAttribution() ? '<br>' + soundAttribution() : ''); };
 $('attr').innerHTML = t('credit.base');
 addEventListener('keydown', (e) => { if (e.code === 'Escape' && !title.isOpen && !inVR && !fullMap.isOpen && !(phone && phone.menuOpen) && !(levelEditor && levelEditor.isOpen) && !(soundLab && soundLab.isOpen)) goHome(); });
@@ -1196,6 +1202,7 @@ const reportCtx = {
       'побудова міста': JSON.stringify(cityStats).slice(0, 400),
       'позиція': `x ${phys.x.toFixed(0)}, z ${phys.z.toFixed(0)}, висота ${phys.y.toFixed(1)} м, швидкість ${(phys.forwardSpeed * 3.6).toFixed(0)} км/год`,
       'відсікання / туман': `${CULL_DIST} м / 300–1150 м`,
+      'звук': arcadeSound.report(),
       'підігрів і маска': `warm-up ${warmMs.toFixed(0)} мс; маска слідів: ${cityStats.footMs != null ? cityStats.footMs + ' мс, ' + cityStats.footRoads + ' доріг' : 'вимкнена'}; 3D-панель кабіни: ${hudIn3D ? 'так' : 'ні (HTML-інтерфейс)'}`,
       ...screenReport(),
     },

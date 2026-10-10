@@ -14,6 +14,7 @@ export class SoundBank {
   constructor(horn, base = 'assets/audio/') {
     this.horn = horn; this.base = base; this.manifest = { sfx: {}, loops: {}, music: {}, credits: [] };
     this.buffers = new Map(); this.loading = null; this.loaded = false; this.master = null; this.muted = false;
+    this.stats = { decoded: 0, failed: [], plays: {}, blocked: {} };   // for «Діагностика → звіт» (0.19.1): what was decoded, what was played, what was refused and why
   }
 
   // reads the manifest (once); decoding starts when the audio context exists
@@ -42,19 +43,28 @@ export class SoundBank {
     for (const l of Object.values(this.manifest.loops)) if (l.file) files.add(l.file);
     this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : 1; this.master.connect(ctx.destination);
     this.loading = Promise.all([...files].map(async (f) => {
-      try { const r = await fetch(this.base + f); if (!r.ok) throw new Error(r.status); this.buffers.set(f, await ctx.decodeAudioData(await r.arrayBuffer())); }
-      catch (e) { console.warn(`audio ${f}: ${e.message}`); }
+      try { const r = await fetch(this.base + f); if (!r.ok) throw new Error(r.status); this.buffers.set(f, await ctx.decodeAudioData(await r.arrayBuffer())); this.stats.decoded++; }
+      catch (e) { this.stats.failed.push(`${f}: ${e.message}`); console.warn(`audio ${f}: ${e.message}`); }
     })).then(() => { this.loaded = true; });
     return this.loading;
+  }
+  // one line for the diagnostics report
+  report() {
+    const ctx = this.ctx, s = this.stats, files = new Set(); for (const l of Object.values(this.manifest.sfx)) for (const f of l) files.add(f); for (const l of Object.values(this.manifest.loops)) if (l.file) files.add(l.file);
+    const plays = Object.entries(s.plays).map(([k, n]) => `${k} ×${n}`).join(', ') || 'нічого не грало';
+    const blocked = Object.entries(s.blocked).map(([k, n]) => `${k} ×${n}`).join(', ');
+    return `контекст ${ctx ? ctx.state + (ctx.sampleRate ? ' ' + ctx.sampleRate + ' Гц' : '') : 'немає'} · вимкнено: ${this.muted ? 'так' : 'ні'} · файлів у маніфесті ${files.size}, розкодовано ${s.decoded}${s.failed.length ? ', не розкодовано ' + s.failed.length + ' (' + s.failed.join('; ') + ')' : ''} · грало: ${plays}${blocked ? ' · відмовлено: ' + blocked : ''}`;
   }
   setMuted(m) { this.muted = !!m; if (this.master && this.ctx) this.master.gain.setTargetAtTime(this.muted ? 0 : 1, this.ctx.currentTime, 0.05); }
 
   // a one-shot: opts { gain, rate }. Returns the source or null (no file / not ready / muted)
   play(name, { gain = 1, rate = 1 } = {}) {
     const ctx = this.ctx, list = this.manifest.sfx[name];
-    if (!ctx || ctx.state !== 'running' || !this.master || this.muted || !list || !list.length) return null;
+    const why = !list || !list.length ? 'no-file' : !ctx ? 'no-context' : ctx.state !== 'running' ? 'context-' + ctx.state : !this.master ? 'not-prepared' : this.muted ? 'muted' : null;
+    if (why) { this.stats.blocked[name + ':' + why] = (this.stats.blocked[name + ':' + why] || 0) + 1; return null; }
     const ok = list.filter((f) => this.buffers.has(f));   // a variant that failed to decode is skipped, not played as silence
-    if (!ok.length) return null;
+    if (!ok.length) { this.stats.blocked[name + ':not-decoded'] = (this.stats.blocked[name + ':not-decoded'] || 0) + 1; return null; }
+    this.stats.plays[name] = (this.stats.plays[name] || 0) + 1;
     const buf = this.buffers.get(ok[Math.floor(Math.random() * ok.length)]);
     const src = ctx.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
     const g = ctx.createGain(); g.gain.value = gain * ((this.manifest.gain && this.manifest.gain[name]) ?? 1);   // manifest.gain: the level of the slot (the horn and the tourists loud, the chimes quieter)

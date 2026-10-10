@@ -21,6 +21,7 @@ const globRe = (g) => new RegExp('^' + g.replace(/[.+^${}()|[\]\\]/g, '\\$&').re
 async function resolve(ref, pick = 1) {
   const [key, pattern] = ref.split(':'), s = cfg.sources[key];
   if (!s) throw new Error(`нема джерела ${key} у sounds.json`);
+  if (s.type === 'local') { const dir = path.join(SRC, s.dir), re = globRe(pattern || '*'); if (!existsSync(dir)) return []; const files = (await walk(dir)).filter((f) => /\.(wav|ogg|mp3|flac)$/i.test(f) && re.test(path.basename(f).replace(/\.[a-z0-9]+$/i, ''))).sort(); return files.slice(0, pick).map((f) => ({ file: path.relative(SRC, f), source: s, key, label: path.basename(f) })); }   // generated sounds in the repo (assets/audio-src/retro)
   if (s.type === 'freesound') { const f = `dl/${key}.mp3`; return existsSync(path.join(SRC, f)) ? [{ file: f, source: s, key, label: s.name }] : []; }
   const dir = path.join(DL, key); if (!existsSync(dir)) return [];
   const re = globRe(pattern || '*'), files = (await walk(dir)).filter((f) => /\.(ogg|wav|mp3|flac)$/i.test(f) && re.test(path.basename(f).replace(/\.[a-z0-9]+$/i, '')) ).sort();
@@ -37,9 +38,14 @@ if (wantA) {
     if (!r.length) { missing.push(`${a.slot} <- ${a.src}`); continue; }
     const slot = cfg.slots[a.slot]; if (!slot) throw new Error(`нема слота ${a.slot}`);
     for (const x of r) {
-      const info = meta[x.key] || {}, label = x.source.type === 'freesound' ? (info.title || x.source.name) : `${x.source.name}: ${x.label}`;
-      items.push({ src: x.file, slot: `${slot.kind === 'loop' ? 'loops' : 'sfx'}.${a.slot}`, max: a.max || 3, slotGain: slot.gain, cfg: slot.cfg, credit: creditOf({ ...x.source, author: info.author || x.source.author }, x.source.type === 'kenney' ? x.source.name : label), ...(x.source.attribution ? { attribution: attrOf(x.source, label) } : {}) });
+      const info = meta[x.key] || {}, label = x.source.type === 'freesound' ? (info.title || x.source.name) : x.source.type === 'local' ? x.source.name : `${x.source.name}: ${x.label}`;   // one credit line for all the generated sounds
+      items.push({ src: x.file, slot: `${slot.kind === 'loop' ? 'loops' : 'sfx'}.${a.slot}`, max: a.max || 3, norm: a.norm !== false, slotGain: slot.gain, cfg: slot.cfg, credit: creditOf({ ...x.source, author: info.author || x.source.author }, x.source.type === 'kenney' ? x.source.name : label), ...(x.source.attribution ? { attribution: attrOf(x.source, label) } : {}) });
     }
+  }
+  // the owner's music (sounds.json "music"): converted like the effects, credited as test music
+  for (const [kind, list] of Object.entries(cfg.music || {})) for (const m of Array.isArray(list) ? list : [list]) {
+    if (!existsSync(path.join(SRC, m.src))) { missing.push(`music.${kind} <- ${m.src}`); continue; }
+    items.push({ src: m.src, slot: `music.${kind}`, credit: `«${m.title || m.src}»: музика автора проєкту, зроблена в Suno (безкоштовний тариф); ТЕСТОВА, до релізу буде замінена` });
   }
   console.log(`затверджені: ${items.length} файлів, не знайдено: ${missing.length}`);
   for (const m of missing) console.log('  немає: ' + m);

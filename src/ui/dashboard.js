@@ -54,10 +54,10 @@ export class Dashboard {
     const g = this.ctx;
     g.fillStyle = '#10161c'; g.fillRect(0, 0, W, H);
     g.strokeStyle = '#f2c230'; g.lineWidth = 5; g.strokeRect(2.5, 2.5, W - 5, H - 5);
-    const t = s.tour;
-    if (t && t.mode === 'card') this.drawCard(g, t);
-    else if (t && t.mode === 'summary') this.drawSummary(g, t);
-    else this.drawDrive(g, s, t);
+    const T = s.tour;
+    if (T && T.mode === 'card') this.drawCard(g, T);
+    else if (T && T.mode === 'summary') this.drawSummary(g, T);
+    else this.drawDrive(g, s, T);
     // footer: attribution + version
     g.textBaseline = 'alphabetic';
     g.textAlign = 'left'; g.font = `15px ${FONT}`; g.fillStyle = '#7f93a6';
@@ -67,7 +67,7 @@ export class Dashboard {
     return true;
   }
 
-  drawDrive(g, s, t) {
+  drawDrive(g, s, T) {
     // speed
     g.textBaseline = 'alphabetic';
     g.fillStyle = '#ffffff'; g.font = `bold 96px ${FONT}`; g.textAlign = 'right';
@@ -84,30 +84,30 @@ export class Dashboard {
       g.font = `bold 17px ${FONT}`; g.textAlign = 'left'; g.fillStyle = col;
       g.fillText(N.state === 'active' ? tr('dash.nitroActive') : N.state === 'ready' ? tr('dash.nitro') : tr('dash.nitroWait', { s: N.left }), x + w + 10, y + 15);
     }
-    if (t) {
+    if (T) {
       // status: stop i/N or the next point, distance, clock
       g.fillStyle = '#9fb3c8'; g.font = `22px ${FONT}`;
-      g.fillText(t.line1 || '', 312, 46);
+      g.fillText(T.line1 || '', 312, 46);
       g.fillStyle = '#ffffff';
-      fitText(g, t.title || '', 312, 84, 262, 30, 18, 'bold ');
+      fitText(g, T.title || '', 312, 84, 262, 30, 18, 'bold ');
       g.font = `24px ${FONT}`; g.fillStyle = '#cfe3f5';
-      g.fillText(t.line3 || '', 312, 122);
+      g.fillText(T.line3 || '', 312, 122);
       // compass dial
-      if (t.dial) {
+      if (T.dial) {
         g.strokeStyle = '#34495e'; g.lineWidth = 4;
         g.beginPath(); g.arc(DIAL.x, DIAL.y, DIAL.r, 0, Math.PI * 2); g.stroke();
         g.fillStyle = '#34495e'; g.beginPath(); g.arc(DIAL.x, DIAL.y - DIAL.r, 6, 0, Math.PI * 2); g.fill();
       }
       // mood + tips
-      if (t.mood != null) {
-        const col = moodColor(t.mood);
-        for (let i = 0; i < t.group; i++) { g.fillStyle = col; g.beginPath(); g.arc(30 + i * 30, 172, 11, 0, Math.PI * 2); g.fill(); }
+      if (T.mood != null) {
+        const col = moodColor(T.mood);
+        for (let i = 0; i < T.group; i++) { g.fillStyle = col; g.beginPath(); g.arc(30 + i * 30, 172, 11, 0, Math.PI * 2); g.fill(); }
         g.fillStyle = '#cfe3f5'; g.font = `24px ${FONT}`; g.textAlign = 'left';
-        g.fillText(tr('dash.mood', { v: Math.round(t.mood) }), 30 + t.group * 30 + 8, 181);
-        g.textAlign = 'right'; g.fillText(tr('dash.tips', { v: euro(t.tips) }), W - 20, 181);
-      } else if (t.hint) {
+        g.fillText(tr('dash.mood', { v: Math.round(T.mood) }), 30 + T.group * 30 + 8, 181);
+        g.textAlign = 'right'; g.fillText(tr('dash.tips', { v: euro(T.tips) }), W - 20, 181);
+      } else if (T.hint) {
         g.fillStyle = '#cfe3f5'; g.font = `24px ${FONT}`; g.textAlign = 'left';
-        fitText(g, t.hint, 20, 181, W - 40, 24, 16, '');
+        fitText(g, T.hint, 20, 181, W - 40, 24, 16, '');
       }
     }
     // message line
@@ -116,11 +116,11 @@ export class Dashboard {
       fitText(g, s.msg, W / 2, 228, W - 40, 30, 16, 'bold ', 'center');
     }
     // "on the way" fact / intro
-    if (t && t.text) {
+    if (T && T.text) {
       g.textAlign = 'left'; g.fillStyle = '#f2c230';
-      fitText(g, t.text.title, 20, 266, W - 40, 24, 16, 'bold ');
+      fitText(g, T.text.title, 20, 266, W - 40, 24, 16, 'bold ');
       g.fillStyle = '#ffffff';
-      wrapFit(g, t.text.body, 20, 276, W - 40, 60, 24, 16);
+      wrapFit(g, T.text.body, 20, 276, W - 40, 60, 24, 16);
     }
     // stats (F / X)
     if (this.showFps && s.stats) {
@@ -129,40 +129,40 @@ export class Dashboard {
       g.textAlign = 'right'; g.font = `bold 22px ${FONT}`;
       g.fillStyle = st.fps >= target - 2 ? '#6fe06f' : st.fps >= target * 0.8 ? '#ffd166' : '#ff5c5c';
       const line = `${Math.round(st.fps)} FPS · GPU ${ms(st.gpuMs)} · CPU ${ms(st.cpuMs)} · ${st.hz ? st.hz + ' ' + tr('dash.hz') + ' · ' : ''}${st.calls} calls · ${(st.tris / 1000).toFixed(0)}k${st.stress > 1 ? ` · ×${st.stress}` : ''}`;
-      g.fillText(line, W - 16, t ? 352 : 300);
+      g.fillText(line, W - 16, T ? 352 : 300);
     }
   }
 
-  drawCard(g, t) {
+  drawCard(g, T) {
     g.textBaseline = 'alphabetic'; g.textAlign = 'left';
     g.fillStyle = '#f2c230';
-    fitText(g, t.title, 20, 50, W - 150, 34, 20, 'bold ');
+    fitText(g, T.title, 20, 50, W - 150, 34, 20, 'bold ');
     g.textAlign = 'right'; g.fillStyle = '#9fb3c8'; g.font = `24px ${FONT}`;
-    g.fillText(t.counter || '', W - 20, 48);
+    g.fillText(T.counter || '', W - 20, 48);
     g.textAlign = 'left'; g.fillStyle = '#ffffff';
-    wrapFit(g, t.body || '', 20, 70, W - 40, t.credit ? 212 : 250, 32, 18);
-    if (t.credit) { g.fillStyle = '#9fb3c8'; wrapFit(g, t.credit, 20, 286, W - 40, 42, 17, 13); } // photo authors (licences)
+    wrapFit(g, T.body || '', 20, 70, W - 40, T.credit ? 212 : 250, 32, 18);
+    if (T.credit) { g.fillStyle = '#9fb3c8'; wrapFit(g, T.credit, 20, 286, W - 40, 42, 17, 13); } // photo authors (licences)
     g.fillStyle = '#6fe06f';
-    fitText(g, t.footer || '', 20, 350, W - 40, 26, 16, 'bold ');
+    fitText(g, T.footer || '', 20, 350, W - 40, 26, 16, 'bold ');
   }
 
-  drawSummary(g, t) {
+  drawSummary(g, T) {
     g.textBaseline = 'alphabetic'; g.textAlign = 'left';
     g.fillStyle = '#f2c230'; g.font = `bold 34px ${FONT}`; g.fillText(tr('dash.tourDone'), 20, 50);
     g.textAlign = 'right'; g.fillStyle = '#ffd166'; g.font = `bold 40px ${FONT}`;
-    g.fillText('★'.repeat(t.stars) + '☆'.repeat(5 - t.stars), W - 20, 52);
+    g.fillText('★'.repeat(T.stars) + '☆'.repeat(5 - T.stars), W - 20, 52);
     g.textAlign = 'left'; g.font = `26px ${FONT}`;
-    g.fillStyle = '#ffffff'; g.fillText(tr('dash.tipsV', { v: euro(t.tips) }), 20, 96);
-    g.fillStyle = t.onTime === 'yes' ? '#6fe06f' : t.onTime === 'almost' ? '#ffd166' : '#ff7a5c';
-    g.textAlign = 'right'; g.fillText(tr('dash.timeLine', { a: clock(t.time), b: clock(t.target), c: tr(t.onTime === 'yes' ? 'dash.onTime' : t.onTime === 'almost' ? 'dash.almost' : 'dash.late') }), W - 20, 96);
+    g.fillStyle = '#ffffff'; g.fillText(tr('dash.tipsV', { v: euro(T.tips) }), 20, 96);
+    g.fillStyle = T.onTime === 'yes' ? '#6fe06f' : T.onTime === 'almost' ? '#ffd166' : '#ff7a5c';
+    g.textAlign = 'right'; g.fillText(tr('dash.timeLine', { a: clock(T.time), b: clock(T.target), c: tr(T.onTime === 'yes' ? 'dash.onTime' : T.onTime === 'almost' ? 'dash.almost' : 'dash.late') }), W - 20, 96);
     g.textAlign = 'left'; g.fillStyle = '#cfe3f5';
-    wrapFit(g, t.events, 20, 112, W - 40, 64, 24, 16);
+    wrapFit(g, T.events, 20, 112, W - 40, 64, 24, 16);
     g.fillStyle = '#ffffff';
-    wrapFit(g, t.review ? `«${t.review}»` : '', 20, 182, W - 40, 70, 26, 16, 'italic ');
+    wrapFit(g, T.review ? `«${T.review}»` : '', 20, 182, W - 40, 70, 26, 16, 'italic ');
     g.fillStyle = '#9fb3c8';
-    fitText(g, t.best || '', 20, 290, W - 40, 22, 14, '');
+    fitText(g, T.best || '', 20, 290, W - 40, 22, 14, '');
     g.fillStyle = '#6fe06f';
-    fitText(g, t.footer || '', 20, 336, W - 40, 26, 16, 'bold ');
+    fitText(g, T.footer || '', 20, 336, W - 40, 26, 16, 'bold ');
   }
 }
 

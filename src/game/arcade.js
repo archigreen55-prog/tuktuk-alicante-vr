@@ -249,7 +249,7 @@ export class Arcade {
   // things smashed this frame (types 'c' | 'b' | 't' | 'u'): the tips go to the stake; returns the euros
   smashed(types) {
     let tips = 0;
-    for (const t of types) { tips += (RUSH.smash[t] || 1) * this.combo; this.smashCount = (this.smashCount || 0) + 1; if (this.smashCount % RUSH.smash.every === 0) this.bump('smash'); }
+    for (const ty of types) { tips += (RUSH.smash[ty] || 1) * this.combo; this.smashCount = (this.smashCount || 0) + 1; if (this.smashCount % RUSH.smash.every === 0) this.bump('smash'); }
     this.stake += tips; this.skillTips += tips; this.smashTips = (this.smashTips || 0) + tips;
     this.events.push({ type: 'smash', n: types.length, tips });
     return tips;
