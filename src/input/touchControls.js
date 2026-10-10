@@ -3,6 +3,7 @@
 // Pointer Events with pointer capture: a finger that started on a pedal stays that pedal wherever it slides, and
 // several fingers work at once. The numbers (ramps, curves) live in touchMath.js, shared with tools/test-touch.mjs.
 import { steerRamp, sliderSteer, gasFromY, brakeRamp, lookDrag, lookReturn, approach, BACK_YAW } from './touchMath.js';
+import { t } from '../i18n.js';
 
 const CSS = /* css */ `
 .tc-root { position: fixed; inset: 0; z-index: 40; pointer-events: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
@@ -79,13 +80,14 @@ export class TouchControls {
     this.btnL = mk('tc-btn', '◄', this.zone); this.btnR = mk('tc-btn', '►', this.zone);
     this.track = mk('tc-track', null, this.zone); this.knob = mk('tc-knob', null, this.zone);
     // pedals and buttons
-    this.brakeEl = mk('tc-pedal tc-brake'); this.brakeFill = mk('tc-fill', null, this.brakeEl); mk('tc-lab', 'ГАЛЬМО', this.brakeEl);
-    this.gasEl = mk('tc-pedal tc-gas'); this.gasFill = mk('tc-fill', null, this.gasEl); mk('tc-lab', 'ГАЗ', this.gasEl);
-    this.handEl = mk('tc-btn tc-hand'); mk('tc-lab', 'РУЧНИК', this.handEl);
-    this.nitroEl = mk('tc-btn tc-nitro'); this.nitroLab = mk('tc-lab', 'НІТРО', this.nitroEl);
+    this.brakeEl = mk('tc-pedal tc-brake'); this.brakeFill = mk('tc-fill', null, this.brakeEl); this.brakeLab = mk('tc-lab', t('tc.brake'), this.brakeEl);
+    this.gasEl = mk('tc-pedal tc-gas'); this.gasFill = mk('tc-fill', null, this.gasEl); this.gasLab = mk('tc-lab', t('tc.gas'), this.gasEl);
+    this.handEl = mk('tc-btn tc-hand'); this.handLab = mk('tc-lab', t('tc.hand'), this.handEl);
+    this.nitroEl = mk('tc-btn tc-nitro'); this.nitroLab = mk('tc-lab', t('tc.nitro'), this.nitroEl);
     this.hornEl = mk('tc-btn tc-horn', '📯');
     this.backEl = mk('tc-btn tc-back', '⟲');
-    this.speedEl = mk('tc-speed'); this.speedNum = mk('', '0', this.speedEl, 'b'); mk('', 'км/год', this.speedEl, 'span');
+    this.speedEl = mk('tc-speed'); this.speedNum = mk('', '0', this.speedEl, 'b'); this.kmhLab = mk('', t('hud.kmh'), this.speedEl, 'span');
+    addEventListener('tuktuk-lang', () => { this.brakeLab.textContent = t('tc.brake'); this.gasLab.textContent = t('tc.gas'); this.handLab.textContent = t('tc.hand'); this.kmhLab.textContent = t('hud.kmh'); });
     this.menuEl = mk('tc-btn tc-sm tc-menu', '≡'); this.mapEl = mk('tc-btn tc-sm tc-map', '🗺'); this.camEl = mk('tc-btn tc-sm tc-cam', '📷'); this.fsEl = mk('tc-btn tc-sm tc-fs', '⛶');
     this.bindZone(); this.bindHold(this.brakeEl, (on) => { this.brakeHeld = on; }, true); this.bindGas();
     this.bindHold(this.handEl, (on) => { this.hand = on; }); this.bindHold(this.nitroEl, (on) => { this.nitro = on; });
@@ -231,7 +233,7 @@ export class TouchControls {
     this.nitroKey = key;
     this.nitroEl.style.setProperty('--p', String(Math.round(n.level * 100)));
     this.nitroEl.style.setProperty('--ring', n.state === 'active' ? '#ff9f43' : n.state === 'ready' ? '#4cc36b' : '#6f8fa8');
-    this.nitroLab.textContent = n.state === 'charge' ? `${n.left} с` : n.state === 'active' ? 'НІТРО!' : 'НІТРО';
+    this.nitroLab.textContent = n.state === 'charge' ? `${n.left} ${t('hud.s')}` : n.state === 'active' ? t('tc.nitroActive') : t('tc.nitro');
   }
   buzz(ms) { if (this.cfg.vibrate && navigator.vibrate) { try { navigator.vibrate(ms); } catch { /* ignored */ } } }
 }

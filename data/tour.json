@@ -1,6 +1,7 @@
 {
   "_help": [
     "Тексти й маршрути туру. Редагуй сміливо: title, intro, outro, fact, reviews.",
+    "Англійська (0.19.0): title_en у місця, reviews_en; intro_en / outro_en / fact_en — за бажанням. Поки fact — ЗАГЛУШКА, гра бере рядок з arcade-facts.json (uk / en).",
     "Рядки — у лапках, між полями — коми. Кілька абзаців — список рядків через кому.",
     "Тур: start (місце старту й фінішу) + route: список { \"stop\": id } (зупинка з фото) або { \"pass\": id } (факт на ходу).",
     "Порядок, склад маршруту й тексти працюють одразу після оновлення сторінки.",
@@ -65,24 +66,28 @@
   "places": {
     "melia": {
       "title": "Готель Meliá",
+      "title_en": "Hotel Meliá",
       "osm": "Hotel Meliá Alicante",
       "road": "Passeig del Port",
       "at": [38.34403, -0.47933]
     },
     "explanada": {
       "title": "Explanada і Casa Carbonell",
+      "title_en": "Explanada and Casa Carbonell",
       "osm": "Casa Carbonell",
       "road": "Passeig dels Màrtirs de la Llibertat",
       "fact": ["ЗАГЛУШКА: факт про Explanada de España і Casa Carbonell (1–3 речення, до ~280 знаків)."]
     },
     "canalejas": {
       "title": "Parque de Canalejas",
+      "title_en": "Parque de Canalejas",
       "osm": "Parque de Canalejas",
       "at": [38.34157, -0.48680],
       "fact": ["ЗАГЛУШКА: фікуси Canalejas (коротко — читаєш на ходу)."]
     },
     "brujas": {
       "title": "Casa de las Brujas",
+      "title_en": "Casa de las Brujas",
       "osm": "Casa de les Bruixes",
       "road": "Avinguda del Doctor Gadea",
       "at": [38.34179, -0.48749],
@@ -90,29 +95,34 @@
     },
     "university": {
       "title": "Будівля університету",
+      "title_en": "The university building",
       "osm": "Seu Universitària Ciutat d'Alacant",
       "road": "Carrer de Sant Ferran",
       "fact": ["ЗАГЛУШКА: університет, Calle San Fernando, 40."]
     },
     "rambla": {
       "title": "Rambla de Méndez Núñez",
+      "title_en": "Rambla de Méndez Núñez",
       "osm": "Rambla de Méndez Núñez",
       "fact": ["ЗАГЛУШКА: Rambla."]
     },
     "townHall": {
       "title": "Ayuntamiento",
+      "title_en": "Ayuntamiento (Town Hall)",
       "osm": "way/265207919",
       "road": "Plaça de l'Ajuntament",
       "fact": ["ЗАГЛУШКА: факт про ратушу."]
     },
     "santaMaria": {
       "title": "Basílica de Santa María",
+      "title_en": "Basílica de Santa María",
       "osm": "Basílica de Santa María",
       "road": "Carrer de Jorge Juan",
       "fact": ["ЗАГЛУШКА: факт про базиліку."]
     },
     "postiguet": {
       "title": "Postiguet і замок Санта-Барбара",
+      "title_en": "Postiguet and Santa Bárbara Castle",
       "osm": "Castillo de Santa Bárbara",
       "road": "Avinguda de Juan Bautista Lafora",
       "at": [38.34546, -0.47867],
@@ -120,29 +130,34 @@
     },
     "mercado": {
       "title": "Mercado Central",
+      "title_en": "Mercado Central",
       "osm": "Mercado Central de Alicante",
       "road": "Avinguda Alfons el Savi",
       "fact": ["ЗАГЛУШКА: факт про ринок."]
     },
     "marq": {
       "title": "MARQ — Археологічний музей",
+      "title_en": "MARQ — Archaeological Museum",
       "osm": "MARQ - Museo Arqueológico de Alicante",
       "road": "Plaça del Doctor Gómez Ulla",
       "fact": ["ЗАГЛУШКА: MARQ, Європейський музей року 2004 (коротко — на ходу)."]
     },
     "castle": {
       "title": "Замок Санта-Барбара — ворота",
+      "title_en": "Santa Bárbara Castle — the gate",
       "osm": "way/20490181",
       "at": [38.34972, -0.47778],
       "fact": ["ЗАГЛУШКА: замок Санта-Барбара, 166 м над морем. Тук-тук піднімається до воріт і розвертається на майданчику; 2 хв на оглядовій точці."]
     },
     "luceros": {
       "title": "Plaza de los Luceros",
+      "title_en": "Plaza de los Luceros",
       "osm": "Plaza de los Luceros",
       "fact": ["ЗАГЛУШКА: фонтан Luceros."]
     },
     "sanFrancisco": {
       "title": "Calle San Francisco — вулиця грибів",
+      "title_en": "Calle San Francisco — the mushroom street",
       "osm": "Carrer de Sant Francesc",
       "fact": ["ЗАГЛУШКА: вулиця грибів."]
     }
@@ -154,5 +169,13 @@
     "hits": ["Стіни Аліканте ми тепер знаємо особисто.", "Екскурсія гарна, але навіщо було таранити будинки?"],
     "late": ["Ледь встигли на лайнер!", "Гарно, але дуже довго."],
     "nitro": ["Ми замовляли екскурсію, а не «Формулу-1»!", "Коли тук-тук полетів, я забула, як мене звати."]
+  },
+  "reviews_en": {
+    "great": ["The best excursion of our whole cruise!", "Smooth, interesting, with a sense of humour. Five stars!"],
+    "brakes": ["Lovely, but the braking nearly sent my phone flying.", "We got to know the dashboard with our foreheads."],
+    "turns": ["The turns felt like a roller coaster.", "Interesting, but we held on to everything in the corners."],
+    "hits": ["We now know the walls of Alicante personally.", "A nice tour, but why ram the houses?"],
+    "late": ["We barely made it back to the ship!", "Lovely, but it took far too long."],
+    "nitro": ["We booked a tour, not Formula 1!", "When the tuk-tuk took off, I forgot my own name."]
   }
 }

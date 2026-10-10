@@ -4,6 +4,7 @@
 // drives it with an autopilot in Node.
 import { ComfortScore, MOOD_DELTA } from './scoring.js';
 import { polylineDistance, flatDistance } from './route.js';
+import { t } from '../i18n.js';
 
 export const TOUR = {
   zoneLen: 14, zoneMinW: 6, zoneTol: 1,  // m, stop zone along the road x width, tolerance
@@ -138,7 +139,7 @@ export class Tour {
         if (v > TOUR.leaveSpeed) {
           this.setState('waiting');
           this.events.push({ type: 'boardAbort' });
-          this.flash('Зачекай, поки всі сядуть', '#ffd166');
+          this.flash(t('tour.waitSeated'), '#ffd166');
         } else if (this.stateT >= TOUR.boardTime) {
           this.setState('driving');
           this.events.push({ type: 'seated' });
@@ -160,7 +161,7 @@ export class Tour {
           this.setState('afterPhoto');
           this.events.push({ type: 'photoDone' });
           const it = this.items[this.next];
-          this.card.footer = it ? `Можна рушати · Далі: ${it.place.title}` : 'Можна рушати';
+          this.card.footer = t('tour.canGo') + (it ? t('tour.next', { v: it.place.title }) : '');
           this.newRoute(ctx);
         }
         break;
@@ -200,7 +201,7 @@ export class Tour {
     const z = zoneOf(it.place, it.kind);
     const inside = inZone(z, ctx.x, ctx.z);
     this.holdBrake = inside && v < 1;
-    if (inside && v > TOUR.zoneFast && this.t - this.flashAt > 3) this.flash('Пригальмуй — зупинка тут', '#ffd166');
+    if (inside && v > TOUR.zoneFast && this.t - this.flashAt > 3) this.flash(t('tour.slowStop'), '#ffd166');
     this.holdT = inside && v < TOUR.stopSpeed ? this.holdT + ctx.dt : 0;
     if (this.holdT >= TOUR.stopHold) {
       const idx = this.items.indexOf(it);
@@ -213,7 +214,7 @@ export class Tour {
         this.events.push({ type: 'dropoff' });
         if (this.def.outro) this.showText(this.start.title, this.def.outro, TOUR.introTime);
       } else {
-        this.card = { title: it.place.title, body: it.place.fact, footer: 'Фото…', credit: it.place.credit || '' };
+        this.card = { title: it.place.title, body: it.place.fact, footer: t('tour.photo'), credit: it.place.credit || '' };
         this.setState('photo');
         this.events.push({ type: 'stop', id: it.place.id });
       }
@@ -223,7 +224,7 @@ export class Tour {
     if (this.route) {
       const off = polylineDistance(this.route, ctx.x, ctx.z).d > TOUR.offRoute;
       this.offT = off ? this.offT + ctx.dt : 0;
-      if (this.offT > TOUR.offRouteFor && this.t - this.lastRoute > TOUR.rerouteEvery) { this.newRoute(ctx); this.flash('Маршрут перераховано', '#9fd3ff', 2); }
+      if (this.offT > TOUR.offRouteFor && this.t - this.lastRoute > TOUR.rerouteEvery) { this.newRoute(ctx); this.flash(t('tour.rerouted'), '#9fd3ff', 2); }
     }
   }
 
@@ -255,7 +256,7 @@ export class Tour {
     if (this.state === 'summary') return true;
     if (this.t - this.confirmAt < TOUR.confirm) return true;
     this.confirmAt = this.t;
-    this.flash('Натисни ще раз — тур заново', '#ffd166', TOUR.confirm);
+    this.flash(t('tour.againConfirm'), '#ffd166', TOUR.confirm);
     return false;
   }
 

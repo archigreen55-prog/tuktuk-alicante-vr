@@ -3,6 +3,7 @@
 // record and the "book the real tour" button. Plain HTML over the canvas, phone and PC alike; updated ~10 times a
 // second from main.js, nothing runs while the mode is off.
 import { euroWhole as euro, clock as fmtClock } from './dashboard.js';
+import { t } from '../i18n.js';
 
 const CSS = `
 .ah { position: fixed; inset: 0; pointer-events: none; z-index: 6; font-family: system-ui, sans-serif; color: #fff; display: none; }
@@ -54,7 +55,7 @@ const CSS = `
 .ah-sum .note { color: #9fb3c8; font-size: 13px; margin-top: 10px; }
 `;
 const el = (tag, cls, text, parent) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; };
-const KIND = { exact: 'Точно!', good: 'Добре', ok: 'Є', missed: 'Пропущено' };
+const KIND = (k) => t('kind.' + k);   // exact / good / ok / missed
 
 // onAgain(), onTour(), bookLink: string | null (null = the number is not set yet), showSpeed: PC (the phone shows its own)
 export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMissing }) {
@@ -65,9 +66,10 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
   const bonus = el('div', 'ah-bonus', '', root);
   const pop = el('div', 'ah-pop', '', root);
   const gate = el('div', 'ah-gate', '', root);
-  const speed = showSpeed ? el('div', 'ah-speed', null, root) : null; const speedNum = speed ? el('b', null, '0', speed) : null; if (speed) el('span', null, 'км/год', speed);
+  const speed = showSpeed ? el('div', 'ah-speed', null, root) : null; const speedNum = speed ? el('b', null, '0', speed) : null; const kmh = speed ? el('span', null, t('hud.kmh'), speed) : null;
   const card = el('div', 'ah-card', null, root); const cardT = el('div', 't', '', card), cardF = el('div', 'f', '', card);
-  const off = el('div', 'ah-off', null, root), offTxt = el('div', 'ah-offtxt', 'З ДОРОГИ! Повертайся на вулицю', root);
+  const off = el('div', 'ah-off', null, root), offTxt = el('div', 'ah-offtxt', t('hud.offRoad'), root);
+  addEventListener('tuktuk-lang', () => { if (kmh) kmh.textContent = t('hud.kmh'); offTxt.textContent = t('hud.offRoad'); });
   const white = el('div', 'ah-white', null, root);
   const flash = el('div', 'ah-flash', null, root);
   const count = el('div', 'ah-count', '3', root);
@@ -77,15 +79,15 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
 
   return {
     show(on) { root.classList.toggle('on', !!on); if (!on) { sum.style.display = 'none'; card.classList.remove('show'); cardId = null; off.classList.remove('on'); offTxt.classList.remove('on'); } },
-    setCountdown(n) { count.style.display = n == null ? 'none' : 'block'; if (n != null) count.textContent = n > 0 ? String(n) : 'ЇДЬ!'; },
+    setCountdown(n) { count.style.display = n == null ? 'none' : 'block'; if (n != null) count.textContent = n > 0 ? String(n) : t('hud.go'); },
     // s: { timeLeft, pocket, stake, combo, kmh, gateIndex, gateCount, gateTitle, off (outside the road of a stay-on-road level), card: { id, title, text } | null }
     update(s) {
       const tl = Math.max(0, s.timeLeft);
       set(clockEl, isFinite(tl) ? `${Math.floor(tl / 60)}:${String(Math.floor(tl % 60)).padStart(2, '0')}` : '--:--');
       clockEl.classList.toggle('low', tl < 10 && isFinite(tl));
       if (off.classList.contains('on') !== !!s.off) { off.classList.toggle('on', !!s.off); offTxt.classList.toggle('on', !!s.off); }
-      set(pocket, euro(s.pocket)); set(stake, s.stake > 0.5 ? ` +${euro(s.stake)} на кону` : ''); set(combo, s.combo > 1 ? `×${s.combo}` : '');
-      set(gate, s.gateTitle ? `${s.gateIndex + 1}/${s.gateCount} · ${s.gateTitle}${s.gateDist != null ? ' · ' + (s.gateDist < 1000 ? Math.round(s.gateDist / 10) * 10 + ' м' : (s.gateDist / 1000).toFixed(1) + ' км') : ''}` : '');
+      set(pocket, euro(s.pocket)); set(stake, s.stake > 0.5 ? t('hud.atStake', { v: euro(s.stake) }) : ''); set(combo, s.combo > 1 ? `×${s.combo}` : '');
+      set(gate, s.gateTitle ? `${s.gateIndex + 1}/${s.gateCount} · ${s.gateTitle}${s.gateDist != null ? ' · ' + (s.gateDist < 1000 ? Math.round(s.gateDist / 10) * 10 + ' ' + t('hud.m') : (s.gateDist / 1000).toFixed(1) + ' ' + t('hud.km')) : ''}` : '');
       if (speedNum) set(speedNum, String(Math.round(Math.abs(s.kmh))));
       const c = s.card;
       // the card appears when a gate is passed, stays a few seconds (arcade.js), then fades out smoothly (CSS); the text stays while it fades
@@ -98,15 +100,15 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
     // seconds won / lost flash next to the clock
     bonusTime(sec) {
       if (!sec) return;
-      bonus.textContent = `${sec > 0 ? '+' : '−'}${Math.round(Math.abs(sec))} с`; bonus.classList.toggle('bad', sec < 0);
+      bonus.textContent = `${sec > 0 ? '+' : '−'}${Math.round(Math.abs(sec))} ${t('hud.s')}`; bonus.classList.toggle('bad', sec < 0);
       bonus.classList.remove('show'); void bonus.offsetWidth; bonus.classList.add('show');
     },
     flashGate(ev) {
       const k = ev.kind;
       flash.innerHTML = '';
-      el('div', null, ev.finish ? 'ФІНІШ!' : KIND[k], flash).style.color = k === 'exact' ? '#6fe06f' : k === 'good' ? '#ffd166' : k === 'ok' ? '#cfe3f5' : '#ff7a5c';
-      if (k !== 'missed') el('small', null, `+${euro(ev.tips)}${ev.time ? ` · +${Math.round(ev.time)} с` : ''}`, flash);
-      else el('small', null, 'ворота пропущено', flash);
+      el('div', null, ev.finish ? t('hud.finish') : KIND(k), flash).style.color = k === 'exact' ? '#6fe06f' : k === 'good' ? '#ffd166' : k === 'ok' ? '#cfe3f5' : '#ff7a5c';
+      if (k !== 'missed') el('small', null, `+${euro(ev.tips)}${ev.time ? ` · +${Math.round(ev.time)} ${t('hud.s')}` : ''}`, flash);
+      else el('small', null, t('hud.gateMissed'), flash);
       flash.classList.add('show'); clearTimeout(flashTimer); flashTimer = setTimeout(() => flash.classList.remove('show'), 1300);
     },
     flashText(text, color = '#ff7a5c') { flash.innerHTML = ''; el('div', null, text, flash).style.color = color; flash.classList.add('show'); clearTimeout(flashTimer); flashTimer = setTimeout(() => flash.classList.remove('show'), 1200); },
@@ -114,28 +116,28 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
     summary(r, { gates, best, isRecord, tourTitle }) {
       sum.innerHTML = '';
       const c = el('div', 'card', null, sum);
-      const h = el('h2', null, r.state === 'timeout' ? 'Час вийшов' : 'Фініш!', c); el('small', null, `Crazy Tuk · ${tourTitle}`, h);
+      const h = el('h2', null, r.state === 'timeout' ? t('sum.timeout') : t('sum.finish'), c); el('small', null, `Crazy Tuk · ${tourTitle}`, h);
       el('div', 'big', euro(r.tips), c);
       el('div', 'stars', '★'.repeat(r.stars) + '☆'.repeat(5 - r.stars), c);
-      if (isRecord) el('div', 'rec', '🏆 Новий рекорд!', c);
-      if (best && !isRecord) el('div', 'prev', `Твій рекорд: ${euro(best.tips)} · ${'★'.repeat(best.stars)}`, c);
+      if (isRecord) el('div', 'rec', t('sum.record'), c);
+      if (best && !isRecord) el('div', 'prev', t('sum.yourBest', { v: euro(best.tips), stars: '★'.repeat(best.stars) }), c);
       const tbl = el('table', null, null, c);
       const row = (k, v) => { const tr = el('tr', null, null, tbl); el('td', null, k, tr); el('td', null, v, tr); };
-      row('Час', fmtClock(r.time) + (r.state === 'finished' ? ` · лишилось ${Math.round(r.timeLeft)} с → +${euro(r.bonus)}` : ''));
-      row('Ворота', `точно ${r.exact} · добре ${r.good} · є ${r.ok} · пропущено ${r.missed} з ${r.gates}`);
-      row('Максимум', `${r.maxKmh} км/год`); row('Удари', String(r.hits));
-      if (r.offRoad) row('З дороги', `${r.offRoad} разів · ${r.offRoadSecs} с · згоріло ${euro(r.offRoadBurnt)}`);
-      if (r.nearMisses || r.driftSecs || r.smashed) row('Майстерність', `розбито ${r.smashed || 0} · майже зачепив ${r.nearMisses} · дрифт ${r.driftSecs} с → ${euro(r.skillTips)}`); row('Шлях', `${(r.dist / 1000).toFixed(1)} км`);
+      row(t('sum.time'), fmtClock(r.time) + (r.state === 'finished' ? t('sum.timeLeft', { s: Math.round(r.timeLeft), v: euro(r.bonus) }) : ''));
+      row(t('sum.gates'), t('sum.gatesLine', { e: r.exact, g: r.good, o: r.ok, m: r.missed, n: r.gates }));
+      row(t('sum.max'), `${r.maxKmh} ${t('hud.kmh')}`); row(t('sum.hits'), String(r.hits));
+      if (r.offRoad) row(t('sum.offRoad'), t('sum.offRoadLine', { n: r.offRoad, s: r.offRoadSecs, v: euro(r.offRoadBurnt) }));
+      if (r.nearMisses || r.driftSecs || r.smashed) row(t('sum.skill'), t('sum.skillLine', { sm: r.smashed || 0, nm: r.nearMisses, d: r.driftSecs, v: euro(r.skillTips) })); row('Шлях', `${(r.dist / 1000).toFixed(1)} км`);
       const gl = el('div', 'gates', null, c);
-      for (const g of gates) { const d = el('div', 'g ' + (g.kind || 'missed'), null, gl); el('b', null, g.title, d); el('i', null, (KIND[g.kind] || 'не дістались') + (g.text ? ' · ' : ''), d); d.append(g.text || ''); }
+      for (const g of gates) { const d = el('div', 'g ' + (g.kind || 'missed'), null, gl); el('b', null, g.title, d); el('i', null, (g.kind ? KIND(g.kind) : t('sum.notReached')) + (g.text ? ' · ' : ''), d); d.append(g.text || ''); }
       const btns = el('div', 'btns', null, c);
-      const again = el('button', 'main', 'Ще раз', btns); again.addEventListener('click', onAgain);
-      const tourB = el('button', null, 'Справжній тур', btns); tourB.addEventListener('click', onTour);
-      const book = el('a', 'b book', 'Забронювати справжній тур', btns);
+      const again = el('button', 'main', t('sum.again'), btns); again.addEventListener('click', onAgain);
+      const tourB = el('button', null, t('sum.tour'), btns); tourB.addEventListener('click', onTour);
+      const book = el('a', 'b book', t('sum.book'), btns);
       if (bookLink) { book.href = bookLink; book.target = '_blank'; book.rel = 'noopener'; }
       else { book.href = '#'; book.addEventListener('click', (e) => { e.preventDefault(); if (onBookMissing) onBookMissing(); }); }
       setTimeout(() => book.classList.add('show'), 1500);   // not before a stray tap can land on it
-      el('div', 'note', 'Це гра. На справжньому турі ми не ламаємо стіни, але драйв той самий 😉', c);
+      el('div', 'note', t('sum.note'), c);
       sum.style.display = 'block'; sum.scrollTop = 0;
     },
     hideSummary() { sum.style.display = 'none'; },

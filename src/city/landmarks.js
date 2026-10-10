@@ -5,6 +5,7 @@
 // Which walls, spans, domes: src/city/photoFacades.js (shared with tools/prepare-facade.mjs).
 import * as THREE from 'three';
 import { ringOf, photoPlacement, edgeOf, JOG_INSET } from './photoFacades.js';
+import { t as tr } from '../i18n.js';
 
 const PAD = 8;           // px of repeated border around every photo in the atlas (mip levels, filtering)
 const LATHE_SEG = 32;    // segments around a dome
@@ -64,7 +65,7 @@ export function creditLine(photos, osmIds) {
   if (!photos) return '';
   const all = [];
   for (const id of osmIds || []) for (const c of photos.credits.get(id) || []) if (!all.includes(c)) all.push(c);
-  return all.length ? `Фото фасаду: ${all.join(', ')} · Wikimedia Commons` : '';
+  return all.length ? `${tr('credit.photo')} ${all.join(', ')} · Wikimedia Commons` : '';
 }
 
 function loadImage(url) {

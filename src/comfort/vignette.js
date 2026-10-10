@@ -7,10 +7,10 @@ import * as THREE from 'three';
 import { TUNING } from '../vehicle/physics.js';
 
 export const VIGNETTE_LEVELS = [
-  { id: 'off', label: 'вимкнено', k: 0 },
-  { id: 'weak', label: 'слабко', k: 0.6 },
-  { id: 'standard', label: 'стандартно', k: 1 },
-  { id: 'strong', label: 'сильно', k: 1.4 },
+  { id: 'off', label: 'tilt.off', k: 0 },
+  { id: 'weak', label: 'vig.weak', k: 0.6 },
+  { id: 'standard', label: 'vig.standard', k: 1 },
+  { id: 'strong', label: 'vig.strong', k: 1.4 },
 ];
 const STORE_KEY = 'tuktuk.vignette';
 export const NITRO_VIGNETTE = 0.6;   // minimum tunnel strength during a nitro burst

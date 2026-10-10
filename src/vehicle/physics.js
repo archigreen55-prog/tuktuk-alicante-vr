@@ -61,7 +61,7 @@ export const TUNING = {
 export const ARCADE = {
   ...TUNING,
   arcade: true,
-  maxForward: 120 / 3.6,
+  maxForward: 70 / 3.6,    // the pedal gives no more than the auto-gas (0.19.0): above 70 km/h only the nitro
   engineAccel: 7.0,       // 0 -> 60 km/h in about 3 s
   powerAccel: 220,        // the motor pulls the castle climb (8-14 %) without losing speed
   climbSpeed: null, downhillCap: null, regen: 0,   // no slope governors
@@ -72,7 +72,7 @@ export const ARCADE = {
   latAccelMax: 30,        // m/s² (≈ 3 g, arcade grip): R = v² / 30 -> 9.3 m at 60 km/h, 37 m at 120, 58 m at 150
   minTurnRadius: 7.5,     // m, the tightest path at low speed
   gripKeep: 0.86,
-  // speeds (tune here): the auto-gas holds autoGasKmh, the pedal gives maxForward, the nitro nitroMaxKmh (below)
+  // speeds (tune here): the auto-gas holds autoGasKmh, the pedal gives maxForward (the same 70: the owner's decision), the nitro nitroMaxKmh (below)
   autoGasKmh: 70, cruiseFade: 3,   // km/h the auto-gas holds; m/s² it trims a faster speed back (after a nitro burst)
   // drift (handbrake at speed): the rear loses grip, the heading turns faster than the path, the tuk-tuk slides sideways.
   // The side force is bounded (driftFriction m/s²), so the slide is caught by steering against it; releasing the
@@ -96,8 +96,8 @@ export const ARCADE = {
   slopeScrape: 0.985,       // speed kept per step while sliding along a steep slope (A.2)
   overspeedFade: 4,
   crashSpeed: Infinity,   // never a reset by the physics (arcade.js resets a stuck tuk-tuk itself)
-  // nitro as a tank: full = 100 %, burns 25 %/s while held, refills 3 %/s by itself (events add more)
-  nitroTank: true, nitroMaxKmh: 150, nitroAccel: 6.0, nitroDrain: 0.25, nitroPassive: 0.03, nitroMinSpeed: -10,   // from a standstill, even rolling backwards, without the gas
+  // nitro as a tank: full = 100 %, burns 20 %/s while held (5 s of burst), refills 5 %/s by itself (20 s), the gates add more (arcade.js gateNitro)
+  nitroTank: true, nitroMaxKmh: 120, nitroAccel: 8.0, nitroDrain: 0.2, nitroPassive: 0.05, nitroMinSpeed: -10,   // from a standstill, even rolling backwards, without the gas
 };
 
 // max speed on a descent of `grade` (0..): linear between the table rows, none below the first

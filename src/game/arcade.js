@@ -4,6 +4,7 @@
 // No three.js here: tools/sim-arcade.mjs drives the same class in Node.
 import { sideNormal } from './tour.js';
 import { stayRules } from './levels.js';
+import { t } from '../i18n.js';
 
 export const RUSH = {
   minSpeed: 60 / 3.6,                 // m/s: below this nothing is earned (the auto-throttle keeps it unless braking)
@@ -17,7 +18,7 @@ export const RUSH = {
   gateCentre: 1.5,
   gateTips: { exact: 25, good: 10, ok: 0 },          // € (× combo)
   gateTime: { exact: 1.3, good: 1.0, ok: 0.6 },      // × the gate's share of the time
-  gateNitro: { exact: 0.25, good: 0.1, ok: 0 },      // tank refill
+  gateNitro: { exact: 0.35, good: 0.2, ok: 0.1 },    // tank refill (0.19.0: the nitro is the only way above 70 km/h, so the gates feed it more)
   parPerMetre: 0.06,                  // s of par per metre of the way, when a tour has no measured par (the short tour: 250 s / 4.4 km)
   startShare: 0.35,                   // the clock starts with this share of par; the rest is spread over the gates
   finishBonus: 1.5,                   // € per second left on the clock
@@ -275,7 +276,7 @@ export class Arcade {
 // a gate across the road at a place: p (road point), d (unit direction along the road), n (across), half width
 // a start given by a point: x, z, heading (the tuk-tuk looks along -sin, -cos)
 function freeStart({ x, z, heading }) {
-  return { id: 'start', title: 'Старт', short: '', p: [x, z], d: [-Math.sin(heading), -Math.cos(heading)], w: 6, look: [x - Math.sin(heading) * 20, z - Math.cos(heading) * 20], back: [[x, z, heading]] };
+  return { id: 'start', title: t('arc.start'), short: '', p: [x, z], d: [-Math.sin(heading), -Math.cos(heading)], w: 6, look: [x - Math.sin(heading) * 20, z - Math.cos(heading) * 20], back: [[x, z, heading]] };
 }
 // a gate given by a point: across the road there (the direction of the nearest road, unless the level says it)
 function freeGate(it, i, graph, facts) {
@@ -285,7 +286,7 @@ function freeGate(it, i, graph, facts) {
     if (e) { const a = graph.ea[e.e], b = graph.eb[e.e], dx = graph.x[b] - graph.x[a], dz = graph.z[b] - graph.z[a], l = Math.hypot(dx, dz) || 1; d = [dx / l, dz / l]; }
   }
   d = d || [1, 0];
-  return { id: it.id || `g${i + 1}`, title: it.title || `Ворота ${i + 1}`, short: it.fact || '', p: [it.p[0], it.p[1]], d, w: it.w || 8, look: [it.p[0] - d[1] * 10, it.p[1] + d[0] * 10] };
+  return { id: it.id || `g${i + 1}`, title: it.title || t('arc.gate', { n: i + 1 }), short: it.fact || '', p: [it.p[0], it.p[1]], d, w: it.w || 8, look: [it.p[0] - d[1] * 10, it.p[1] + d[0] * 10] };
 }
 function gateOf(place, finish = false) {
   const d = place.d, l = Math.hypot(d[0], d[1]) || 1;

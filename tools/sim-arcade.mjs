@@ -131,7 +131,7 @@ export function simulate(tourId, style, { par = null, log = false, onStep = null
   const input = { throttle: 0, brake: 0, steer: 0, handbrake: false, horn: false, nitro: false };
   let t = 0, routeV = -1, line = null, pursueLine = null, cs = null, below60 = 0, hitsHard = 0, minV = Infinity, sumV = 0, nV = 0, stuck = 0;
   const cornerT = new Map();
-  let driftOn = false, driftT = 0, driftN = 0;
+  let driftOn = false, driftT = 0, driftN = 0, nitroS = 0, above70 = 0, chargeSum = 0, emptyS = 0, burns = 0, wasNitro = false, nitroHold = false;
   const cornerMin = new Map();   // corner index -> min speed within 12 m
   const gatesLog = [];
   while (t < 900 && !run.done) {
@@ -175,7 +175,9 @@ export function simulate(tourId, style, { par = null, log = false, onStep = null
         if (driftOn) input.handbrake = true;
       }
       if (v > vt + 0.5 && !driftOn) { input.throttle = 0; input.brake = Math.min(D.brakeMax, Math.max(0.2, (v - vt) * 0.25)); }
-      if (D.nitro && straight > D.nitroMinStraight && v > 14 && vt >= D.top - 0.1 && phys.nitro.charge > 0.05) input.nitro = true;
+      // a person holds the nitro until the tank is empty (no flicker at the 5 % mark): start it from D.nitroFrom of the tank, hold while any is left
+      const wantNitro = D.nitro && straight > D.nitroMinStraight && v > 14 && vt >= D.top - 0.1;
+      if (wantNitro && (nitroHold || phys.nitro.charge >= (D.nitroFrom || 0.5))) { input.nitro = true; nitroHold = phys.nitro.charge > 0.01; } else nitroHold = false;
     }
     phys.step(DT, input);
     if (phys.hit) { hitsHard++; phys.hit = null; }
@@ -193,6 +195,7 @@ export function simulate(tourId, style, { par = null, log = false, onStep = null
     }
     const kmh = phys.forwardSpeed * 3.6;
     if (kmh < 60) below60 += DT;
+    if (phys.nitro.active) nitroS += DT; if (kmh > 72) above70 += DT; chargeSum += phys.nitro.charge; if (phys.nitro.charge < 0.05 && !phys.nitro.active) emptyS += DT; if (phys.nitro.active && !wasNitro) burns++; wasNitro = phys.nitro.active;
     if (t > 4) minV = Math.min(minV, kmh);
     sumV += kmh; nV++;
     if (cs) for (const c of cs) {
@@ -203,12 +206,17 @@ export function simulate(tourId, style, { par = null, log = false, onStep = null
     if (cs) for (const c of cs) { const d = Math.hypot(phys.x - c.x, phys.z - c.z); if (d < 12) { const key = `${c.x.toFixed(0)},${c.z.toFixed(0)}`; cornerMin.set(key, Math.min(cornerMin.get(key) ?? Infinity, kmh)); } }
     if (onStep) onStep(t, phys, run);
   }
-  return { run, driftN, cornerT, r: run.result, t, below60, hitsHard, minV, avgV: sumV / Math.max(1, nV), stuck, reverts: phys.reverts || 0, gatesLog, cornerMin, cornersOf: (pts) => corners(pts, world) };
+  return { run, driftN, nitro: { secs: nitroS, above70, avgCharge: chargeSum / Math.max(1, nV), emptySecs: emptyS, burns }, cornerT, r: run.result, t, below60, hitsHard, minV, avgV: sumV / Math.max(1, nV), stuck, reverts: phys.reverts || 0, gatesLog, cornerMin, cornersOf: (pts) => corners(pts, world) };
 }
 
 let [argTour = 'short', argStyle] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 if (argTour.endsWith('.json') && process.argv[1] && process.argv[1].endsWith('sim-arcade.mjs')) argTour = await loadLevelFile(argTour);
 const wantPar = process.argv.includes('--par') || process.argv.includes('--write');
+// tank tuning: --drain 0.2 --passive 0.05 --gate 0.35,0.2,0.1 (exact, good, ok refill) override ARCADE / RUSH for this run
+{ const a = process.argv, f = (n) => { const i = a.indexOf(n); return i >= 0 ? a[i + 1] : null; };
+  if (f('--drain')) ARCADE.nitroDrain = +f('--drain'); if (f('--passive')) ARCADE.nitroPassive = +f('--passive'); if (f('--accel')) ARCADE.nitroAccel = +f('--accel');
+  if (f('--straight')) for (const d of Object.values(DRIVERS)) { d.nitroMinStraight = +f('--straight'); d.nitro = true; d.nitroFrom = 0.3; }   // a nitro-happy driver: presses it on every straight this long
+  if (f('--gate')) { const [e, g, o] = f('--gate').split(',').map(Number); RUSH.gateNitro.exact = e; RUSH.gateNitro.good = g; RUSH.gateNitro.ok = o; } }
 const writePar = process.argv.includes('--write');
 if (process.argv[1] && process.argv[1].endsWith('sim-arcade.mjs') && process.argv.includes('--drift')) {
   // the handbrake against the brake: the same pro driver, per corner of 60°+ (35 m before to 35 m after the corner point)
@@ -252,6 +260,7 @@ if (process.argv[1] && process.argv[1].endsWith('sim-arcade.mjs')) {
     console.log(`\n--- ${style}: ${run.state} after ${run.clock.toFixed(1)} s (sim ${(s.t).toFixed(0)} s) ---`);
     if (r) console.log(`tips ${r.tips} € (finish bonus ${r.bonus}, ${r.stars}★), time left ${r.timeLeft.toFixed(1)} s, gates exact ${r.exact} / good ${r.good} / ok ${r.ok} / missed ${r.missed} of ${r.gates}, max ${r.maxKmh} km/h`);
     if (s.driftN) console.log(`drifts: ${s.driftN}`);
+    console.log(`nitro: burning ${s.nitro.secs.toFixed(0)} s of ${run.clock.toFixed(0)} (${(100 * s.nitro.secs / run.clock).toFixed(0)} %), ${s.nitro.burns} bursts, above 72 km/h ${(100 * s.nitro.above70 / run.clock).toFixed(0)} % of the time, tank empty ${s.nitro.emptySecs.toFixed(0)} s, average charge ${(100 * s.nitro.avgCharge).toFixed(0)} %`);
     if (run.stay) console.log(`stay on the road: off ${run.off.count} times, ${run.off.secs.toFixed(1)} s, burnt ${run.off.burnt.toFixed(1)} €`);
     console.log(`skill: near misses ${run.nearMisses}, drift ${run.driftSecs.toFixed(1)} s in ${run.dr.count} slides (best ${run.dr.best.toFixed(1)} s), ${run.skillTips.toFixed(0)} € of the tips`);
     console.log(`speed: avg ${s.avgV.toFixed(0)} km/h, min after start ${s.minV.toFixed(0)}, below 60 km/h ${s.below60.toFixed(1)} s; wall hits ${s.hitsHard} (run counted ${run.hits}), stuck resets ${s.stuck}, anti-stuck ${s.reverts}, distance ${(run.dist / 1000).toFixed(2)} km`);

@@ -2,6 +2,7 @@
 // to read, so the tour status, the fact card / summary and a heading-up minimap are also shown as
 // HTML. Hidden in VR (the headset shows the dashboard).
 import { euro, clock, moodColor } from './dashboard.js';
+import { t } from '../i18n.js';
 
 export class DesktopHud {
   constructor(minimap) {
@@ -23,15 +24,15 @@ export class DesktopHud {
     let status = '';
     if (panel.mode === 'drive') {
       status = `<div class="l1">${esc(panel.line1 || '')}</div><div class="l2">${esc(panel.title || '')}</div><div class="l3">${esc(panel.line3 || '')}</div>`;
-      if (panel.mood != null) status += `<div class="l4"><span style="color:${moodColor(panel.mood)}">●</span> Настрій ${Math.round(panel.mood)} % · Чайові ≈ ${euro(panel.tips)}</div>`;
+      if (panel.mood != null) status += `<div class="l4"><span style="color:${moodColor(panel.mood)}">●</span> ${t('dash.mood', { v: Math.round(panel.mood) })} · ${t('dash.tips', { v: euro(panel.tips) })}</div>`;
       else if (panel.hint) status += `<div class="l4">${esc(panel.hint)}</div>`;
     }
     if (status !== this.lastStatus) { this.status.innerHTML = status; this.lastStatus = status; }
     let card = '';
     if (panel.mode === 'card') card = `<div class="t">${esc(panel.title)} <span class="c">${esc(panel.counter || '')}</span></div><div class="b">${esc(panel.body || '')}</div>${panel.credit ? `<div class="c">${esc(panel.credit)}</div>` : ''}<div class="f">${esc(panel.footer || '')}</div>`;
     else if (panel.mode === 'summary') {
-      card = `<div class="t">Тур завершено! <span class="s">${'★'.repeat(panel.stars)}${'☆'.repeat(5 - panel.stars)}</span></div>` +
-        `<div class="b">Чайові ${euro(panel.tips)} · час ${clock(panel.time)} / ${clock(panel.target)}<br>${esc(panel.events)}<br><i>${panel.review ? '«' + esc(panel.review) + '»' : ''}</i><br><span class="c">${esc(panel.best || '')}</span></div><div class="f">${esc(panel.footer || '')}</div>`;
+      card = `<div class="t">${t('dash.tourDone')} <span class="s">${'★'.repeat(panel.stars)}${'☆'.repeat(5 - panel.stars)}</span></div>` +
+        `<div class="b">${t('dash.tipsV', { v: euro(panel.tips) })} · ${t('dash.time')} ${clock(panel.time)} / ${clock(panel.target)}<br>${esc(panel.events)}<br><i>${panel.review ? '«' + esc(panel.review) + '»' : ''}</i><br><span class="c">${esc(panel.best || '')}</span></div><div class="f">${esc(panel.footer || '')}</div>`;
     } else if (panel.text) card = `<div class="t">${esc(panel.text.title)}</div><div class="b">${esc(panel.text.body)}</div>`;
     if (card !== this.lastCard) { this.card.innerHTML = card; this.lastCard = card; this.card.className = panel.mode === 'card' ? 'mode-card' : panel.mode === 'summary' ? 'mode-summary' : 'mode-text'; }
   }

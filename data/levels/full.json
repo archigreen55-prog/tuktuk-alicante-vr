@@ -4,7 +4,7 @@
   "title": {"uk":"Повний тур","en":"Full tour","es":"Tour completo"},
   "type": "standard",
   "start": {"place":"melia"},
-  "time": {"mode":"auto","par":456},
+  "time": {"mode":"auto","par":443},
   "items": [
     {"k":"via","p":[585,123]},
     {"k":"gate","place":"explanada"},

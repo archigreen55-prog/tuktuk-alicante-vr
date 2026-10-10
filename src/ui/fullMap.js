@@ -6,6 +6,7 @@
 // drawing hooks; the tour, the trail and the route are not drawn then.
 // Layers: sea, parks, plazas, buildings (from 0.25 px/m), roads, the walked trail (grey), the planned rest of the tour
 // (arrows show the direction), the way to the next target (orange), places with names, the tuk-tuk with its heading.
+import { t } from '../i18n.js';
 
 const COL = { land: '#e6dcc6', sea: '#6fa8cf', park: '#b3d397', plaza: '#efe7d6', building: '#c9bba2', buildingEdge: '#b5a68c', road: '#ffffff', roadEdge: '#b9ad97', ped: '#f3ecdf' };
 const ROAD_W = { primary: 12, primary_link: 7, secondary: 10, secondary_link: 7, tertiary: 8, tertiary_link: 6, residential: 6.5, unclassified: 6, living_street: 5, service: 4, pedestrian: 5, busway: 7 };
@@ -60,10 +61,11 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     cv = document.createElement('canvas'); root.appendChild(cv); g = cv.getContext('2d');
     const btn = (cls, text, fn) => { const b = document.createElement('button'); b.className = cls; b.textContent = text; b.addEventListener('click', (e) => { e.stopPropagation(); fn(); }); b.addEventListener('pointerdown', (e) => e.stopPropagation()); root.appendChild(b); return b; };
     btn('fm-close', '✕', () => close());
-    btn('fm-me', '◎ До мене', () => toMe());
+    const meBtn = btn('fm-me', t('map.me'), () => toMe());
     btn('fm-zin', '+', () => zoomAt(view.W / 2, view.H / 2, 1.6));
     btn('fm-zout', '−', () => zoomAt(view.W / 2, view.H / 2, 1 / 1.6));
-    titleEl = document.createElement('div'); titleEl.className = 'fm-title'; titleEl.textContent = 'Карта · гра на паузі'; root.appendChild(titleEl);
+    titleEl = document.createElement('div'); titleEl.className = 'fm-title'; titleEl.textContent = t('map.title'); root.appendChild(titleEl);
+    addEventListener('tuktuk-lang', () => { meBtn.textContent = t('map.me'); if (!editor) titleEl.textContent = t('map.title'); });
     document.body.appendChild(root);
     cv.addEventListener('pointerdown', onDown); cv.addEventListener('pointermove', onMove); cv.addEventListener('pointerup', onUp); cv.addEventListener('pointercancel', onUp);
     cv.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
@@ -286,8 +288,8 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     g.fillStyle = 'rgba(255, 255, 255, .92)'; g.fillRect(x0 - 6, y0 - 26, px + 74, 40);
     g.strokeStyle = '#10161c'; g.lineWidth = 3; g.beginPath(); g.moveTo(x0, y0 - 6); g.lineTo(x0, y0); g.lineTo(x0 + px, y0); g.lineTo(x0 + px, y0 - 6); g.stroke();
     g.font = FONT; g.fillStyle = '#10161c'; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
-    g.fillText(m >= 1000 ? '1 км' : m + ' м', x0 + 2, y0 - 10);
-    g.fillText('↑ Пн', x0 + px + 10, y0 - 10);
+    g.fillText(m >= 1000 ? t('map.km') : t('map.m', { n: m }), x0 + 2, y0 - 10);
+    g.fillText(t('map.north'), x0 + px + 10, y0 - 10);
     g.textBaseline = 'middle';
   }
 
@@ -300,7 +302,7 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     resize();
     const t = (editor && editor.initialView && editor.initialView()) || getTuk();
     view.cx = t.x; view.cz = t.z; view.s = Math.min(MAX_SCALE, Math.max(editor && t.s ? t.s : 0.9, fitScale()));
-    titleEl.textContent = editor ? editor.title || 'Редактор рівнів' : 'Карта · гра на паузі';
+    titleEl.textContent = editor ? editor.title || t('map.editor') : t('map.title');
     clampView(); plan = null; anim = null; ptrs.clear(); pinch = null; drag = null;
     setPaused(true);
     try { history.pushState({ fullMap: true }, ''); pushed = true; } catch (_) { pushed = false; }

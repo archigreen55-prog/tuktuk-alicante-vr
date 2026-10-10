@@ -16,6 +16,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { ringOf, edgeOf } from './photoFacades.js';
+import { t as tr } from '../i18n.js';
 
 // Basis Universal transcoder of the same three.js release as the import map
 const BASIS_PATH = `https://cdn.jsdelivr.net/npm/three@0.${THREE.REVISION}/examples/jsm/libs/basis/`;
@@ -87,7 +88,7 @@ export async function loadModels(city, spec, { renderer, version = '', groundY =
     const c = entry.credit;
     if (c && c.author) {
       const list = credits.get(osmId) || [];
-      list.push(`3D-скан: ${c.author} (${c.license || '?'})${c.site ? ` · ${c.site}` : ''}`);
+      list.push(`${tr('credit.scan')} ${c.author} (${c.license || '?'})${c.site ? ` · ${c.site}` : ''}`);
       credits.set(osmId, list);
     }
   }));

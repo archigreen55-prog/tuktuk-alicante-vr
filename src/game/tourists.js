@@ -93,7 +93,8 @@ export class Tourists {
   }
 
   // New group of `count` tourists standing at pos [x, z] (row along the road), facing [fx, fz]
-  setup(count, pos, facing) {
+  // seatFrom: the first seat index to use (2 = the second bench: Crazy Tuk keeps the first bench free so the driver is seen)
+  setup(count, pos, facing, seatFrom = 0) {
     this.dispose();
     const figs = [], geos = [], bones = [];
     const along = [-facing[1], facing[0]];
@@ -111,7 +112,7 @@ export class Tourists {
       bones.push(...fb);
       const off = (i - (count - 1) / 2) * 0.85;
       const stand = [pos[0] + along[0] * off, pos[1] + along[1] * off];
-      figs.push({ bones: fb, root: fb[0], s, stand, state: 'stand', t: 0, seat: this.seats[i], path: null });
+      figs.push({ bones: fb, root: fb[0], s, stand, state: 'stand', t: 0, seat: this.seats[Math.min(this.seats.length - 1, seatFrom + i)], path: null });
     }
     const geo = mergeGeometries(geos);
     const skeleton = new THREE.Skeleton(bones);

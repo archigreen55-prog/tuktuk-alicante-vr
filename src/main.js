@@ -9,7 +9,7 @@ import { loadModels, modelCreditLine } from './city/models.js';
 import { CollisionWorld, KIND } from './vehicle/collision.js';
 import { TukTukPhysics, TUNING, ARCADE } from './vehicle/physics.js';
 import { Arcade } from './game/arcade.js';
-import { levelFromTour, validateLevel, levelTitle, LEVEL } from './game/levels.js';
+import { levelFromTour, validateLevel, levelTitle, LEVEL, BUILTIN_TITLES } from './game/levels.js';
 import { loadMine, saveMine } from './game/levelStore.js';
 import { editorEnabled } from './game/editorAccess.js';
 import { driveGraph } from './game/pathfind.js';
@@ -36,10 +36,13 @@ import { RoadGraph } from './game/route.js';
 import { Tour } from './game/tour.js';
 import { StopMarker } from './game/markers.js';
 import { Tourists } from './game/tourists.js';
+import { Driver } from './game/driver.js';
 import { Minimap } from './ui/minimap.js';
 import { DesktopHud } from './ui/hud.js';
 import { clock as fmtClock, euro, euroWhole } from './ui/dashboard.js';
 import { IS_PHONE, UI, installRotateGuard } from './diag/device.js';
+import { t, pick, getLang } from './i18n.js';
+import { createTitleScreen } from './ui/titleScreen.js';
 import { FrameCap } from './perf/frameCap.js';
 import { FrameStats } from './diag/frameStats.js';
 import { Bench, buildStations } from './diag/bench.js';
@@ -65,10 +68,11 @@ const modelMode = !['0', 'off', 'no'].includes(params.get('model'));
 // ?terrain=0: flat city (every height 0), for A/B comparison of FPS and driving
 const terrainMode = !['0', 'off', 'no'].includes(params.get('terrain'));
 // cab tilt with the road (plan-terrain.md 6): full / half / off, remembered
-const TILT_LEVELS = [{ id: 'full', label: 'повний', k: 1 }, { id: 'half', label: 'половина', k: 0.5 }, { id: 'off', label: 'вимкнено', k: 0 }];
+const TILT_LEVELS = [{ id: 'full', label: 'tilt.full', k: 1 }, { id: 'half', label: 'tilt.half', k: 0.5 }, { id: 'off', label: 'tilt.off', k: 0 }];   // label: a dictionary key
 let tilt = TILT_LEVELS.find((l) => l.id === loadSetting('tilt', 'full')) || TILT_LEVELS[0];
 const cab = { pitch: 0, roll: 0, pitchRate: 0, snap: false }; // smoothed cab attitude (snap: jump to the ground after a teleport)
 let chaseInit = false;  // chase camera placed (reset after teleports)
+let showcaseWas = false; // the side view after a finish was on last frame
 // phone stage F0 (docs/plan-phone.md): ?bench[=N] runs the automatic FPS measurement (N rounds), ?diag shows
 // the FPS widget on any device, ?cap=N limits the frame rate (default 60 on a phone, none elsewhere; not in VR),
 // ?dpr=N sets the pixel ratio (default min(devicePixelRatio, 1.5)); ?ui=phone|desktop is handled in index.html
@@ -82,8 +86,13 @@ const frameStats = new FrameStats();
 if (+params.get('nitro') > 0) TUNING.nitroMaxKmh = Math.min(160, +params.get('nitro'));
 
 const $ = (id) => document.getElementById(id);
-const status = (t) => { $('status').textContent = t; };
-$('version').textContent = `версія ${VERSION}`;
+// the loading screen (src/ui/titleScreen.js): the stage text and the share done (weights measured on the phone, docs/plan-title-screen.md 2)
+const G = {};   // filled when the game is up (play, levels, best...); the title screen calls through it
+const titleApi = { version: VERSION, get vrButton() { return G.vrButton; }, play: (m, e) => G.play && G.play(m, e), levels: () => (G.levels ? G.levels() : []), level: () => (G.level ? G.level() : ''), setLevel: (id) => G.setLevel && G.setLevel(id),
+  tours: () => (G.tours ? G.tours() : []), tour: () => (G.tour ? G.tour() : ''), setTour: (id) => G.setTour && G.setTour(id), best: () => (G.best ? G.best() : ''), hasTour: () => (G.hasTour ? G.hasTour() : true),
+  get settingsDefs() { return G.settingsDefs ? G.settingsDefs() : []; }, get credit() { return G.credit ? G.credit() : ''; } };
+const title = createTitleScreen({ root: $('overlay'), isPhone: IS_PHONE, api: titleApi });
+const status = (text, frac) => { title.setProgress(frac, text); };
 
 // ---------- renderer / scene ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); // antialias = MSAA 4x in XR too
@@ -142,14 +151,23 @@ applyFov();
 
 // ---------- textures (drawn by code) ----------
 const ANISOTROPY = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-status('Малюю текстури…');
+status(t('st.textures'), 0.02);
 const tiles = texMode === 'off' ? null : buildTiles(ANISOTROPY);
-if (params.has('tiles')) { showTilesPage(tiles || buildTiles(ANISOTROPY)); $('overlay').style.display = 'none'; }
+if (params.has('tiles')) { showTilesPage(tiles || buildTiles(ANISOTROPY)); title.show(false); }
 if (tiles) console.log(`Tiles drawn in ${tiles.ms.toFixed(0)} ms, ${(tiles.bytes / 1048576).toFixed(1)} MB (+mips), anisotropy ${ANISOTROPY}`);
 
 // ---------- load city ----------
-status('Завантаження міста…');
-const city = await (await fetch(`data/city.json?v=${VERSION}`)).json();
+status(t('st.city'), 0.05);
+// city.json is the big file (a few MB): read it in chunks so the bar moves with the bytes
+const city = await (async () => {
+  const res = await fetch(`data/city.json?v=${VERSION}`);
+  const total = +res.headers.get('content-length') || 0;
+  if (!res.body || !total) return res.json();
+  const reader = res.body.getReader(), chunks = []; let got = 0;
+  for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); got += value.length; status(t('st.city'), 0.05 + 0.12 * Math.min(1, got / total)); }
+  const buf = new Uint8Array(got); let o = 0; for (const c of chunks) { buf.set(c, o); o += c.length; }
+  return JSON.parse(new TextDecoder().decode(buf));
+})();
 // tour texts and routes: edited by hand, so always fresh (no cache) and never fatal
 let tourSpec = null, tourError = '';
 try {
@@ -191,7 +209,7 @@ if (tourError) console.warn(tourError);
 // terrain heights (data/terrain.bin, IGN MDT05): the ground, the roads and the physics read one grid
 let terrain = null;
 if (city.meta.terrain) {
-  status('Рельєф…');
+  status(t('st.terrain'), 0.18);
   try {
     const buf = await (await fetch(`${city.meta.terrain.file}?v=${VERSION}`)).arrayBuffer();
     terrain = Terrain.fromBin(city.meta.terrain, buf);
@@ -205,22 +223,23 @@ if (photoMode || modelMode) {
   try { facadeSpec = await (await fetch(`data/facades.json?t=${Date.now()}`, { cache: 'no-store' })).json(); } catch (e) { console.warn(`data/facades.json: ${e.message}`); }
 }
 if (photoMode && facadeSpec) {
-  status('Фото фасадів…');
+  status(t('st.photos'), 0.24);
   try {
     photos = await loadPhotoFacades(city, facadeSpec, { version: VERSION, anisotropy: ANISOTROPY });
     if (photos) console.log(`Photo facades: ${photos.stats.photos} photos, atlas ${photos.stats.atlas} (${photos.stats.mb} MB with mips), ${photos.stats.ms} ms`);
   } catch (e) { console.warn(`photo facades: ${e.message}`); }
 }
 if (modelMode && facadeSpec) {
-  status('3D-моделі пам\'яток…');
+  status(t('st.models'), 0.3);
   try {
     models = await loadModels(city, facadeSpec, { renderer, version: VERSION, groundY });
     if (models) console.log(`Landmark models: ${models.stats.models} models, ${models.stats.tris} triangles, ${models.stats.ms} ms`);
   } catch (e) { console.warn(`landmark models: ${e.message}`); }
 }
 // the tour card of a place shows who took the photos / made the scans of its building
-if (city.tour) for (const pl of Object.values(city.tour.places)) pl.credit = [creditLine(photos, pl.osm), modelCreditLine(models, pl.osm)].filter(Boolean).join(' · ');
-status(`Будую ${city.buildings.length} будинків…`);
+const placeCredits = () => { if (city.tour) for (const pl of Object.values(city.tour.places)) pl.credit = [creditLine(photos, pl.osm), modelCreditLine(models, pl.osm)].filter(Boolean).join(' · '); };
+placeCredits();   // the photo / scan credits of the landmark cards (in the language of the interface; redone on a language change)
+status(t('st.build', { n: city.buildings.length }), 0.36);
 await new Promise((r) => setTimeout(r, 0));
 const t0 = performance.now();
 // ?mask=0: ground drawn under the roads too (the 0.10.2 look), for A/B comparison
@@ -282,6 +301,7 @@ const hudIn3D = !IS_PHONE;
 tuk.dashboard.mesh.visible = hudIn3D;
 const marker = new StopMarker(scene);
 const tourists = new Tourists(scene, tuk.group, SEATS, groundY);
+const driver = new Driver(tuk.group, tuk.handlebar);   // the figure at the handlebar (src/game/driver.js): the racer in Crazy Tuk, the taxi driver otherwise
 const hud = new DesktopHud(minimap);
 let mapOn = loadSetting('minimap', true) !== false;
 let gameMode = benchOn ? 'free' : ['free', 'tour', 'arcade'].includes(params.get('mode')) ? params.get('mode') : loadSetting('mode', 'tour');
@@ -299,16 +319,39 @@ let frameTag = '';   // what happened in this frame (gate, hit, drift...), for t
 const arcadeSound = new ArcadeSound(horn);
 // the CC BY works among the sounds must be credited (name, author, link, licence): a line in the credits at the bottom and in the phone menu
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const soundAttribution = () => { const a = arcadeSound.attribution; return a.length ? 'Звуки: ' + a.map((x) => `«${esc(x.title)}», ${esc(x.author)}, <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.license)}</a>`).join('; ') : ''; };
+// Crazy Tuk's one-line facts in the language of the interface (arcade-facts.json has uk / en / es)
+const factsOf = (lang) => (arcadeFacts ? arcadeFacts[lang] || arcadeFacts.uk : null);
+const tourTitleOf = (tr) => (BUILTIN_TITLES[tr.id] ? BUILTIN_TITLES[tr.id] : { uk: tr.title || tr.id, en: tr.title_en || tr.title || tr.id });
+// data/tour.json in the language of the interface: the place titles (title_en), the reviews (reviews_en), the tour titles; the facts that are
+// still placeholders ("ЗАГЛУШКА") become the approved one-line facts of arcade-facts.json, the placeholder intro / outro generic lines
+function localizedSpec() {
+  if (!tourSpec) return null;
+  const lang = getLang(), facts = factsOf(lang), places = {};
+  const isStub = (v) => !v || /^(ЗАГЛУШКА|PLACEHOLDER)/.test(Array.isArray(v) ? v[0] || '' : v);
+  for (const [id, pl] of Object.entries(tourSpec.places)) {
+    const title = lang === 'en' ? pl.title_en || pl.title : pl.title;
+    const fact = isStub(pl.fact) ? (facts && facts[id]) || '' : lang === 'en' && pl.fact_en ? pl.fact_en : pl.fact;
+    places[id] = { ...pl, title, fact };
+  }
+  const tours = tourSpec.tours.map((tr) => {
+    const stops = tr.route.filter((r) => r.stop).map((r) => places[r.stop] && places[r.stop].title).filter(Boolean).join(', ');
+    const intro = isStub(tr.intro) ? t('tour.intro', { stops }) : lang === 'en' && tr.intro_en ? tr.intro_en : tr.intro;
+    const outro = isStub(tr.outro) ? t('tour.outro') : lang === 'en' && tr.outro_en ? tr.outro_en : tr.outro;
+    return { ...tr, title: pick(tourTitleOf(tr)), intro, outro };
+  });
+  const reviews = lang === 'en' && tourSpec.reviews_en ? tourSpec.reviews_en : tourSpec.reviews;
+  return { ...tourSpec, places, tours, reviews };
+}
+const soundAttribution = () => { const a = arcadeSound.attribution; return a.length ? t('credit.sounds') + a.map((x) => `«${esc(x.title)}», ${esc(x.author)}, <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.license)}</a>`).join('; ') : ''; };
 arcadeSound.init(VERSION).then(() => { const line = soundAttribution(), at = document.getElementById('attr'); if (line && at) at.insertAdjacentHTML('beforeend', `<br>${line}`); });   // the sound files of assets/audio (manifest.json); none yet = silent
-const arcadeHud = createArcadeHud({ onAgain: () => startArcade(), onTour: () => setGameMode('tour'), bookLink: bookingLink('uk'), showSpeed: !IS_PHONE,
-  onBookMissing: () => flash('Номер WhatsApp ще не вписано (src/config.js)', 4, '#ff9f43') });
+const arcadeHud = createArcadeHud({ onAgain: () => startArcade(), onTour: () => setGameMode('tour'), bookLink: bookingLink(getLang()), showSpeed: !IS_PHONE,
+  onBookMissing: () => flash(t('msg.whatsapp'), 4, '#ff9f43') });
 const trail = []; let trailLast = null;   // where the tuk-tuk has been during the tour (grey line on the full map)
 
 const buildMs = performance.now() - t0;
 console.log(`City built in ${buildMs.toFixed(0)} ms`, cityStats, `collision edges: ${world.edgeCount}`);
 // compile the shaders now (loading screen), not in the first frame
-status('Компілюю шейдери…');
+status(t('st.shaders'), 0.86);
 await new Promise((r) => setTimeout(r, 0));
 const tc0 = performance.now();
 renderer.compile(scene, camera);
@@ -398,8 +441,8 @@ function flash(text, seconds = 2, color = '#ffd166') { flashText = text; flashT 
 
 // ---------- tour control ----------
 function startTour() {
-  if (!tourSpec || !graph) { tour = null; flash(tourError || 'Тур недоступний', 5, '#ff7a5c'); return false; }
-  try { tour = new Tour(tourSpec, city.tour, graph, tourId); } catch (e) {
+  if (!tourSpec || !graph) { tour = null; flash(tourError || t('msg.tourUnavailable'), 5, '#ff7a5c'); return false; }
+  try { tour = new Tour(localizedSpec(), city.tour, graph, tourId); } catch (e) {
     tour = null; tourError = `Тур: ${e.message}`; flash(tourError, 6, '#ff7a5c'); console.warn(tourError); return false;
   }
   const cands = tour.spawnCandidates();
@@ -407,7 +450,7 @@ function startTour() {
   phys.teleport(spawn.x, spawn.z, spawn.heading);
   trail.length = 0; trailLast = null;
   tourists.setup(tour.group, tour.groupPos, tour.groupFacing);
-  tourists.visible = true;
+  tourists.visible = true; driver.setLook('taxi');
   lookYaw = 0; lookPitch = 0;
   if (touch) touch.resetLook();
   return true;
@@ -418,10 +461,10 @@ let driveG = null;
 const getDrive = () => driveG || (driveG = driveGraph(city, driveDropped));   // the streets a tuk-tuk can drive (for the stay-on-road levels)
 const arcadeBestKey = () => `arcade.best.${run ? run.level.id : levelId}`;
 function startArcade() {
-  if (!tourSpec || !graph) { flash(tourError || 'Тур недоступний', 5, '#ff7a5c'); return false; }
+  if (!tourSpec || !graph) { flash(tourError || t('msg.tourUnavailable'), 5, '#ff7a5c'); return false; }
   const level = trialLevel || levelById(levelId);
-  if (!level) { flash('Crazy Tuk: рівень не знайдено', 5, '#ff7a5c'); return false; }
-  try { run = new Arcade(level, { places: city.tour.places, spec: tourSpec, graph, drive: level.type === 'stay-on-road' ? getDrive() : null }, { facts: arcadeFacts && arcadeFacts.uk, useRoute: false }); run.trial = !!trialLevel; run.estimatePar(); } catch (e) {
+  if (!level) { flash(t('msg.levelNotFound'), 5, '#ff7a5c'); return false; }
+  try { run = new Arcade(level, { places: city.tour.places, spec: localizedSpec(), graph, drive: level.type === 'stay-on-road' ? getDrive() : null }, { facts: factsOf(getLang()), useRoute: false }); run.trial = !!trialLevel; run.estimatePar(); } catch (e) {
     run = null; flash(`Crazy Tuk: ${e.message}`, 6, '#ff7a5c'); console.warn(e); return false;
   }
   tour = null; tourists.dispose();
@@ -437,7 +480,7 @@ function startArcade() {
   runCountdown = 3.2;
   arcadeHud.hideSummary(); arcadeHud.show(true); arcadeHud.setCountdown(3);
   arcadeSound.setOn(true); arcadeSound.setSection('menu');
-  { const fx = -Math.sin(phys.heading), fz = -Math.cos(phys.heading); tourists.setup(2, [phys.x, phys.z], [fx, fz]); tourists.live = true; tourists.seatAll(); tourists.visible = true; }   // two passengers on the back seat who feel the ride
+  { const fx = -Math.sin(phys.heading), fz = -Math.cos(phys.heading); tourists.setup(2, [phys.x, phys.z], [fx, fz], 2); tourists.live = true; driver.setLook('racer'); tourists.seatAll(); tourists.visible = true; }   // two passengers on the back seat who feel the ride
   if (params.get('smash') !== '0') {
     if (!smash) smash = new Smashables(scene, groundY);
     const frac = parseFloat(params.get('smash')), all = arcadeSmash[run.level.id] || [];   // ?smash=0.5: half of the things (the frame-rate test: fewer or none)
@@ -453,7 +496,7 @@ function leaveArcade() {
   if (!run && phys.T === TUNING) return;
   run = null; phys.T = TUNING; phys.hit = null; phys.nitro.charge = 1; phys.nitro.active = false;
   arcadeHud.show(false); arcadeSound.setOn(false);
-  tourists.live = false; tourists.dispose();
+  tourists.live = false; tourists.dispose(); driver.setLook('taxi');
   if (smash) smash.enable(false);
   if (arcadeFx) arcadeFx.enable(false);
   if (touch) touch.setArcade(false);
@@ -480,19 +523,19 @@ function handleRunEvents() {
   for (const ev of run.events) {
     frameTag += `${ev.type}${ev.kind ? ':' + ev.kind : ''} `;
     // an exact gate: the cheer, or the scream while there is no cheer file
-    if (ev.type === 'gate') { if (arcadeFx) { arcadeFx.beacon.flash(run.gates[ev.index], ev.kind, groundY(run.gates[ev.index].p[0], run.gates[ev.index].p[1])); arcadeHud.flashScreen(); } arcadeHud.flashGate(ev); arcadeHud.bonusTime(ev.time); arcadeSound.gate(ev.kind); if (ev.kind !== 'missed') buzz(40); if (ev.kind === 'exact') passengers('cheer', 1.5, arcadeSound.has('tourist.cheer') ? 'cheer' : 'scream'); else if (ev.kind === 'good') passengers('laugh'); }
-    else if (ev.type === 'hit') { arcadeHud.flashText(ev.burnt > 0.5 ? `Удар! −${euroWhole(ev.burnt)}` : 'Удар!'); passengers('gasp'); }
-    else if (ev.type === 'offRoad') { arcadeHud.flashText(ev.on ? 'З дороги!' : 'Знову на дорозі', ev.on ? '#ff5a3c' : '#9be08a'); if (ev.on) { buzz(60); arcadeSound.play('hit.light', {}, 0.3); passengers('gasp', 2.5); } }
-    else if (ev.type === 'nearMiss') { arcadeHud.pop(`Майже зачепив! +${euroWhole(ev.tips)}${run.combo > 1 ? ' · ×' + run.combo : ''}`, '#9fe0ff'); arcadeSound.play('nearmiss', {}, 0.4); passengers(Math.random() < 0.5 ? 'gasp' : 'laugh', 2.5); }
-    else if (ev.type === 'drift') { arcadeHud.pop(`Дрифт ${ev.secs.toFixed(1)} с! +${euroWhole(ev.tips)}${run.combo > 1 ? ' · ×' + run.combo : ''}`, '#ffb36b'); arcadeSound.play('drift.end', {}, 0.4); passengers(ev.secs > 2 ? 'scream' : 'laugh'); }
+    if (ev.type === 'gate') { if (arcadeFx) { arcadeFx.beacon.flash(run.gates[ev.index], ev.kind, groundY(run.gates[ev.index].p[0], run.gates[ev.index].p[1])); arcadeHud.flashScreen(); } arcadeHud.flashGate(ev); arcadeHud.bonusTime(ev.time); arcadeSound.gate(ev.kind); if (ev.kind === 'exact') driver.cheer(); else if (ev.kind === 'missed') driver.shake(); else driver.nod(); if (ev.kind !== 'missed') buzz(40); if (ev.kind === 'exact') passengers('cheer', 1.5, arcadeSound.has('tourist.cheer') ? 'cheer' : 'scream'); else if (ev.kind === 'good') passengers('laugh'); }
+    else if (ev.type === 'hit') { arcadeHud.flashText(ev.burnt > 0.5 ? t('ev.hitBurn', { v: euroWhole(ev.burnt) }) : t('ev.hit')); passengers('gasp'); driver.hit(ev.impact / 8); }
+    else if (ev.type === 'offRoad') { arcadeHud.flashText(t(ev.on ? 'ev.offRoadOn' : 'ev.offRoadOff'), ev.on ? '#ff5a3c' : '#9be08a'); if (ev.on) { buzz(60); arcadeSound.play('hit.light', {}, 0.3); passengers('gasp', 2.5); driver.shake(); } }
+    else if (ev.type === 'nearMiss') { arcadeHud.pop(t('ev.nearMiss', { v: euroWhole(ev.tips) }) + (run.combo > 1 ? ' · ×' + run.combo : ''), '#9fe0ff'); arcadeSound.play('nearmiss', {}, 0.4); passengers(Math.random() < 0.5 ? 'gasp' : 'laugh', 2.5); }
+    else if (ev.type === 'drift') { arcadeHud.pop(t('ev.drift', { s: ev.secs.toFixed(1), v: euroWhole(ev.tips) }) + (run.combo > 1 ? ' · ×' + run.combo : ''), '#ffb36b'); arcadeSound.play('drift.end', {}, 0.4); passengers(ev.secs > 2 ? 'scream' : 'laugh'); }
     else if (ev.type === 'combo' && ev.combo >= 3) { arcadeSound.play('combo', {}, 1); }
-    else if (ev.type === 'stuck') { resetToRoad(); comfort.flashBlack(0.25); arcadeHud.flashText('Назад на дорогу −3 с'); arcadeHud.bonusTime(-3); }
+    else if (ev.type === 'stuck') { resetToRoad(); comfort.flashBlack(0.25); arcadeHud.flashText(t('ev.stuck')); arcadeHud.bonusTime(-3); }
     else if (ev.type === 'finish') {
       const r = ev.result, b = loadSetting(arcadeBestKey(), null);
       const isRecord = !run.trial && (!b || r.tips > b.tips);
       if (isRecord) saveSetting(arcadeBestKey(), { tips: r.tips, stars: r.stars, time: Math.round(r.time) });
       updateBestLabel();
-      arcadeHud.summary(r, { gates: run.gates.map((g, i) => ({ title: g.title, text: g.short, kind: run.results[i] })), best: b, isRecord, tourTitle: (run.trial ? 'Пробний заїзд · ' : '') + levelTitle(run.level) });
+      arcadeHud.summary(r, { gates: run.gates.map((g, i) => ({ title: g.title, text: g.short, kind: run.results[i] })), best: b, isRecord, tourTitle: (run.trial ? t('sum.trial') : '') + levelTitle(run.level, getLang()) });
       if (window.__onArcadeFinish) window.__onArcadeFinish(r);
     }
   }
@@ -502,8 +545,7 @@ function handleRunEvents() {
 function setGameMode(mode) {
   gameMode = mode;
   saveSetting('mode', mode);
-  $('mode').value = mode;
-  if (mode === 'arcade') { if (!startArcade()) { gameMode = 'free'; $('mode').value = 'free'; } }
+  if (mode === 'arcade') { if (!startArcade()) gameMode = 'free'; }
   else if (mode === 'tour') { leaveArcade(); if (inVR) comfort.fadeIn(0.35); startTour(); }
   else {
     leaveArcade();
@@ -517,12 +559,12 @@ function setGameMode(mode) {
 function tourButton() {
   if (run) {   // T / the menu in Crazy Tuk: once more (a second press within 2 s while the run is on)
     if (run.done || clock.t - runRestartAt < 2) startArcade();
-    else { runRestartAt = clock.t; flash('Натисни ще раз — забіг заново', 2); }
+    else { runRestartAt = clock.t; flash(t('msg.againRun'), 2); }
     return;
   }
   if (!tour) {
     if (clock.t - freeConfirm < 2) setGameMode('tour');
-    else { freeConfirm = clock.t; flash('Натисни ще раз — почати тур', 2); }
+    else { freeConfirm = clock.t; flash(t('msg.againTour'), 2); }
     return;
   }
   if (tour.action()) { if (inVR) comfort.fadeIn(0.35); startTour(); }
@@ -537,6 +579,7 @@ function handleTourEvents() {
     else if (ev.type === 'dropoff') tourists.dropOff(tour.start.look);
     else if (ev.type === 'summary') saveBest(tour.result);
     else if (ev.type === 'oy') shout(horn, tour.group);
+    else if (ev.type === 'stop') { const pl = city.tour.places[ev.id]; if (pl) { const side = tuk.group.worldToLocal(tmpV.set(pl.look ? pl.look[0] : pl.p[0], 0, pl.look ? pl.look[1] : pl.p[1])).x < 0 ? -1 : 1; driver.point(side, 1.6); } }   // the guide shows the landmark
   }
   tour.events = [];
 }
@@ -548,26 +591,29 @@ function saveBest(r) {
   if (better) saveSetting(bestKey(), { stars: r.stars, tips: r.tips, time: Math.round(r.time) });
   updateBestLabel();
 }
-function bestText(b) { return b ? `Найкраще: ${'★'.repeat(b.stars)}${'☆'.repeat(5 - b.stars)} · ${euro(b.tips)} · ${fmtClock(b.time)}` : ''; }
-function updateBestLabel() {
-  const el = $('best'); if (!el) return;
-  if (gameMode === 'arcade') { const b = loadSetting(arcadeBestKey(), null); el.textContent = b ? `Рекорд Crazy Tuk: ${euroWhole(b.tips)} · ${'★'.repeat(b.stars)}${'☆'.repeat(5 - b.stars)} · ${fmtClock(b.time)}` : 'Crazy Tuk: рекорду ще немає'; }
-  else el.textContent = gameMode === 'tour' ? bestText(loadSetting(bestKey(), null)) : '';
+const starsOf = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
+function bestText(b) { return b ? t('best.text', { stars: starsOf(b.stars), v: euro(b.tips), t: fmtClock(b.time) }) : ''; }
+function bestLine(b) { return b ? `${euro(b.tips)} · ${starsOf(b.stars)} · ${fmtClock(b.time)}` : ''; }   // the record without the word in front (the tour summary, the title screen)
+function updateBestLabel() { title.refresh(); }
+// the record line of the title screen: the Crazy Tuk record of the chosen level, else the tour's
+function titleBest() {
+  const b = loadSetting(`arcade.best.${levelId}`, null), lv = levelById(levelId);
+  if (b) return `🏆 ${t('title.best')}: ${euroWhole(b.tips)} · ${starsOf(b.stars)} · ${fmtClock(b.time)} · ${lv ? levelTitle(lv, getLang()) : ''}`;
+  return t('best.noneShort');
 }
-const fmtDist = (d) => (d < 1000 ? `${Math.round(d / 10) * 10} м` : `${(d / 1000).toFixed(1)} км`);
-const EVENT_NAMES = { brake: 'різке гальмування', emergency: 'екстрене гальмування', turn: 'швидкий поворот', danger: 'небезпечний поворот', touch: 'дотик до стіни', hit: 'удар', hitHard: 'сильний удар', scrape: 'шкрябання', nearPeople: 'швидко біля людей', reset: 'повернення на дорогу', leftEarly: 'поїхав під час фото' };
+const fmtDist = (d) => (d < 1000 ? `${Math.round(d / 10) * 10} ${t('hud.m')}` : `${(d / 1000).toFixed(1)} ${t('hud.km')}`);
 // what the dashboard and the desktop HUD show for the tour (null in free ride)
 function tourPanel() {
   if (!tour) return null;
   const T = tour, st = T.state, btn = inVR ? 'Y' : touch ? null : 'T';
   if (st === 'summary') {
     const r = T.result;
-    const ev = Object.entries(r.counts).filter(([, n]) => n > 0).map(([k, n]) => `${EVENT_NAMES[k] || k} ×${n}`).join(', ');
+    const ev = Object.entries(r.counts).filter(([, n]) => n > 0).map(([k, n]) => `${t('ev.s.' + k)} ×${n}`).join(', ');
     return {
       mode: 'summary', stars: r.stars, tips: r.tips, time: r.time, target: r.target, onTime: r.onTime,
-      events: `Настрій ${r.mood} %${ev ? ': ' + ev : ' — жодної різкої події!'}${r.passCount ? ` · факти на ходу ${r.passes}/${r.passCount}` : ''}`,
-      review: r.reviewText, best: r.prevBest ? `Було найкраще: ${bestText(r.prevBest).replace('Найкраще: ', '')}` : 'Перший результат збережено',
-      footer: btn ? `${btn} — новий тур` : 'Новий тур — кнопкою внизу',
+      events: t('tour.moodEvents', { m: r.mood, ev: ev ? ': ' + ev : t('tour.noEvents') }) + (r.passCount ? t('tour.passes', { a: r.passes, b: r.passCount }) : ''),
+      review: r.reviewText, best: r.prevBest ? t('tour.wasBest', { v: bestLine(r.prevBest) }) : t('tour.firstSaved'),
+      footer: btn ? t('tour.newTourBtn', { btn }) : t('tour.newTourBelow'),
     };
   }
   if (T.card && (st === 'photo' || st === 'afterPhoto')) {
@@ -576,11 +622,11 @@ function tourPanel() {
   const tg = T.target;
   const d = tg ? Math.hypot(tg.x - phys.x, tg.z - phys.z) : 0;
   if (st === 'waiting' || st === 'boarding') {
-    return { mode: 'drive', line1: `Посадка · ${T.def.title}`, title: `Туристи чекають: ${T.start.title}`, line3: fmtDist(d), dial: true, group: T.group,
-      hint: st === 'boarding' ? 'Туристи сідають…' : 'Під\x27їдь повільно й зупинись у жовтій зоні', text: T.text };
+    return { mode: 'drive', line1: t('tour.boardingLine', { v: T.def.title }), title: t('tour.waiting', { v: T.start.title }), line3: fmtDist(d), dial: true, group: T.group,
+      hint: t(st === 'boarding' ? 'tour.seating' : 'tour.approach'), text: T.text };
   }
-  if (!tg) return { mode: 'drive', line1: T.def.title, title: 'Туристи виходять…', line3: '', mood: T.mood, tips: T.tipsEstimate, group: T.group, text: T.text };
-  const line1 = tg.kind === 'pass' ? `Факт на ходу · зупинка ${T.stopIndex}/${T.stopCount} далі` : tg.kind === 'finish' ? 'Фініш — назад до готелю' : `Зупинка ${T.stopIndex}/${T.stopCount}`;
+  if (!tg) return { mode: 'drive', line1: T.def.title, title: t('tour.leaving'), line3: '', mood: T.mood, tips: T.tipsEstimate, group: T.group, text: T.text };
+  const line1 = tg.kind === 'pass' ? t('tour.factAhead', { a: T.stopIndex, b: T.stopCount }) : tg.kind === 'finish' ? t('tour.finishLine') : t('tour.stop', { a: T.stopIndex, b: T.stopCount });
   return { mode: 'drive', line1, title: tg.title, line3: `${fmtDist(d)} · ⏱ ${fmtClock(T.clock)} / ${fmtClock(T.targetTime)}`,
     mood: T.mood, tips: T.tipsEstimate, group: T.group, dial: true, text: T.text };
 }
@@ -599,7 +645,7 @@ renderer.xr.addEventListener('sessionstart', () => {
   xrRig.recenter();
   comfort.blackout(); // black until the head pose is known, then fade in
   horn.unlock();
-  $('overlay').style.display = 'none';
+  title.show(false);
   // the system recentre (holding the Meta button) resets the reference space: recentre the seat too
   const space = renderer.xr.getReferenceSpace();
   if (space && space.addEventListener) space.addEventListener('reset', () => xrRig.recenter());
@@ -623,7 +669,7 @@ renderer.xr.addEventListener('sessionend', () => {
   applyFov();
   renderer.setSize(innerWidth, innerHeight);
   comfort.fade = 0;
-  $('overlay').style.display = 'flex';
+  title.show(true);
 });
 
 // ---------- stats / FPS ----------
@@ -652,7 +698,7 @@ const fullMap = createFullMap({
 function tryLevel(lv) {   // the editor's test drive: this level, no record; restarts replay it until another level is chosen
   trialLevel = lv;
   if (gameMode === 'arcade') startArcade(); else setGameMode('arcade');
-  flash('Пробний заїзд. Назад до редактора: меню ≡ → «Редактор рівнів» (на ПК: клавіша E)', 6, '#9fe0ff');
+  flash(t('msg.trial'), 6, '#9fe0ff');
 }
 // the sound lab (menu ≡ -> «Звуки», PC: L): the candidates of assets/audio-cand, only on the owner's device (the editor key)
 if (editorOn) {
@@ -664,7 +710,7 @@ if (editorOn) {
 }
 if (editorOn && tourSpec && graph) {
   levelEditor = createLevelEditor({
-    fullMap, graph, places: city.tour.places, spec: tourSpec, facts: arcadeFacts && arcadeFacts.uk,
+    fullMap, graph, places: city.tour.places, spec: tourSpec, facts: arcadeFacts && arcadeFacts.uk,   // the editor stays Ukrainian (the owner's tool)
     drive: getDrive(), clear: (x, z, r) => world.penetration(x, z, r) === 0,
     builtin: () => builtinLevels, mine: mineLevels,
     saveMine: (list) => saveMine(list), tryLevel, getTuk: () => ({ x: phys.x, z: phys.z, heading: phys.heading }),
@@ -672,7 +718,7 @@ if (editorOn && tourSpec && graph) {
       mineLevels = list; rebuildLevels();
       if (trialLevel && lv && trialLevel.id === lv.id) trialLevel = lv;
       if (!levelById(levelId)) levelId = levels[0] ? levels[0].id : null;
-      fillLevelSel();
+      title.refresh();
     },
   });
   addEventListener('keydown', (e) => {
@@ -687,23 +733,20 @@ const arcadeCam = new ArcadeCam();
 let smash = null;   // the smashable street things (src/game/smashables.js); ?smash=0 switches them off (an A/B for the frame rate)
 let arcadeFx = null;   // the beacon, the arrow and the drift effects: built on the first Crazy Tuk run
 const chasePos = new THREE.Vector3(), chaseLook = new THREE.Vector3(), tmpV = new THREE.Vector3();
-function setTilt(level) { tilt = level; saveSetting('tilt', level.id); $('tilt').value = level.id; }
-function cycleTilt() { setTilt(TILT_LEVELS[(TILT_LEVELS.indexOf(tilt) + 1) % TILT_LEVELS.length]); flash(`Нахил кабіни: ${tilt.label}`); }
+function setTilt(level) { tilt = level; saveSetting('tilt', level.id); }
+function cycleTilt() { setTilt(TILT_LEVELS[(TILT_LEVELS.indexOf(tilt) + 1) % TILT_LEVELS.length]); flash(t('msg.tilt', { v: t(tilt.label) })); }
 
 function toggleStats() { showStats = !showStats; tuk.dashboard.showFps = showStats; dashTimer = 0; }
 function nextStress() {
   stress = STRESS_LEVELS[(STRESS_LEVELS.indexOf(stress) + 1) % STRESS_LEVELS.length] || 1;
   showStats = tuk.dashboard.showFps = true;
-  flash(stress > 1 ? `Навантаження ×${stress}` : 'Навантаження вимкнено');
+  flash(stress > 1 ? t('msg.stress', { n: stress }) : t('msg.stressOff'));
 }
 function setSteeringMode(mode) {
   steeringMode = mode;
   saveSetting('steering', mode);
-  $('steering').value = mode;
 }
-const modeHint = () => (steeringMode === 'hands'
-  ? 'Затисни обидва grip — кермо, крути праву ручку — газ'
-  : 'Газ — правий тригер, гальмо — лівий');
+const modeHint = () => t(steeringMode === 'hands' ? 'vr.hintHands' : 'vr.hintStick');
 // Drop to 72 Hz once if the headset cannot hold its current rate (plan: steady 72 beats jittery 80-90).
 function autoFrameRate(now) {
   fpsWindow.frames++;
@@ -716,20 +759,19 @@ function autoFrameRate(now) {
   if (!s || !s.updateTargetFrameRate || !rates || !Array.from(rates).includes(72) || !(s.frameRate > 73)) return;
   if (fps < 86) {
     autoHzDone = true;
-    s.updateTargetFrameRate(72).then(() => flash(`Частота 72 Гц (було ${fps.toFixed(0)} FPS)`, 4)).catch(() => {});
+    s.updateTargetFrameRate(72).then(() => flash(t('msg.hz', { v: fps.toFixed(0) }), 4)).catch(() => {});
   }
 }
 function cycleVignette() {
   const level = comfort.cycleLevel();
-  $('vignette').value = level.id;
-  flash(`Віньєтка: ${level.label}`);
+  flash(t('msg.vignette', { v: t(level.label) }));
 }
 
 function frame(now, xrFrame) {
   frameStats.raf(now);
   if (!inVR) {
     // phone held upright: the game waits (and the measuring clocks stop); frame limiter: skipped frames cost nothing
-    if ((rotateGuard && rotateGuard.portrait) || paused) { last = now; frameStats.pause(); return; }
+    if ((rotateGuard && rotateGuard.portrait && !title.isOpen) || paused) { last = now; frameStats.pause(); return; }
     if (!frameCap.allow(now)) return;
   }
   const cpuStart = performance.now();
@@ -749,11 +791,12 @@ function frame(now, xrFrame) {
   input.reverseDelay = undefined;
   keys.read(frameDt, input);
   if (touch) touch.read(frameDt, input);
+  if (title.isOpen && !inVR) { input.throttle = 0; input.brake = 1; input.steer = 0; input.handbrake = false; input.nitro = false; input.horn = false; input.reverseDelay = Infinity; }   // the title: the tuk-tuk stands
 
   if (inVR) {
     if (xrRig.update(xrFrame)) {
       comfort.fadeIn(firstRecenter ? 0.5 : 0.25);
-      if (!firstRecenter) flash('Сидіння відцентровано');
+      if (!firstRecenter) flash(t('msg.recentered'));
       else flash(modeHint(), 5);
       firstRecenter = false;
     }
@@ -766,7 +809,7 @@ function frame(now, xrFrame) {
     if (act.reset) { resetToRoad(); comfort.fadeIn(0.3); }
     if (act.mode) {
       setSteeringMode(steeringMode === 'hands' ? 'stick' : 'hands');
-      flash(steeringMode === 'hands' ? 'Кермо: руки (затисни обидва grip)' : 'Кермо: стік');
+      flash(t(steeringMode === 'hands' ? 'msg.steerHands' : 'msg.steerStick'));
     }
     autoFrameRate(now);
   }
@@ -819,19 +862,19 @@ function frame(now, xrFrame) {
   let nitroStarted = false;
   if (phys.nitro.uses > nitroUses) {
     nitroUses = phys.nitro.uses; nitroStarted = true;
-    if (!tour && !run) flash(`НІТРО! до ${TUNING.nitroMaxKmh} км/год`, 1.5, '#ff9f43');
+    if (!tour && !run) flash(t('msg.nitroTo', { v: TUNING.nitroMaxKmh }), 1.5, '#ff9f43');
     if (run) { arcadeSound.play('nitro.start'); passengers('scream', 3, null); }   // nitro: the passengers flinch, but no scream (the owner: it sounds awful there)
     if (inVR) xrIn.pulse('right', 0.5, 120); else buzz(70);
   } else if (nitroPress && !phys.nitro.active && !run) {
-    if (phys.nitro.charge < 1) flash(`Нітро заряджається: ${Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge)} с`, 1.5, '#9fb3c8');
-    else if (phys.forwardSpeed < TUNING.nitroMinSpeed) flash('Нітро — лише коли їдеш уперед', 1.5, '#9fb3c8');
+    if (phys.nitro.charge < 1) flash(t('msg.nitroCharge', { s: Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge) }), 1.5, '#9fb3c8');
+    else if (phys.forwardSpeed < TUNING.nitroMinSpeed) flash(t('msg.nitroForward'), 1.5, '#9fb3c8');
   }
   // a hard wall hit at speed: a short blackout and back onto the road, no camera jolt
   if (phys.crash) {
     phys.crash = false;
     comfort.flashBlack(0.3);
     resetToRoad();
-    flash('Удар! Назад на дорогу', 2.5, '#ff7a5c');
+    flash(t('msg.hitReset'), 2.5, '#ff7a5c');
     if (inVR) xrIn.pulse('both', 1, 160); else buzz(140);
   }
   if (inVR && Math.max(impact, verge) > 1.5) {
@@ -876,7 +919,7 @@ function frame(now, xrFrame) {
         if (hit.some((h) => h.t === 't')) passengers('laugh', 2.5);
       }
     } else if (smash) smash.update(frameDt, phys.x, phys.z, phys.heading, 0, 0);
-    if (smashPop.n && (smashPop.t -= frameDt) <= 0) { arcadeHud.pop(`Розбито${smashPop.n > 1 ? ' ×' + smashPop.n : ''}! +${euroWhole(smashPop.tips)}${run.combo > 1 ? ' · ×' + run.combo : ''}`, '#ffe27a'); smashPop.n = smashPop.tips = 0; }
+    if (smashPop.n && (smashPop.t -= frameDt) <= 0) { arcadeHud.pop(t('ev.smashed', { x: smashPop.n > 1 ? ' ×' + smashPop.n : '', v: euroWhole(smashPop.tips) }) + (run.combo > 1 ? ' · ×' + run.combo : ''), '#ffe27a'); smashPop.n = smashPop.tips = 0; }
     handleRunEvents();
     if (arcadeFx) arcadeFx.setGate(run, groundY);
     arcadeSound.setSection(run.state === 'running' ? 'drive' : 'menu');
@@ -887,10 +930,13 @@ function frame(now, xrFrame) {
   if (tour) {
     tour.update({ dt: frameDt, x: phys.x, z: phys.z, speed: phys.forwardSpeed, accel: phys.accel, yawRate: phys.yawRate,
       brake: input.brake, reversing: phys.reversing, impact, contact: phys.contactTimer > 0, handbrake: input.handbrake, grade: phys.grade });
-    if (nitroStarted && !tour.onNitro()) flash(`НІТРО! до ${TUNING.nitroMaxKmh} км/год`, 1.5, '#ff9f43');
+    if (nitroStarted && !tour.onNitro()) flash(t('msg.nitroTo', { v: TUNING.nitroMaxKmh }), 1.5, '#ff9f43');
     handleTourEvents();
   }
   tourists.update(frameDt);
+  driver.setRide(phys.yawRate * phys.forwardSpeed, phys.accel, Math.abs(phys.forwardSpeed) * 3.6, phys.slip || 0, phys.nitro.active);
+  driver.setBodyVisible(!inVR && (camMode !== 'cockpit' || title.isOpen));   // the player sits there in VR and in the cockpit view
+  driver.update(frameDt, { held: { left: bars.leftHeld, right: bars.rightHeld } });
   camera.getWorldPosition(tmpV);
   for (const { m, c: cc, r } of cullable) m.visible = Math.hypot(cc.x - tmpV.x, cc.z - tmpV.z) - r < CULL_DIST;
   const zone = tour ? tour.zone : null;
@@ -918,7 +964,7 @@ function frame(now, xrFrame) {
   }
   mapTimer -= frameDt;
   if (run && !hudIn3D) minimap.radius += (150 + 250 * Math.max(0, Math.min(1, (phys.forwardSpeed - 16.7) / 25)) - minimap.radius) * (1 - Math.exp(-frameDt / 0.8));   // the phone map grows with the speed
-  if (mapTimer <= 0) { mapTimer = 0.1; hud.drawMap(!inVR && mapOn, x, z, h, run ? null : target, routeNow, run && !run.done ? { list: run.gates.slice(run.next).map((g) => ({ x: g.p[0], z: g.p[1] })), next: 0, vias: run.gate ? run.gate.vias.slice(run.viaI).map((v) => ({ x: v.p[0], z: v.p[1] })) : [] } : null); }
+  if (mapTimer <= 0) { mapTimer = 0.1; hud.drawMap(!inVR && mapOn && !title.isOpen, x, z, h, run ? null : target, routeNow, run && !run.done ? { list: run.gates.slice(run.next).map((g) => ({ x: g.p[0], z: g.p[1] })), next: 0, vias: run.gate ? run.gate.vias.slice(run.viaI).map((v) => ({ x: v.p[0], z: v.p[1] })) : [] } : null); }
 
   if (touch && touch.visible) { const l = touch.update(frameDt); lookYaw = l.yaw; lookPitch = l.pitch; touch.setSpeed(phys.forwardSpeed * 3.6); }
   if (inVR) {
@@ -928,7 +974,22 @@ function frame(now, xrFrame) {
   } else if (camMode === 'chase') {
     const h = tuk.group.rotation.y;
     const gy = groundY(x, z);
-    if (run) {
+    const showcase = (run && run.done) || (tour && (tour.state === 'summary' || tour.state === 'dropoff'));
+    if (showcase) {
+      if (!showcaseWas) { chasePos.copy(camera.position); chaseInit = true; }   // glide from wherever the camera is now
+      showcaseWas = true;
+      // after the finish: from the right side, a little ahead, looking at the cab: the driver and the passengers are seen (the pose of the mock-ups)
+      const fx = -Math.sin(h), fz = -Math.cos(h), rx = Math.cos(h), rz = -Math.sin(h);
+      tmpV.set(x + fx * 1.6 + rx * 3.1, gy + 1.9, z + fz * 1.6 + rz * 3.1);
+      tmpV.y = Math.max(tmpV.y, groundY(tmpV.x, tmpV.z) + 1.2);
+      if (!chaseInit) { chasePos.copy(tmpV); chaseInit = true; }
+      chasePos.lerp(tmpV, 1 - Math.exp(-frameDt * 2.5));
+      camera.position.copy(chasePos);
+      chaseLook.set(x - fx * 0.3, gy + 1.1, z - fz * 0.3);
+      camera.lookAt(chaseLook);
+      if (run && Math.abs(camera.fov - verticalFov(IS_PHONE ? 100 : 95, camera.aspect)) > 0.05) { camera.fov = verticalFov(IS_PHONE ? 100 : 95, camera.aspect); camera.updateProjectionMatrix(); }
+    } else if (run) {
+      if (showcaseWas) { showcaseWas = false; chaseInit = false; }
       // Crazy Tuk (src/game/arcadeCam.js): higher and farther with the speed, a wider view, the nitro shakes it lightly,
       // never inside the tuk-tuk and never behind a wall
       if (!chaseInit) { arcadeCam.reset(); chaseInit = true; }
@@ -940,6 +1001,7 @@ function frame(now, xrFrame) {
       const fovV = verticalFov((IS_PHONE ? 100 : 95) + c.fovAdd, camera.aspect);
       if (Math.abs(camera.fov - fovV) > 0.05) { camera.fov = fovV; camera.updateProjectionMatrix(); }
     } else {
+      if (showcaseWas) { showcaseWas = false; chasePos.copy(camera.position); }
       tmpV.set(Math.sin(h) * 7 + x, gy + 3.2, Math.cos(h) * 7 + z);
       tmpV.y = Math.max(tmpV.y, groundY(tmpV.x, tmpV.z) + 1.5);
       if (!chaseInit) { chasePos.copy(tmpV); chaseInit = true; }
@@ -949,6 +1011,21 @@ function frame(now, xrFrame) {
       camera.lookAt(chaseLook);
     }
   }
+  if (title.isOpen && !inVR && title.state === 'menu') {
+    // the live background of the title (the mock-up docs/img/mock-title-landscape-en.png): the tuk-tuk stands on the Explanada, the camera
+    // behind and to its right looks up the palm avenue towards the sea, swaying slowly; the tuk-tuk sits in the left part of the frame,
+    // clear of the buttons
+    if (camera.parent !== scene) scene.add(camera);   // the camera is free of the cab (the cockpit holder) while the title is up
+    titleAngle += frameDt;
+    const gy = groundY(x, z), th = tuk.group.rotation.y, fx = -Math.sin(th), fz = -Math.cos(th), rx = Math.cos(th), rz = -Math.sin(th);
+    const df = -8 + Math.sin(titleAngle * 0.37) * 0.6, dr = 2.6 + Math.sin(titleAngle * 0.5) * 1.0;
+    const cx = x + fx * df + rx * dr, cz = z + fz * df + rz * dr;
+    camera.position.set(cx, Math.max(gy + 3.2, groundY(cx, cz) + 1.4), cz);
+    camera.lookAt(x + fx * 12 + rx * 2.6, gy + 1.0, z + fz * 12 + rz * 2.6);
+    const fovT = verticalFov(IS_PHONE ? 78 : 68, camera.aspect);
+    if (Math.abs(camera.fov - fovT) > 0.05) { camera.fov = fovT; camera.updateProjectionMatrix(); }
+    if (!title.live) { title.setLive(true); title.live = true; }
+  } else if (title.live) { title.setLive(false); title.live = false; setCamMode(camMode); chaseInit = false; applyFov(); if (!IS_PHONE) { camera.fov = 72; camera.updateProjectionMatrix(); } }   // the PC cockpit's own field of view
   if (run && arcadeFx) {
     // gate beacon, arrow over the tuk-tuk, drift smoke and tyre marks (src/game/arcadeFx.js), after the camera moved
     const g = run.done ? null : run.gate, sliding = phys.slipSpeed > ARCADE.driftSmoke && phys.grip < 0.8 && Math.abs(phys.forwardSpeed) > 6;
@@ -980,9 +1057,9 @@ function frame(now, xrFrame) {
     dashTimer = 0.2;
     let msg = '', msgColor;
     if (flashT > 0) { msg = flashText; msgColor = flashColor; }
-    else if (phys.edgeDist < TUNING.edgeZone) msg = 'Повертайся до центру';
-    else if (bars.invalid) msg = 'Тримай руки по боках';
-    else if (steeringMode === 'hands' && inVR && bars.releasedFor > 1.5 && Math.abs(phys.forwardSpeed) > 1 && !xrIn.stickActive) msg = 'Візьмись за кермо (grip)';
+    else if (phys.edgeDist < TUNING.edgeZone) msg = t('vr.center');
+    else if (bars.invalid) msg = t('vr.hands');
+    else if (steeringMode === 'hands' && inVR && bars.releasedFor > 1.5 && Math.abs(phys.forwardSpeed) > 1 && !xrIn.stickActive) msg = t('vr.grab');
     const session = inVR && renderer.xr.getSession();
     const gpuMs = gpu.take(), cpuMs = cpu.n ? (cpu.ms = cpu.sum / cpu.n, cpu.sum = cpu.n = 0, cpu.ms) : cpu.ms;
     if (gpuMs != null) gpuLatest = gpuMs;
@@ -993,14 +1070,14 @@ function frame(now, xrFrame) {
       stats: showStats ? { fps: Math.round(perf.fps), calls: perf.calls, tris: perf.tris, hz: session && session.frameRate ? Math.round(session.frameRate) : 0,
         gpuMs: gpuMs == null ? null : Math.round(gpuMs * 10) / 10, cpuMs: cpuMs == null ? null : Math.round(cpuMs * 10) / 10, stress } : null,
     });
-    hud.update(!inVR, panel);
+    hud.update(!inVR && !title.isOpen, panel);
     if (phone) phone.update({ msg, msgColor, panel });
     if (touch && run) touch.setNitro({ state: phys.nitro.active ? 'active' : phys.nitro.charge > 0.05 ? 'ready' : 'charge', level: phys.nitro.charge, left: Math.round(phys.nitro.charge * 100) });
     else if (touch) touch.setNitro({ state: phys.nitro.active ? 'active' : phys.nitro.charge < 1 ? 'charge' : 'ready', level: phys.nitro.active ? 1 - phys.nitro.t / TUNING.nitroTime : phys.nitro.charge, left: Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge) });
     if (run) {
       const g = run.gate;
       arcadeHud.update({ timeLeft: run.timeLeft, pocket: run.pocket, stake: run.stake, combo: run.combo, kmh: phys.forwardSpeed * 3.6, card: run.card, off: run.off.on && run.state === 'running',
-        gateIndex: run.next, gateCount: run.gates.length, gateTitle: g ? (g.finish ? 'Фініш: ' + g.title : g.title) : '', gateDist: g ? Math.hypot(g.p[0] - phys.x, g.p[1] - phys.z) : null });
+        gateIndex: run.next, gateCount: run.gates.length, gateTitle: g ? (g.finish ? t('hud.finishGate', { v: g.title }) : g.title) : '', gateDist: g ? Math.hypot(g.p[0] - phys.x, g.p[1] - phys.z) : null });
     }
     dashMs = performance.now() - dashStart;
     debugEl.style.display = showStats && !inVR ? 'block' : 'none';
@@ -1018,68 +1095,83 @@ frameTag = '';
 const loadedAt = performance.now();   // since the navigation start: how long the whole loading took
 renderer.setAnimationLoop(frame);
 
-// ---------- start overlay ----------
-const startBtn = $('start');
-startBtn.disabled = false;
-startBtn.textContent = IS_PHONE ? 'Грати' : 'Грати (клавіатура)';
-status(`${city.buildings.length} будинків · ${city.roads.length} вулиць · зібрано за ${buildMs.toFixed(0)} мс${tiles ? ` · ${tiles.preview.facade.length + tiles.preview.ground.length + 1} плиток за ${tiles.ms.toFixed(0)} мс` : ' · без текстур'}${photos ? ` · ${photos.stats.photos} фото фасадів за ${photos.stats.ms} мс` : ''}${models ? ` · ${models.stats.models} 3D-модел${models.stats.models === 1 ? 'ь' : 'і'} за ${models.stats.ms} мс` : ''}`);
-// full screen and the landscape lock must be requested inside the tap itself (phone: phone.onStart)
-const start = (e) => { horn.unlock(); if (phone) phone.onStart({ gesture: !!(e && e.isTrusted) }); $('overlay').style.display = 'none'; renderer.domElement.focus(); };
-startBtn.addEventListener('click', start);
-
+// ---------- the title screen (src/ui/titleScreen.js, 0.19.0) ----------
+// The old start card is gone: the title shows Crazy Tuk (with the level), Real tour (with the tour), Free ride, Settings, Help, EN | UA.
+// While it is open the game stands at the hotel behind it and the camera circles the tuk-tuk (the live background, frame()).
 const vrButton = VRButton.createButton(renderer);
 vrButton.id = 'vrbutton';
-$('buttons').appendChild(vrButton);
-
-const select = $('vignette');
-for (const l of VIGNETTE_LEVELS) select.add(new Option(l.label, l.id));
-select.value = comfort.level.id;
-select.addEventListener('change', () => comfort.setLevel(VIGNETTE_LEVELS.find((l) => l.id === select.value)));
-$('steering').value = steeringMode;
-$('steering').addEventListener('change', () => setSteeringMode($('steering').value));
-for (const l of TILT_LEVELS) $('tilt').add(new Option(l.label, l.id));
-$('tilt').value = tilt.id;
-$('tilt').addEventListener('change', () => setTilt(TILT_LEVELS.find((l) => l.id === $('tilt').value) || TILT_LEVELS[0]));
-// game mode and tour (stage 6)
-const modeSel = $('mode'), tourSel = $('tourSel');
-for (const t of tourSpec?.tours || []) tourSel.add(new Option(t.title || t.id, t.id));
-tourSel.value = tourId;
-modeSel.value = gameMode;
-const levelSel = $('levelSel');
-const levelName = (l) => (l.mine ? '✎ ' : '') + levelTitle(l);
-function fillLevelSel() { levelSel.textContent = ''; for (const l of levels) levelSel.add(new Option(levelName(l), l.id)); levelSel.value = levelId || ''; }
-fillLevelSel();
-levelSel.addEventListener('change', () => setLevel(levelSel.value));
-// the Crazy Tuk level: chosen on the start screen (PC) or in the phone's menu; in a run it starts the level at once
+const levelName = (l) => (l.mine ? '✎ ' : '') + levelTitle(l, getLang());
+// the Crazy Tuk level: chosen on the title screen or in the phone's menu; in a run it starts the level at once
 function setLevel(id) {
   if (!levelById(id)) return false;
-  trialLevel = null; levelId = id; saveSetting('arcade.level', id); levelSel.value = id; updateBestLabel();
+  trialLevel = null; levelId = id; saveSetting('arcade.level', id); updateBestLabel();
   if (run) startArcade();
   return true;
 }
-const syncModeUi = () => { $('levelRow').style.display = gameMode === 'arcade' && !IS_PHONE ? '' : 'none'; $('tourLbl').style.display = tourSel.style.display = gameMode === 'arcade' ? 'none' : ''; vrButton.style.display = gameMode === 'arcade' ? 'none' : ''; $('manualGasRow').style.display = gameMode === 'arcade' && !IS_PHONE ? '' : 'none'; };
-modeSel.addEventListener('change', () => { setGameMode(modeSel.value); syncModeUi(); });
-// settings kept for every viewer: auto-gas (Crazy Tuk), sound, music (the phone's menu rows and these PC checkboxes use the same keys)
-function applyAutoGas() { $('autoGas').checked = !manualGas(); if (touch && run) touch.setAutoGas(!manualGas()); }
+function setTour(id) {
+  if (!tourSpec || !tourSpec.tours.some((t) => t.id === id)) return false;
+  tourId = id; saveSetting('tourId', id); if (gameMode === 'tour') startTour(); updateBestLabel();
+  return true;
+}
+// settings kept for every viewer: auto-gas (Crazy Tuk), sound, music (the phone's menu rows and the title's rows use the same keys)
+function applyAutoGas() { if (touch && run) touch.setAutoGas(!manualGas()); }
 function applySound() {
   const sound = loadSetting('sound.on', true) !== false, music = loadSetting('music.on', true) !== false;
   horn.setMuted(!sound); arcadeSound.setSound(sound); arcadeSound.setMusic(music);
-  $('soundOn').checked = sound; $('musicOn').checked = music;
 }
-$('autoGas').addEventListener('change', () => { saveSetting('arcade.manualGas', !$('autoGas').checked); applyAutoGas(); });
-$('soundOn').addEventListener('change', () => { saveSetting('sound.on', $('soundOn').checked); applySound(); });
-$('musicOn').addEventListener('change', () => { saveSetting('music.on', $('musicOn').checked); applySound(); });
-applyAutoGas(); applySound();
-tourSel.addEventListener('change', () => { tourId = tourSel.value; saveSetting('tourId', tourId); if (gameMode === 'tour') startTour(); updateBestLabel(); });
-if (tourError) { $('tourError').textContent = tourError; $('tourError').style.display = 'block'; }
-if (!tourSpec || !graph) { modeSel.value = 'free'; modeSel.disabled = tourSel.disabled = true; if (gameMode === 'tour') gameMode = 'free'; }
-if (gameMode === 'tour' && !startTour()) gameMode = 'free';
-if (gameMode === 'arcade' && !startArcade()) gameMode = 'free';
-modeSel.value = gameMode;
-syncModeUi();
+applySound();
+// the PC rows of the title's Settings drawer (the phone's are the phone menu's, phone.settingsDefs)
+const pcDefs = [
+  { label: 'set.autoGas', check: true, get: () => !manualGas(), set: (v) => { saveSetting('arcade.manualGas', !v); applyAutoGas(); } },
+  { label: 'set.sound', check: true, get: () => loadSetting('sound.on', true) !== false, set: (v) => { saveSetting('sound.on', v); applySound(); } },
+  { label: 'set.music', check: true, get: () => loadSetting('music.on', true) !== false, set: (v) => { saveSetting('music.on', v); applySound(); } },
+  { label: 'set.vrSteer', options: () => [['stick', t('set.vrStick')], ['hands', t('set.vrHands')]], get: () => steeringMode, set: (v) => setSteeringMode(v) },
+  { label: 'set.vrVignette', options: () => VIGNETTE_LEVELS.map((l) => [l.id, t(l.label)]), get: () => comfort.level.id, set: (v) => comfort.setLevel(VIGNETTE_LEVELS.find((l) => l.id === v)) },
+  { label: 'set.tilt', options: () => TILT_LEVELS.map((l) => [l.id, t(l.label)]), get: () => tilt.id, set: (v) => setTilt(TILT_LEVELS.find((l) => l.id === v) || TILT_LEVELS[0]) },
+  { label: 'set.vrVibration', check: true, get: () => bars.engineVibration, set: (v) => { bars.engineVibration = v; saveSetting('engineVibration', v); } },
+];
+if (tourError) console.warn(tourError);
+if (!tourSpec || !graph) { if (gameMode !== 'free') gameMode = 'free'; }
+// the game behind the title: the tour's start (the tuk-tuk at the hotel, the tourists waiting) when there is one
+let titleBgMode = gameMode;   // the mode the player will get on the first "play" (?mode=, or the last one)
+if (tourSpec && graph) { gameMode = 'tour'; if (!startTour()) gameMode = 'free'; }
+let titleAngle = 0;
+const TITLE_SPOT = { x: 467.7, z: 190.6, heading: 2.04 };   // where the tuk-tuk stands behind the title: the Explanada (the first gate), facing along the avenue
+function titleSpot() { phys.teleport(TITLE_SPOT.x, TITLE_SPOT.z, TITLE_SPOT.heading); cab.snap = true; chaseInit = false; trail.length = 0; trailLast = null; }
+// the player pressed a mode: close the title, start the mode; on a phone the full screen and the landscape lock go with the tap
+function play(mode, e) {
+  if (!['arcade', 'tour', 'free'].includes(mode)) mode = titleBgMode;
+  horn.unlock();
+  if (phone) phone.onStart({ gesture: !!(e && e.isTrusted) });
+  if (phone && title.isOpen) phone.closeMenu();
+  title.show(false);
+  setGameMode(mode);   // a fresh start of the mode (the background tour had the tuk-tuk at the title spot)
+  if (mode === 'tour' && tour) handleTourEvents();
+  renderer.domElement.focus();
+}
+// the pause menu's "Main menu" (and Esc on the PC): back to the title with the game reset to the hotel behind it
+function goHome() {
+  if (title.isOpen || inVR) return;
+  if (fullMap.isOpen) fullMap.close();
+  if (phone) phone.onHome();
+  if (tourSpec && graph) setGameMode('tour'); else setGameMode('free');
+  title.show(true);
+}
+Object.assign(G, {
+  play, levels: () => levels.map((l) => [l.id, levelName(l)]), level: () => levelId, setLevel,
+  tours: () => (tourSpec ? tourSpec.tours.map((tr) => [tr.id, pick(tourTitleOf(tr))]) : []), tour: () => tourId, setTour,
+  best: titleBest, hasTour: () => !!(tourSpec && graph), settingsDefs: () => (phone ? phone.settingsDefs : pcDefs),
+  credit: () => t('credit.base') + (soundAttribution() ? '<br>' + soundAttribution() : ''),
+});
+title.onOpen = () => { titleAngle = 0; titleSpot(); if (rotateGuard) rotateGuard.quiet = true; $('attr').style.display = 'none'; };
+title.onClose = () => { chaseInit = false; cab.snap = true; if (rotateGuard) rotateGuard.quiet = false; $('attr').style.display = ''; };
+$('attr').style.display = 'none';
+if (rotateGuard) rotateGuard.quiet = true;
+if (tourSpec && graph) titleSpot();
+title.onLang = () => { placeCredits(); if (tour && gameMode === 'tour' && tour.state === 'waiting') { startTour(); if (title.isOpen) titleSpot(); } $('attr').innerHTML = t('credit.base') + (soundAttribution() ? '<br>' + soundAttribution() : ''); };
+$('attr').innerHTML = t('credit.base');
+addEventListener('keydown', (e) => { if (e.code === 'Escape' && !title.isOpen && !inVR && !fullMap.isOpen && !(phone && phone.menuOpen) && !(levelEditor && levelEditor.isOpen) && !(soundLab && soundLab.isOpen)) goHome(); });
 updateBestLabel();
-$('vibration').checked = bars.engineVibration;
-$('vibration').addEventListener('change', () => { bars.engineVibration = $('vibration').checked; saveSetting('engineVibration', bars.engineVibration); });
 
 // ---------- diagnostics UI and ?bench (phone stage F0, docs/plan-phone.md) ----------
 let bench = null;
@@ -1114,7 +1206,7 @@ function runBench() {
   if (!graph || benchStations.length < 3) { flash('Замір недоступний: немає графа доріг або місць', 5, '#ff7a5c'); return; }
   bench = new Bench({ stations: benchStations, stats: frameStats, api: benchApi, passes: benchPasses, ...benchTime });
   bench.onDone = () => { diagUI.setProgress(null); diagUI.open(); };
-  $('overlay').style.display = 'none';
+  title.show(false);
   diagUI.close();
   if (IS_PHONE && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
   bench.start();
@@ -1130,7 +1222,7 @@ if (IS_PHONE || benchOn || params.has('diag')) {
   setInterval(() => { if (bench) diagUI.setProgress(bench.status()); }, 250);
   if (touch) diagUI.setVisible(false);   // the phone start screen is crowded: the FPS button appears when the game starts
   if (benchOn) {
-    $('overlay').style.display = 'none';
+    title.show(false);
     if (benchStations.length < 3) diagUI.open();
     else diagUI.showIntro({ passes: benchPasses, stations: benchStations.length, per: (benchTime.warmup ?? 2.5) + (benchTime.measure ?? 8), onStart: runBench });
   }
@@ -1142,27 +1234,28 @@ if (touch) {
     touch,
     api: {
       setPaused: (p) => { paused = p; if (!p) last = performance.now(); },
-      resetToRoad: () => { resetToRoad(); flash('Повернулись на дорогу', 2); },
+      resetToRoad: () => { resetToRoad(); flash(t('msg.backOnRoad'), 2); },
       restartTour: () => { if (run) startArcade(); else if (gameMode !== 'tour') setGameMode('tour'); else startTour(); },
       startArcade: () => setGameMode('arcade'), applyAutoGas, applySound, levels: () => levels.map((l) => [l.id, levelName(l)]), editorEnabled: () => !!levelEditor, soundLabEnabled: () => !!soundLab, openSoundLab: () => { if (soundLab) soundLab.open(); }, openEditor: () => { if (levelEditor) levelEditor.open(); }, level: () => levelId, setLevel,
       newTour: () => tourButton(),
       freeRide: () => setGameMode('free'),
       hasTour: () => !!tour || !!run, isArcade: () => !!run, hasTourSpec: () => !!(tourSpec && graph),
-      cycleTilt, tiltLabel: () => tilt.label,
+      cycleTilt, tiltLabel: () => t(tilt.label),
       toggleCamera: () => { setCamMode(camMode === 'cockpit' ? 'chase' : 'cockpit'); chaseInit = false; },
-      camLabel: () => (camMode === 'cockpit' ? 'кабіна' : 'ззаду'),
+      camLabel: () => t(camMode === 'cockpit' ? 'cam.cockpit' : 'cam.chase'), camIsCockpit: () => camMode === 'cockpit',
       toggleMap: () => { mapOn = !mapOn; saveSetting('minimap', mapOn); },
       openMap: () => fullMap.open(),
       mapOn: () => mapOn,
       openDiagnostics: () => { if (diagUI) diagUI.open(); },
       applyFov, applyRes, version: VERSION, onStarted: () => { if (diagUI) diagUI.setVisible(true); },
       get credit() { return this.creditBase + (soundAttribution() ? '<br>' + soundAttribution() : ''); },
-      creditBase: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · рельєф © IGN (CNIG) · фото фасадів: <a href="assets/facades/CREDITS.md" target="_blank" rel="noopener">Wikimedia Commons</a> · 3D-скани: <a href="assets/models/CREDITS.md" target="_blank" rel="noopener">Sketchfab</a> · звуки й музика: <a href="assets/audio/CREDITS.md" target="_blank" rel="noopener">подяки</a> (музика Suno тестова, буде замінена)',
+      get creditBase() { return t('credit.base'); },
+      goHome, openHelp: () => title.openHelp(),
     },
   });
-  phone.adaptStartScreen();
 }
-if (params.has('autostart')) start();   // after the phone interface exists (it hides the start screen's parts)
+G.vrButton = vrButton; title.ready(); title.relabel();   // the title's buttons: now, after the phone interface exists (its settings rows)
+if (params.has('autostart')) play(titleBgMode);
 
 // test / debugging hook
-window.__game = { get run() { return run; }, horn, get soundLab() { return soundLab; }, levels, setLevel, get levelEditor() { return levelEditor; }, get mineLevels() { return mineLevels; }, fullMap, tryLevel, get levelId() { return levelId; }, validateLevel, LEVEL, get smash() { return smash; }, smashPop, get fx() { return arcadeFx; }, arcadeSound, tourists, debugWalls, arcadeCam, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { title, play, goHome, localizedSpec, get run() { return run; }, horn, driver, get soundLab() { return soundLab; }, levels, setLevel, get levelEditor() { return levelEditor; }, get mineLevels() { return mineLevels; }, fullMap, tryLevel, get levelId() { return levelId; }, validateLevel, LEVEL, get smash() { return smash; }, smashPop, get fx() { return arcadeFx; }, arcadeSound, tourists, debugWalls, arcadeCam, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };

@@ -4,7 +4,7 @@
   "title": {"uk":"Короткий тур","en":"Short tour","es":"Tour corto"},
   "type": "standard",
   "start": {"place":"melia"},
-  "time": {"mode":"auto","par":309},
+  "time": {"mode":"auto","par":306},
   "items": [
     {"k":"via","p":[585,123]},
     {"k":"gate","place":"explanada"},

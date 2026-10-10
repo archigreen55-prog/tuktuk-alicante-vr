@@ -3,6 +3,7 @@
 // The canvas is redrawn only when what it shows changes (at most as often as main calls draw()).
 // The compass arrow is a separate small mesh in the panel plane, turned every frame (no redraw).
 import * as THREE from 'three';
+import { t as tr } from '../i18n.js';
 
 const W = 768, H = 384;           // canvas px
 const PW = 0.50, PH = 0.25;       // panel size, m
@@ -60,7 +61,7 @@ export class Dashboard {
     // footer: attribution + version
     g.textBaseline = 'alphabetic';
     g.textAlign = 'left'; g.font = `15px ${FONT}`; g.fillStyle = '#7f93a6';
-    g.fillText('© OpenStreetMap contributors · рельєф © IGN (CNIG)', 16, H - 12);
+    g.fillText(tr('credit.dash'), 16, H - 12);
     if (this.version) { g.textAlign = 'right'; g.fillText('v' + this.version, W - 14, H - 12); }
     this.texture.needsUpdate = true;
     return true;
@@ -81,7 +82,7 @@ export class Dashboard {
       g.fillStyle = col; g.fillRect(x, y, w * Math.max(0, Math.min(1, N.level)), h);
       g.strokeStyle = '#7f93a6'; g.lineWidth = 2; g.strokeRect(x, y, w, h);
       g.font = `bold 17px ${FONT}`; g.textAlign = 'left'; g.fillStyle = col;
-      g.fillText(N.state === 'active' ? 'НІТРО!' : N.state === 'ready' ? 'НІТРО' : `НІТРО ${N.left} с`, x + w + 10, y + 15);
+      g.fillText(N.state === 'active' ? tr('dash.nitroActive') : N.state === 'ready' ? tr('dash.nitro') : tr('dash.nitroWait', { s: N.left }), x + w + 10, y + 15);
     }
     if (t) {
       // status: stop i/N or the next point, distance, clock
@@ -102,8 +103,8 @@ export class Dashboard {
         const col = moodColor(t.mood);
         for (let i = 0; i < t.group; i++) { g.fillStyle = col; g.beginPath(); g.arc(30 + i * 30, 172, 11, 0, Math.PI * 2); g.fill(); }
         g.fillStyle = '#cfe3f5'; g.font = `24px ${FONT}`; g.textAlign = 'left';
-        g.fillText(`Настрій ${Math.round(t.mood)} %`, 30 + t.group * 30 + 8, 181);
-        g.textAlign = 'right'; g.fillText(`Чайові ≈ ${euro(t.tips)}`, W - 20, 181);
+        g.fillText(tr('dash.mood', { v: Math.round(t.mood) }), 30 + t.group * 30 + 8, 181);
+        g.textAlign = 'right'; g.fillText(tr('dash.tips', { v: euro(t.tips) }), W - 20, 181);
       } else if (t.hint) {
         g.fillStyle = '#cfe3f5'; g.font = `24px ${FONT}`; g.textAlign = 'left';
         fitText(g, t.hint, 20, 181, W - 40, 24, 16, '');
@@ -124,10 +125,10 @@ export class Dashboard {
     // stats (F / X)
     if (this.showFps && s.stats) {
       const st = s.stats, target = st.hz || 72;
-      const ms = (v) => (v == null ? 'н/д' : v.toFixed(1));
+      const ms = (v) => (v == null ? tr('dash.na') : v.toFixed(1));
       g.textAlign = 'right'; g.font = `bold 22px ${FONT}`;
       g.fillStyle = st.fps >= target - 2 ? '#6fe06f' : st.fps >= target * 0.8 ? '#ffd166' : '#ff5c5c';
-      const line = `${Math.round(st.fps)} FPS · GPU ${ms(st.gpuMs)} · CPU ${ms(st.cpuMs)} · ${st.hz ? st.hz + ' Гц · ' : ''}${st.calls} calls · ${(st.tris / 1000).toFixed(0)}k${st.stress > 1 ? ` · ×${st.stress}` : ''}`;
+      const line = `${Math.round(st.fps)} FPS · GPU ${ms(st.gpuMs)} · CPU ${ms(st.cpuMs)} · ${st.hz ? st.hz + ' ' + tr('dash.hz') + ' · ' : ''}${st.calls} calls · ${(st.tris / 1000).toFixed(0)}k${st.stress > 1 ? ` · ×${st.stress}` : ''}`;
       g.fillText(line, W - 16, t ? 352 : 300);
     }
   }
@@ -147,13 +148,13 @@ export class Dashboard {
 
   drawSummary(g, t) {
     g.textBaseline = 'alphabetic'; g.textAlign = 'left';
-    g.fillStyle = '#f2c230'; g.font = `bold 34px ${FONT}`; g.fillText('Тур завершено!', 20, 50);
+    g.fillStyle = '#f2c230'; g.font = `bold 34px ${FONT}`; g.fillText(tr('dash.tourDone'), 20, 50);
     g.textAlign = 'right'; g.fillStyle = '#ffd166'; g.font = `bold 40px ${FONT}`;
     g.fillText('★'.repeat(t.stars) + '☆'.repeat(5 - t.stars), W - 20, 52);
     g.textAlign = 'left'; g.font = `26px ${FONT}`;
-    g.fillStyle = '#ffffff'; g.fillText(`Чайові ${euro(t.tips)}`, 20, 96);
+    g.fillStyle = '#ffffff'; g.fillText(tr('dash.tipsV', { v: euro(t.tips) }), 20, 96);
     g.fillStyle = t.onTime === 'yes' ? '#6fe06f' : t.onTime === 'almost' ? '#ffd166' : '#ff7a5c';
-    g.textAlign = 'right'; g.fillText(`Час ${clock(t.time)} / ${clock(t.target)} — ${t.onTime === 'yes' ? 'вчасно' : t.onTime === 'almost' ? 'трохи довше' : 'запізнення'}`, W - 20, 96);
+    g.textAlign = 'right'; g.fillText(tr('dash.timeLine', { a: clock(t.time), b: clock(t.target), c: tr(t.onTime === 'yes' ? 'dash.onTime' : t.onTime === 'almost' ? 'dash.almost' : 'dash.late') }), W - 20, 96);
     g.textAlign = 'left'; g.fillStyle = '#cfe3f5';
     wrapFit(g, t.events, 20, 112, W - 40, 64, 24, 16);
     g.fillStyle = '#ffffff';

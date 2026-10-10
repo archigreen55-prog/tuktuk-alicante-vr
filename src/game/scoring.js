@@ -1,6 +1,7 @@
 // Ride comfort of the tourists (stage 6 plan, section 4): events from the physics each frame, the
 // group mood 0..100, and at the end tips and a 1-5 star review. No three.js: runs in Node tools too.
 // All thresholds live here, in one place.
+import { t } from '../i18n.js';
 export const COMFORT = {
   tauBrake: 0.15, tauLat: 0.2,           // s, smoothing of the braking and sideways acceleration
   brakeHard: 3.5, brakeHardFor: 0.3,     // m/s², s
@@ -22,6 +23,7 @@ export const MOOD_DELTA = {
   nearPeople: -5, reset: -10, leftEarly: -5,
   softStop: 3, calm: 1,
 };
+// the labels of the events: t('ev.l.<kind>') of src/i18n.js; this list only documents the kinds
 export const LABEL = {
   brake: 'Різке гальмування', emergency: 'Екстрене гальмування', turn: 'Швидкий поворот', danger: 'Небезпечний поворот',
   touch: 'Дотик до стіни', hit: 'Удар!', hitHard: 'Сильний удар!', scrape: 'Шкрябаємо стіну',
@@ -128,7 +130,7 @@ export class ComfortScore {
       if (g) this.penalty[g] = (this.penalty[g] || 0) + (before - this.mood);
       this.calmT = 0;
     }
-    return { type: kind, delta, label: LABEL[kind] || kind };
+    return { type: kind, delta, label: t('ev.l.' + kind) };
   }
 
   // gentle stop: +3 if the last seconds of braking stayed soft

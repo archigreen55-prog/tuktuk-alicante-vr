@@ -2,6 +2,7 @@
 // with "Копіювати звіт", the bench intro card and progress pill. All DOM is built here with inline styles.
 import { loadSetting, saveSetting } from '../settings.js';
 import { copyText } from './report.js';
+import { t } from '../i18n.js';
 
 const SAFE_L = 'env(safe-area-inset-left)';
 function h(tag, css, text, parent) {
@@ -29,8 +30,8 @@ export function createDiagUI(opts) {
   const SAFE_R = 'max(8px, env(safe-area-inset-right))';
   const topRow = h('div', `position:fixed;${right ? `right:calc(${SAFE_R} + 164px)` : `left:calc(8px + ${SAFE_L})`};top:8px;display:flex;gap:6px;pointer-events:auto`, null, root);
   const toggle = h('button', `${BTN_GHOST};padding:6px 10px;min-height:32px`, 'FPS', topRow);
-  const diagBtn = h('button', `${BTN};padding:6px 10px;min-height:32px;display:none`, 'Діагностика', topRow);
-  const benchBtn = opts.onBench ? h('button', `${BTN_GHOST};padding:6px 10px;min-height:32px;display:none`, 'Замір', topRow) : null;
+  const diagBtn = h('button', `${BTN};padding:6px 10px;min-height:32px;display:none`, t('diag.title'), topRow);
+  const benchBtn = opts.onBench ? h('button', `${BTN_GHOST};padding:6px 10px;min-height:32px;display:none`, t('diag.bench'), topRow) : null;
   const widget = h('div', `position:fixed;${right ? `right:${SAFE_R};top:62px` : `left:calc(8px + ${SAFE_L});top:46px`};width:288px;padding:6px 8px;border-radius:10px;background:rgba(16,22,28,.82);color:#fff;pointer-events:none;display:none`, null, root);
   const l1 = h('div', 'font:700 15px ui-monospace,monospace', '', widget);
   const l2 = h('div', 'font:11px ui-monospace,monospace;color:#cfe3f5;margin-top:1px', '', widget);
@@ -79,10 +80,10 @@ export function createDiagUI(opts) {
   const panel = h('div', 'position:fixed;inset:0;z-index:120;display:none;flex-direction:column;gap:8px;padding:8px 10px;background:rgba(10,16,22,.96);color:#fff;pointer-events:auto');
   document.body.appendChild(panel);
   const bar = h('div', 'display:flex;flex-wrap:wrap;gap:8px;align-items:center', null, panel);
-  const copyBtn = h('button', BTN, 'Копіювати звіт', bar);
-  const refreshBtn = h('button', BTN_GHOST, 'Оновити', bar);
-  const againBtn = opts.onBench ? h('button', BTN_GHOST, 'Замір ще раз', bar) : null;
-  const closeBtn = h('button', BTN_GHOST, 'Закрити', bar);
+  const copyBtn = h('button', BTN, t('diag.copy'), bar);
+  const refreshBtn = h('button', BTN_GHOST, t('diag.refresh'), bar);
+  const againBtn = opts.onBench ? h('button', BTN_GHOST, t('diag.again'), bar) : null;
+  const closeBtn = h('button', BTN_GHOST, t('diag.close'), bar);
   const msg = h('span', 'font:13px system-ui,sans-serif;color:#cfe3f5', '', bar);
   const area = h('textarea', 'flex:1;min-height:0;width:100%;box-sizing:border-box;font:11px/1.35 ui-monospace,monospace;background:#0c1319;color:#dfe9f2;border:1px solid #2c3a47;border-radius:8px;padding:8px;resize:none');
   area.readOnly = true; area.spellcheck = false;
@@ -133,7 +134,7 @@ export function createDiagUI(opts) {
     h('div', 'font:700 22px system-ui,sans-serif;margin-bottom:6px', '🛺 Замір швидкодії', box);
     h('div', null, `Тук-тук сам проїде ${stations} важких місць міста (${passes > 1 ? passes + ' кола поспіль' : 'одне коло'}), приблизно ${Math.max(0.1, Math.ceil(passes * stations * per / 60 * 10) / 10)} хв. Тримай телефон горизонтально й нічого не торкайся. Наприкінці з'явиться звіт: натисни «Копіювати звіт» і встав його в чат.`, box);
     h('div', 'font-size:13px;opacity:.75;margin-top:6px', 'Порада: заряд батареї понад 50 %, екран не блокуй, інші застосунки закрий.', box);
-    const go = h('button', `${BTN};font-size:17px;padding:12px 24px;margin-top:12px`, 'Почати замір', box);
+    const go = h('button', `${BTN};font-size:17px;padding:12px 24px;margin-top:12px`, t('diag.start'), box);
     go.addEventListener('click', () => { card.remove(); onStart(); });
     document.body.appendChild(card);
   }
