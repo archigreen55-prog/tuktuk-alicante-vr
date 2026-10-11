@@ -3,6 +3,8 @@
 // HTML. Hidden in VR (the headset shows the dashboard).
 import { euro, clock, moodColor } from './dashboard.js';
 import { t } from '../i18n.js';
+import { iconOf, drawBadge, zoneColor } from './placeIcons.js';
+import { photoCreditText } from './placeDetail.js';
 
 export class DesktopHud {
   constructor(minimap) {
@@ -13,6 +15,8 @@ export class DesktopHud {
     this.g = this.canvas.getContext('2d');
     this.showMap = true;
     this.lastStatus = ''; this.lastCard = '';
+    this.onMore = null;   // set by main: the "Read more" button of a stop's card
+    this.card.addEventListener('click', (e) => { if (e.target.closest('[data-more]') && this.onMore) { e.preventDefault(); this.onMore(); } });
   }
 
   // panel: the same object as the dashboard's tour state (or null in free ride)
@@ -29,7 +33,7 @@ export class DesktopHud {
     }
     if (status !== this.lastStatus) { this.status.innerHTML = status; this.lastStatus = status; }
     let card = '';
-    if (panel.mode === 'card') card = `<div class="t">${esc(panel.title)} <span class="c">${esc(panel.counter || '')}</span></div><div class="b">${esc(panel.body || '')}</div>${panel.credit ? `<div class="c">${esc(panel.credit)}</div>` : ''}<div class="f">${esc(panel.footer || '')}</div>`;
+    if (panel.mode === 'card') card = `${panel.photo ? `<img class="ph" src="${esc(panel.photo)}" alt="">` : ''}<div class="cb"><div class="t">${esc(panel.title)} <span class="c">${esc(panel.counter || '')}</span></div><div class="b">${esc(panel.body || '')}</div>${panel.credit ? `<div class="c">${esc(panel.credit)}</div>` : ''}${panel.more ? `<button class="more" data-more>${esc(t('place.more'))}</button>` : ''}<div class="f">${esc(panel.footer || '')}</div></div>`;
     else if (panel.mode === 'summary') {
       card = `<div class="t">${t('dash.tourDone')} <span class="s">${'★'.repeat(panel.stars)}${'☆'.repeat(5 - panel.stars)}</span></div>` +
         `<div class="b">${t('dash.tipsV', { v: euro(panel.tips) })} · ${t('dash.time')} ${clock(panel.time)} / ${clock(panel.target)}<br>${esc(panel.events)}<br><i>${panel.review ? '«' + esc(panel.review) + '»' : ''}</i><br><span class="c">${esc(panel.best || '')}</span></div><div class="f">${esc(panel.footer || '')}</div>`;
@@ -40,7 +44,7 @@ export class DesktopHud {
   // heading-up map in the corner (desktop only), ~10 Hz from main
   // gates (Crazy Tuk): { list: [{ x, z }] the gates still ahead, next: index in the list } - small marks, the next one bigger and
   // blinking, on the rim when it is out of the disc. No route line there: the player picks the streets.
-  drawMap(visible, x, z, heading, target, route, gates = null) {
+  drawMap(visible, x, z, heading, target, route, gates = null, icons = null) {
     this.canvas.style.display = visible && this.showMap ? 'block' : 'none';
     if (!visible || !this.showMap) return;
     const g = this.g, S = this.canvas.width, R = this.minimap.rect, radius = this.minimap.radius;
@@ -79,6 +83,14 @@ export class DesktopHud {
       }
     }
     g.restore();
+    if (icons) {   // the pictures of the places inside the disc (not turned with the map)
+      const c0 = Math.cos(heading), s0 = Math.sin(heading);
+      for (const ic of icons) {
+        const dx = ic.x - x, dz = ic.z - z, px = S / 2 + (dx * c0 - dz * s0) * scale, py = S / 2 + (dx * s0 + dz * c0) * scale;
+        if (Math.hypot(px - S / 2, py - S / 2) > S / 2 - 10) continue;
+        drawBadge(g, ic.img, px, py, 9, zoneColor(ic.zone), 2);
+      }
+    }
     if (gates && gates.list[gates.next]) {
       // the next gate outside the disc: a blinking arrow on the rim
       const n = gates.list[gates.next], dx = n.x - x, dz = n.z - z, c = Math.cos(heading), sn = Math.sin(heading);

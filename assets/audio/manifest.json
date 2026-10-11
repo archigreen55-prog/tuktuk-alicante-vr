@@ -52,6 +52,9 @@
     ],
     "nearmiss": [
       "sfx/nearmiss-1.m4a"
+    ],
+    "photo.click": [
+      "sfx/photo-click-1.m4a"
     ]
   },
   "loops": {},
@@ -86,7 +89,8 @@
     "smash.b": 1,
     "smash.t": 1,
     "smash.u": 1,
-    "nearmiss": 1
+    "nearmiss": 1,
+    "photo.click": 0.8
   },
   "attribution": [
     {

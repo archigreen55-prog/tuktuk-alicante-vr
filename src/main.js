@@ -31,6 +31,8 @@ import { HandlebarControl } from './input/handlebarInput.js';
 import { GpuTimer } from './perf/gpuTimer.js';
 import { loadSetting, saveSetting } from './settings.js';
 import { createFullMap } from './ui/fullMap.js';
+import { createPlaceDetail, photoCreditText } from './ui/placeDetail.js';
+import { iconOf, setIconVersion, drawBadge, zoneColor } from './ui/placeIcons.js';
 import { XRRig } from './xr/xrRig.js';
 import { ComfortOverlay, VIGNETTE_LEVELS } from './comfort/vignette.js';
 import { RoadGraph } from './game/route.js';
@@ -591,6 +593,11 @@ function tourButton() {
   if (tour.action()) { if (inVR) comfort.fadeIn(0.35); startTour(); }
   else handleTourEvents();
 }
+// the tourists take their photos at a stop: the click of a camera, a flash, and another click a moment later (the card with the photo of the place is on the screen)
+function photoMoment() {
+  placeDetail.flash(); arcadeSound.play('photo.click', {}, 0);
+  setTimeout(() => { if (tour && (tour.state === 'photo' || tour.state === 'afterPhoto')) arcadeSound.play('photo.click', {}, 0); }, 2300);
+}
 function handleTourEvents() {
   for (const ev of tour.events) {
     if (ev.type === 'flash') flash(ev.text, ev.seconds || 2, ev.color);
@@ -600,7 +607,7 @@ function handleTourEvents() {
     else if (ev.type === 'dropoff') tourists.dropOff(tour.start.look);
     else if (ev.type === 'summary') saveBest(tour.result);
     else if (ev.type === 'oy') shout(horn, tour.group);
-    else if (ev.type === 'stop') { const pl = city.tour.places[ev.id]; if (pl) { const side = tuk.group.worldToLocal(tmpV.set(pl.look ? pl.look[0] : pl.p[0], 0, pl.look ? pl.look[1] : pl.p[1])).x < 0 ? -1 : 1; driver.point(side, 1.6); } }   // the guide shows the landmark
+    else if (ev.type === 'stop') { photoMoment(); const pl = city.tour.places[ev.id]; if (pl) { const side = tuk.group.worldToLocal(tmpV.set(pl.look ? pl.look[0] : pl.p[0], 0, pl.look ? pl.look[1] : pl.p[1])).x < 0 ? -1 : 1; driver.point(side, 1.6); } }   // the guide shows the landmark
   }
   tour.events = [];
 }
@@ -638,7 +645,9 @@ function tourPanel() {
     };
   }
   if (T.card && (st === 'photo' || st === 'afterPhoto')) {
-    return { mode: 'card', title: T.card.title, body: T.card.body, footer: T.card.footer, credit: T.card.credit, counter: `${T.stopsDone + (st === 'photo' ? 1 : 0)}/${T.stopCount}` };
+    const pl = T.card.place || {};   // the photo (thumbnail) and the author of TukTuk OS; "Read more" when the place has a long text
+    return { mode: 'card', title: T.card.title, body: T.card.body, footer: T.card.footer, credit: [photoCreditText(pl.photo), T.card.credit].filter(Boolean).join(' · '), counter: `${T.stopsDone + (st === 'photo' ? 1 : 0)}/${T.stopCount}`,
+      photo: pl.photo ? pl.photo.thumb || pl.photo.src : pl.icon || null, more: !!(pl.long && pl.long.length) };
   }
   const tg = T.target;
   const d = tg ? Math.hypot(tg.x - phys.x, tg.z - phys.z) : 0;
@@ -708,12 +717,25 @@ if (stress > 1) showStats = tuk.dashboard.showFps = true;
 let acc = 0, last = performance.now(), mapTimer = 0, gpuLatest = null;
 // the full-screen map: opened by a tap / click on the minimap (or M); the game stands still while it is open
 let levelEditor = null, soundLab = null;
+// the pictures of the places on the minimap (the illustrations of TukTuk OS, prototypes): [{ x, z, img, zone }] of those that have loaded
+setIconVersion(VERSION);
+function mapIcons() {
+  const sp = localizedSpec(); if (!sp || !city.tour) return null;
+  const out = [];
+  for (const [id, pl] of Object.entries(city.tour.places)) { const ps = sp.places[id], img = ps && iconOf(ps); if (img) out.push({ x: pl.p[0], z: pl.p[1], img, zone: ps.zone }); }
+  return out;
+}
+// the full description of a place ("Read more" on the card of a stop); the game stands still while it is open, like for the full map
+const pauseFor = (p) => { paused = p; arcadeSound.duck(p); if (p && touch) touch.releaseAll(); if (!p) last = performance.now(); };
+const placeDetail = createPlaceDetail({ setPaused: pauseFor });
+hud.onMore = () => { if (tour && tour.card && tour.card.place) placeDetail.open(tour.card.place); };
 const fullMap = createFullMap({
   city, graph, getTour: () => tour || arcadeAsTour(), getTrail: () => (tour || run ? trail : null),
   getTuk: () => ({ x: phys.x, z: phys.z, heading: phys.heading }),
   setPaused: (p) => { paused = p; arcadeSound.duck(p); if (p && touch) touch.releaseAll(); if (!p) last = performance.now(); },
   canOpen: () => !renderer.xr.isPresenting && !(rotateGuard && rotateGuard.portrait),
-  placeTitle: (id) => { const sp = localizedSpec(); return sp && sp.places[id] && sp.places[id].title; },   // the names of TukTuk OS in the language of the interface, in every mode
+  placeTitle: (id) => { const sp = localizedSpec(); return sp && sp.places[id] && sp.places[id].title; },
+  placeSpec: (id) => { const sp = localizedSpec(); return sp && sp.places[id]; },   // the names of TukTuk OS in the language of the interface, in every mode
 });
 { const mm = $('miniMap'); if (mm) { mm.style.cursor = 'pointer'; mm.addEventListener('click', () => fullMap.open()); } }
 // the level editor: only for the owner (src/game/editorAccess.js); not even created for anybody else
@@ -986,7 +1008,7 @@ function frame(now, xrFrame) {
   }
   mapTimer -= frameDt;
   if (run && !hudIn3D) minimap.radius += (150 + 250 * Math.max(0, Math.min(1, (phys.forwardSpeed - 16.7) / 25)) - minimap.radius) * (1 - Math.exp(-frameDt / 0.8));   // the phone map grows with the speed
-  if (mapTimer <= 0) { mapTimer = 0.1; hud.drawMap(!inVR && mapOn && !title.isOpen, x, z, h, run ? null : target, routeNow, run && !run.done ? { list: run.gates.slice(run.next).map((g) => ({ x: g.p[0], z: g.p[1] })), next: 0, vias: run.gate ? run.gate.vias.slice(run.viaI).map((v) => ({ x: v.p[0], z: v.p[1] })) : [] } : null); }
+  if (mapTimer <= 0) { mapTimer = 0.1; hud.drawMap(!inVR && mapOn && !title.isOpen, x, z, h, run ? null : target, routeNow, run && !run.done ? { list: run.gates.slice(run.next).map((g) => ({ x: g.p[0], z: g.p[1] })), next: 0, vias: run.gate ? run.gate.vias.slice(run.viaI).map((v) => ({ x: v.p[0], z: v.p[1] })) : [] } : null, mapIcons()); }
 
   if (touch && touch.visible) { const l = touch.update(frameDt); lookYaw = l.yaw; lookPitch = l.pitch; touch.setSpeed(phys.forwardSpeed * 3.6); }
   if (inVR) {
@@ -1292,4 +1314,4 @@ G.vrButton = vrButton; title.ready(); title.relabel();   // the title's buttons:
 if (params.has('autostart')) play(titleBgMode);
 
 // test / debugging hook
-window.__game = { title, play, goHome, localizedSpec, get run() { return run; }, horn, driver, get soundLab() { return soundLab; }, levels, setLevel, get levelEditor() { return levelEditor; }, get mineLevels() { return mineLevels; }, fullMap, tryLevel, get levelId() { return levelId; }, validateLevel, LEVEL, get smash() { return smash; }, smashPop, get fx() { return arcadeFx; }, arcadeSound, tourists, debugWalls, arcadeCam, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };
+window.__game = { title, play, goHome, localizedSpec, photoMoment, placeDetail, get run() { return run; }, horn, driver, get soundLab() { return soundLab; }, levels, setLevel, get levelEditor() { return levelEditor; }, get mineLevels() { return mineLevels; }, fullMap, tryLevel, get levelId() { return levelId; }, validateLevel, LEVEL, get smash() { return smash; }, smashPop, get fx() { return arcadeFx; }, arcadeSound, tourists, debugWalls, arcadeCam, startArcade, arcadeHud, fullMap, touch, get phone() { return phone; }, get paused() { return paused; }, set paused(v) { paused = v; }, frameStats, frameCap, get bench() { return bench; }, diagUI, benchStations, benchApi, rotateGuard, photos, models, terrain, groundY, get tilt() { return tilt; }, setTilt, get tour() { return tour; }, startTour, setGameMode, tourists, minimap, marker, graph, tourSpec, hud, tourPanel, THREE, renderer, scene, camera, phys, world, city, cityStats, perf, input, resetToRoad, setCamMode, tuk, xrRig, xrIn, comfort, bars, gpu, VERSION, tiles, texMode, look: (y, p) => { lookYaw = y; lookPitch = p; }, freeCam: (x, y, z, tx, ty, tz) => { setCamMode('free'); camera.position.set(x, y, z); camera.lookAt(tx, ty, tz); }, get stress() { return stress; }, get steeringMode() { return steeringMode; } };

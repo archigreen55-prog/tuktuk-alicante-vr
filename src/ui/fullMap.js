@@ -6,12 +6,14 @@
 // drawing hooks; the tour, the trail and the route are not drawn then.
 // Layers: sea, parks, plazas, buildings (from 0.25 px/m), roads, the walked trail (grey), the planned rest of the tour
 // (arrows show the direction), the way to the next target (orange), places with names, the tuk-tuk with its heading.
+import { iconOf, drawBadge, zoneColor } from './placeIcons.js';
 import { t } from '../i18n.js';
 
 const COL = { land: '#e6dcc6', sea: '#6fa8cf', park: '#b3d397', plaza: '#efe7d6', building: '#c9bba2', buildingEdge: '#b5a68c', road: '#ffffff', roadEdge: '#b9ad97', ped: '#f3ecdf' };
 const ROAD_W = { primary: 12, primary_link: 7, secondary: 10, secondary_link: 7, tertiary: 8, tertiary_link: 6, residential: 6.5, unclassified: 6, living_street: 5, service: 4, pedestrian: 5, busway: 7 };
 const MAX_SCALE = 3.2;          // px per metre
 const BUILDINGS_FROM = 0.25;    // px per metre
+const ICONS_FROM = 0.28;         // px per metre: the pictures of the places appear (below that the plain dots)
 const LABELS_FROM = 0.4;        // px per metre: names appear, below that only icons
 const FONT = '700 14px system-ui, sans-serif';
 
@@ -27,7 +29,7 @@ const CSS = `
 .fm .fm-title { position: absolute; left: max(10px, env(safe-area-inset-left)); top: max(8px, env(safe-area-inset-top)); padding: 8px 14px; border-radius: 12px; background: rgba(16, 22, 28, .82); color: #fff; font: 700 15px system-ui, sans-serif; pointer-events: none; }
 `;
 
-export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPaused, canOpen = () => true, placeTitle = () => '' }) {
+export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPaused, canOpen = () => true, placeTitle = () => '', placeSpec = () => null }) {
   let root = null, cv = null, g = null, built = null;
   let open = false, pushed = false, ignorePop = false, dirty = false, raf = 0;
   const view = { cx: 0, cz: 0, s: 0.5, W: 0, H: 0, dpr: 1 };
@@ -247,9 +249,19 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     for (const r of rows) {
       const [x, y] = toScreen(r.p[0], r.p[1]);
       if (x < -40 || y < -40 || x > view.W + 40 || y > view.H + 40) continue;
-      const rad = r.isTarget ? 14 : r.t && r.t.kind === 'stop' || r.isStart ? 13 : r.t ? 9 : 7;
+      const ico = view.s >= ICONS_FROM ? iconOf(spec && spec.places[r.id] || placeSpec(r.id)) : null;   // the picture of TukTuk OS (prototype) when zoomed in enough
+      const rad = ico ? (r.isTarget ? 19 : r.t && r.t.kind === 'stop' || r.isStart ? 18 : r.t ? 15 : 14) : r.isTarget ? 14 : r.t && r.t.kind === 'stop' || r.isStart ? 13 : r.t ? 9 : 7;
       // icon
       if (r.isTarget) { const pulse = 1 + 0.25 * Math.sin(performance.now() / 300); g.beginPath(); g.arc(x, y, rad + 7 * pulse, 0, Math.PI * 2); g.fillStyle = 'rgba(255, 64, 32, .28)'; g.fill(); }
+      if (ico) {   // a picture in a ring (the colour of the zone; red for the target); the number of a stop / the start arrow sits on its corner
+        const ps = spec && spec.places[r.id] || placeSpec(r.id), done = r.t && r.t.state === 'done';
+        g.globalAlpha = done ? 0.55 : 1;
+        drawBadge(g, ico, x, y, rad, r.isTarget ? '#ff4020' : zoneColor(ps && ps.zone), r.isTarget ? 4 : 3);
+        g.globalAlpha = 1;
+        const tag = r.isStart ? '▶' : r.t && r.t.kind === 'stop' ? String(stopNo.get(r.id)) : '';
+        if (tag) { const tx = x - rad * 0.75, ty = y - rad * 0.75; g.beginPath(); g.arc(tx, ty, 9, 0, Math.PI * 2); g.fillStyle = r.isStart ? '#2e9e57' : done ? '#7a8590' : '#ff8a00'; g.fill(); g.lineWidth = 2; g.strokeStyle = '#10161c'; g.stroke(); g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText(tag, tx, ty + 0.5); }
+        else if (r.t) { g.beginPath(); g.arc(x + rad * 0.75, y - rad * 0.75, 4, 0, Math.PI * 2); g.fillStyle = '#ff8a00'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = '#10161c'; g.stroke(); }
+      } else {
       g.beginPath(); g.arc(x, y, rad, 0, Math.PI * 2);
       g.fillStyle = r.isStart ? '#2e9e57' : r.t && r.t.kind === 'stop' ? (r.t.state === 'done' ? '#7a8590' : '#ff8a00') : r.t ? '#fff' : '#b8c0c8';
       g.fill(); g.lineWidth = r.isTarget ? 3.5 : 2.5; g.strokeStyle = r.isTarget ? '#ff4020' : '#10161c'; g.stroke();
@@ -257,6 +269,7 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
       if (r.isStart) { g.beginPath(); g.moveTo(x - 4, y - 6); g.lineTo(x + 6, y); g.lineTo(x - 4, y + 6); g.closePath(); g.fill(); }
       else if (r.t && r.t.kind === 'stop') g.fillText(String(stopNo.get(r.id)), x, y + 0.5);
       else if (r.t) { g.fillStyle = '#ff8a00'; g.beginPath(); g.arc(x, y, 3.2, 0, Math.PI * 2); g.fill(); }
+      }
       boxes.push([x - rad, y - rad, x + rad, y + rad]);
       // name (only when zoomed in enough, the next target always)
       if (view.s < LABELS_FROM && !r.isTarget) continue;

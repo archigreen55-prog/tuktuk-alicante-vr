@@ -3,7 +3,7 @@
 // From there tools/build-sounds.mjs puts them into the slots (assets/audio-src/sounds.json, source "retro").
 //   node tools/make-retro-sounds.mjs            (rewrites every file; deterministic: a seeded noise generator)
 // Sounds: coin (exact gate), beep-good / beep-ok (the other gates), combo (rising tru-lu-lu), nitro (whoosh up), boom-light / -medium / -heavy
-// (hits), crunch-c / -b / -t / -u ×2 (smashed cone / bin / table / umbrella), whistle (near miss).
+// (hits), crunch-c / -b / -t / -u ×2 (smashed cone / bin / table / umbrella), whistle (near miss), camera (the tourists' photo at a stop of the Real tour).
 import { writeFile, mkdir } from 'node:fs/promises';
 
 const SR = 44100, OUT = 'assets/audio-src/retro';
@@ -79,6 +79,10 @@ const S = {
   'crunch-t-2': () => mix(burst(0.18, { lp: () => 1300, hp: 120, decay: 0.16, crush: 4 }), tone(0.08, (t) => 260 * Math.exp(-t * 12), { wave: 'sine', amp: 0.7, decay: 0.08 })),
   'crunch-u-1': () => seq(burst(0.06, { lp: () => 3000, hp: 300, decay: 0.05, crush: 2 }), burst(0.09, { lp: () => 2200, hp: 300, decay: 0.08, crush: 2, amp: 0.8 })),   // the umbrella: two flaps
   'crunch-u-2': () => seq(burst(0.05, { lp: () => 3400, hp: 300, decay: 0.045, crush: 2 }), burst(0.1, { lp: () => 2000, hp: 300, decay: 0.09, crush: 2, amp: 0.8 })),
+  // the camera of the tourists (0.20.2, the photo stop of the Real tour): a sharp shutter click, a softer second click and a tiny electronic beep
+  camera: () => mix(burst(0.016, { lp: () => 9000, hp: 2500, decay: 0.015, attack: 0.0005 }),
+    delayed(burst(0.035, { lp: () => 4200, hp: 700, decay: 0.032, attack: 0.0005, amp: 0.8, crush: 2 }), 0.075),
+    delayed(tone(0.05, () => 2600, { duty: 0.5, amp: 0.3, decay: 0.045 }), 0.14)),
   // near miss: a whistle (sine 1200 -> 2300 -> 1400 Hz) over a swish of band-passed noise
   whistle: () => mix(tone(0.32, (t) => 1200 + 1100 * Math.sin(Math.PI * Math.min(1, t / 0.32)), { wave: 'sine', amp: 0.8, attack: 0.02, decay: 0.3 }),
     burst(0.3, { lp: (t) => 2500 + 3000 * Math.sin(Math.PI * t / 0.3), hp: 1200, amp: 0.7, attack: 0.05, decay: 0.25 })),

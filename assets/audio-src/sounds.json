@@ -235,6 +235,11 @@
       "kind": "sfx",
       "gain": 1
     },
+    "photo.click": {
+      "title": "Справжній тур: клацання фотоапарата (туристи фотографуються)",
+      "kind": "sfx",
+      "gain": 0.8
+    },
     "gate.exact": {
       "title": "Ворота: точно",
       "kind": "sfx",
@@ -378,6 +383,11 @@
     {
       "slot": "nearmiss",
       "src": "retro:whistle",
+      "norm": false
+    },
+    {
+      "slot": "photo.click",
+      "src": "retro:camera",
       "norm": false
     }
   ],

@@ -35,7 +35,7 @@ export class Tour {
       const c = cityTour.places[id], s = spec.places[id];
       if (!c || !s) throw new Error(`місце "${id}" не знайдено${c ? '' : ' в city.json (запусти node tools/build-city.mjs)'}`);
       const fact = Array.isArray(s.fact) ? s.fact.join('\n') : s.fact || '';
-      return { id, ...c, title: s.title || id, fact };
+      return { id, ...c, title: s.title || id, fact, photo: s.photo || null, icon: s.icon || null, zone: s.zone || null, long: s.long || null, questions: s.questions || null, sources: s.sources || null };
     };
     this.start = place(this.def.start);
     this.items = this.def.route.map((r) => ({ kind: r.stop ? 'stop' : 'pass', place: place(r.stop || r.pass) }));
@@ -214,7 +214,7 @@ export class Tour {
         this.events.push({ type: 'dropoff' });
         if (this.def.outro) this.showText(this.start.title, this.def.outro, TOUR.introTime);
       } else {
-        this.card = { title: it.place.title, body: it.place.fact, footer: t('tour.photo'), credit: it.place.credit || '' };
+        this.card = { title: it.place.title, body: it.place.fact, footer: t('tour.photo'), credit: it.place.credit || '', place: it.place };
         this.setState('photo');
         this.events.push({ type: 'stop', id: it.place.id });
       }
