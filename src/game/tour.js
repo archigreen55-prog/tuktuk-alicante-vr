@@ -13,6 +13,7 @@ export const TOUR = {
   stopSpeed: 0.3, stopHold: 0.5,         // m/s, s to register a stop
   leaveSpeed: 3 / 3.6,                   // m/s: moving off (ends a stop, aborts boarding / photos)
   photoTime: 6,                          // s
+  recentFor: 40,                         // s the card of the last stop stays reachable as a one-line chip after the tuk-tuk moves off
   zoneFast: 15 / 3.6,                    // m/s entering a zone: "slow down"
   passAnchor: 30, passShape: 25, passStreet: 20, // m, "on the way" triggers
   factMin: 8, factPerChar: 0.05,         // s a passing fact stays on the panel
@@ -55,7 +56,8 @@ export class Tour {
     this.events = [];
     this.text = null;              // { title, body, until } passing fact / intro on the panel
     this.queue = [];               // facts waiting for the panel
-    this.card = null;              // { title, body, footer, credit } at a stop
+    this.card = null;              // { title, body, footer, credit, place } at a stop
+    this.recent = null;            // { title, place, until }: the stop just left (a one-line chip with "Read more", 0.20.3)
     this.result = null;
     this.route = null; this.routeVersion = (this.routeVersion || 0) + 1;
     this.offT = 0; this.lastRoute = -1e9;
@@ -152,7 +154,7 @@ export class Tour {
         this.holdBrake = true;
         if (v > TOUR.leaveSpeed) {
           this.emitScore(this.score.add('leftEarly'));
-          this.card = null;
+          this.leaveCard();
           this.setState('driving');
         } else if (this.stateT >= TOUR.photoTime) {
           this.stopsDone++;
@@ -167,7 +169,7 @@ export class Tour {
         break;
       case 'afterPhoto':
         this.holdBrake = v < 1;
-        if (v > TOUR.leaveSpeed || this.stateT > 45) { this.card = null; this.setState('driving'); }
+        if (v > TOUR.leaveSpeed || this.stateT > 45) { this.leaveCard(); this.setState('driving'); }
         break;
       case 'dropoff':
         this.holdBrake = true;
@@ -180,6 +182,13 @@ export class Tour {
       const z = this.zone;
       if (!(z && inZone(z, ctx.x, ctx.z) && v < TOUR.stopSpeed)) this.clock += dt;
     }
+  }
+
+  // the tuk-tuk moves off: the big card folds into a chip with the name (and "Read more") for a while
+  leaveCard() {
+    const c = this.card;
+    this.recent = c && c.place && c.place.long && c.place.long.length ? { title: c.title, place: c.place, until: this.t + TOUR.recentFor } : null;
+    this.card = null;
   }
 
   driving(ctx, v) {

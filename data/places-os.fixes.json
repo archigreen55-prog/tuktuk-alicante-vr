@@ -1,0 +1,131 @@
+{
+ "_help": [
+  "ВИПРАВЛЕННЯ текстів TukTuk OS, що суперечать джерелам (docs/fact-check-0203.md). Накладаються tools/sync-tuktuk-os.mjs на згенерований data/places-os.json після кожної синхронізації; кожне виправлення замінює підрядок from на to в полі field (short | long[i] | answer[i] = відповідь i-го питання). Якщо from у TukTuk OS уже змінили, скрипт скаже «виправлення застаріло»: тоді його можна прибрати. Правки варто внести і в самій TukTuk OS."
+ ],
+ "fixes": [
+  {
+   "place": "mercado",
+   "field": "short",
+   "from": "відкритий у 1921 році",
+   "to": "відкритий у 1922 році",
+   "why": "відкриття ринку: листопад 1922 (Архів Аліканте: 21.11.1922; Alicante Plaza: 12.11.1922); дата 1921 в одному джерелі",
+   "sources": [
+    "https://www.alicante.es/es/node/33149",
+    "https://alicanteplaza.es/alicanteplaza/historia-y-curiosidades-del-mercado-central"
+   ]
+  },
+  {
+   "place": "mercado",
+   "field": "long",
+   "i": 0,
+   "from": "Пам'ятаєте архітектора Будинку відьм, Енріке Санчеса Седеньо? Він спроєктував і цей ринок. Будівництво тривало з 1911 по 1921 рік, завершував роботу Хуан Відаль Рамос.",
+   "to": "Ринок спроєктував архітектор Франсіско Фахардо Гуардіола (проєкт 1915 року), а завершив Хуан Відаль Рамос. Перший камінь заклали ще в 1911 році, а відкрили ринок у листопаді 1922-го.",
+   "why": "авторами проєкту джерела називають Франсіско Фахардо Гуардіолу (проєкт 1915) і Хуана Відаля Рамоса (завершив); Санчес Седеньо як автор ринку є лише в поодинокому твердженні",
+   "sources": [
+    "https://es.hispanopedia.com/wiki/Mercado_Central_de_Alicante",
+    "https://alicanteplaza.es/alicanteplaza/historia-y-curiosidades-del-mercado-central",
+    "https://www.alicante.es/es/node/33149"
+   ]
+  },
+  {
+   "place": "brujas",
+   "field": "short",
+   "from": "Неоготичний особняк 1898 року з вежею, головами левів",
+   "to": "Особняк 1898 року з неоготичною вежею (її додали в 1911-му), головами левів",
+   "why": "вежу з готичними мотивами додав Франсіско Фахардо Гуардіола в 1911 році (Wikipedia es / Hispanopedia)",
+   "sources": [
+    "https://es.hispanopedia.com/wiki/Casa_de_las_Brujas"
+   ]
+  },
+  {
+   "place": "brujas",
+   "field": "long",
+   "i": 0,
+   "from": "San Fernando, 60. Його спроєктував архітектор Енріке Санчес Седеньо в 1898 році. Запам'ятайте це ім'я — ми ще зустрінемо його на Центральному ринку (точка 18).",
+   "to": "San Fernando. Його спроєктував архітектор Енріке Санчес Седеньо в 1898 році, а в 1911-му Франсіско Фахардо Гуардіола розширив і перебудував будинок, додавши вежу з готичними мотивами.",
+   "why": "Санчес Седеньо не автор Центрального ринку (посилання на «точку 18» прибрано); вежа з 1911 року, не 1898; номер 60 не підтверджено (Alicante Plaza: Paseo de Gadea, 3, на розі San Fernando)",
+   "sources": [
+    "https://es.hispanopedia.com/wiki/Casa_de_las_Brujas",
+    "https://alicanteplaza.es/descubra-el-enigma-de-la-casa-de-las-brujas",
+    "https://es.hispanopedia.com/wiki/Mercado_Central_de_Alicante"
+   ]
+  },
+  {
+   "place": "casaCarbonell",
+   "field": "long",
+   "i": 0,
+   "from": "Роботи почалися в середині 1920-х.",
+   "to": "Будували його в першій половині 1920-х, а відкрили в 1925 році.",
+   "why": "джерела: будівництво 1922–1925 (дозвіл 1921), відкриття 1925",
+   "sources": [
+    "https://alicanteplaza.es/casa-carbonell-historia-y-curiosidades",
+    "https://www.eldebate.com/espana/comunidad-valenciana/20250225/imponente-edificio-alicante-alzo-orgullo-desplante_273077.html"
+   ]
+  },
+  {
+   "place": "luceros",
+   "field": "short",
+   "from": "фонтаном 1930 року",
+   "to": "фонтаном 1931 року",
+   "why": "конкурс 1929, будівництво 1930, відкриття 11.05.1931",
+   "sources": [
+    "https://alicanteplaza.es/alicanteplaza/plaza-de-los-luceros-historia-y-curiosidades"
+   ]
+  },
+  {
+   "place": "luceros",
+   "field": "long",
+   "i": 0,
+   "from": "У 1930 році він виграв конкурс з проєктом «Levante» («Схід»).",
+   "to": "У 1929 році він виграв конкурс з проєктом «Levante» («Схід»); фонтан споруджували в 1930-му й відкрили 11 травня 1931 року.",
+   "why": "конкурс 1929 року, відкриття 11.05.1931",
+   "sources": [
+    "https://alicanteplaza.es/alicanteplaza/plaza-de-los-luceros-historia-y-curiosidades"
+   ]
+  },
+  {
+   "place": "luceros",
+   "field": "long",
+   "i": 1,
+   "from": "з 2014 року скульптури фонтану на час свята закривають звукоізоляційними коробами",
+   "to": "скульптури фонтану на час маскле́т закривають захисними коробами від вібрації",
+   "why": "у джерелах захисні короби від вібрації; «звукоізоляційні» й «з 2014 року» не підтверджено",
+   "sources": [
+    "https://www.alicante.es/es/node/10404"
+   ]
+  },
+  {
+   "place": "luceros",
+   "field": "answer",
+   "i": 2,
+   "from": "Даніель Баньюльс, 1930 рік.",
+   "to": "Даніель Баньюльс; фонтан відкрили 1931 року.",
+   "why": "відкриття 11.05.1931",
+   "sources": [
+    "https://alicanteplaza.es/alicanteplaza/plaza-de-los-luceros-historia-y-curiosidades"
+   ]
+  },
+  {
+   "place": "plazaDeToros",
+   "field": "long",
+   "i": 0,
+   "from": "вийшло майже 16 000 місць",
+   "to": "вийшло 15 235 місць",
+   "why": "вмістимість 15 235 (Ayuntamiento de Alicante); текст сам собі суперечив: далі «понад 15 тисяч», «15 235»",
+   "sources": [
+    "https://www.alicante.es/sites/default/files/documentos/equipamientos/plaza-toros/historia-plaza-toros.pdf"
+   ]
+  },
+  {
+   "place": "sanFernando",
+   "field": "long",
+   "i": 1,
+   "from": "обстріляв місто з пагорба Альтосано, але на штурм не пішов. Замок San Fernando не зробив жодного бойового пострілу.",
+   "to": "обстріляв місто з пагорба Капучінос (Alto de los Capuchinos), але на штурм не пішов. Замок San Fernando участі в бою не брав.",
+   "why": "хроніст Віравенс: французи стріляли з Alto de los Capuchinos; «жодного пострілу» джерела не підтверджують, лише відсутність бою",
+   "sources": [
+    "https://alicanteplaza.es/alicanteplaza/que-castillo-de-alicante-nacio-para-la-guerra-pero-sirvio-para-la-paz"
+   ]
+  }
+ ]
+}

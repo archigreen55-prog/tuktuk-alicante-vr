@@ -16,12 +16,17 @@ export class DesktopHud {
     this.showMap = true;
     this.lastStatus = ''; this.lastCard = '';
     this.onMore = null;   // set by main: the "Read more" button of a stop's card
+    this.chip = document.createElement('button'); this.chip.id = 'placeChip'; this.chip.type = 'button'; this.chip.style.display = 'none'; document.body.appendChild(this.chip);
+    this.chip.addEventListener('click', () => { if (this.onMore) this.onMore(true); });   // the stop just left: the chip opens its description
     this.card.addEventListener('click', (e) => { if (e.target.closest('[data-more]') && this.onMore) { e.preventDefault(); this.onMore(); } });
   }
 
   // panel: the same object as the dashboard's tour state (or null in free ride)
   update(visible, panel) {
     const show = (el, on) => { el.style.display = on ? 'block' : 'none'; };
+    const chipOn = !!(visible && panel && panel.recent && panel.mode === 'drive');
+    if (chipOn) { const txt = `📷 ${panel.recent.title} · ${t('place.more')}`; if (txt !== this.lastChip) { this.chip.textContent = txt; this.lastChip = txt; } } else this.lastChip = '';
+    this.chip.style.display = chipOn ? 'block' : 'none';
     show(this.status, visible && panel && panel.mode === 'drive');
     show(this.card, visible && panel && (panel.mode === 'card' || panel.mode === 'summary' || !!panel.text));
     if (!visible || !panel) return;

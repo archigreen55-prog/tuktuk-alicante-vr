@@ -123,6 +123,24 @@ for (const p of points) {
   }
   places[id] = rec;
 }
+// corrections of the texts that contradict the sources (data/places-os.fixes.json, docs/fact-check-0203.md): applied to what TukTuk OS says, every time
+const FIX_FILE = join(ROOT, 'data/places-os.fixes.json');
+const fixLog = { applied: [], obsolete: [] };
+if (existsSync(FIX_FILE)) {
+  for (const f of readJson(FIX_FILE).fixes || []) {
+    const rec = places[f.place], key = `${f.place}.${f.field}${f.i != null ? '.' + f.i : ''}`;
+    const get = () => (f.field === 'short' ? rec.short : f.field === 'long' ? rec.long && rec.long[f.i] : rec.questions && rec.questions[f.i] && rec.questions[f.i].a);
+    const cur = rec && get();
+    if (typeof cur !== 'string' || !cur.includes(f.from)) { fixLog.obsolete.push(key); continue; }
+    const next = cur.replace(f.from, f.to);
+    if (f.field === 'short') rec.short = next; else if (f.field === 'long') rec.long[f.i] = next; else rec.questions[f.i].a = next;
+    fixLog.applied.push(key); rec.fixed = [...(rec.fixed || []), key.slice(f.place.length + 1)];
+    for (const url of f.sources || []) {   // the sources of the correction are listed in "Read more" too
+      rec.sources = rec.sources || [];
+      if (!rec.sources.some((x) => x.url === url)) rec.sources.push({ title: 'Звірено: ' + new URL(url).hostname.replace(/^www\./, ''), url });
+    }
+  }
+}
 function tryBin(path) { try { return gitBin('show', `${ref}:${path}`); } catch { return null; } }
 
 const out = {
@@ -144,6 +162,7 @@ for (const [k, n] of Object.entries(places)) {
 }
 const same = !added.length && !removed.length && !moved.length && !retext.length && !rephoto.length && (!prev.source || prev.source.commit === out.source.commit);
 say(`TukTuk OS: ${ref} @ ${commit.slice(0, 12)}, пунктів ${points.length}, у грі місць ${Object.keys(places).length}`);
+say(fixLog.applied.length || fixLog.obsolete.length ? `✎ виправлення джерел (data/places-os.fixes.json): застосовано ${fixLog.applied.length}${fixLog.obsolete.length ? `; ⚠ застаріли (у TukTuk OS текст уже інший, перевір і прибери): ${fixLog.obsolete.join(', ')}` : ''}` : '');
 say(same ? '✓ data/places-os.json збігається з TukTuk OS: нових змін немає.' : '');
 if (!same) {
   if (added.length) say(`+ додано: ${added.join(', ')}`);

@@ -14,9 +14,11 @@ html.ui-phone #attr, html.ui-phone #debug, html.ui-phone #vrbutton { display: no
 /* start screen: two columns, no tables of keys */
 /* the desktop HUD, restyled */
 html.ui-phone #tourHud { left: 50%; right: auto; top: 6px; transform: translateX(-50%); min-width: 0; width: max-content; max-width: min(44vw, 340px); padding: 5px 10px; font-size: 13px; text-align: center; pointer-events: none; }
+html.ui-phone #placeChip { top: 100px; max-width: min(52vw, 400px); padding: 7px 14px; font-size: 13px; }
 html.ui-phone #tourHud .l1 { font-size: 12px; } html.ui-phone #tourHud .l2 { font-size: 16px; } html.ui-phone #tourHud .l3, html.ui-phone #tourHud .l4 { font-size: 13px; }
 html.ui-phone #tourCard { left: 50%; bottom: auto; top: 54px; transform: translateX(-50%); width: min(58vw, 540px); max-height: calc(100vh - 150px); overflow-y: auto; font-size: 15px; z-index: 8; background: rgba(10, 14, 20, .88); pointer-events: none; }
 html.ui-phone #tourCard.mode-card, html.ui-phone #tourCard.mode-summary { pointer-events: auto; touch-action: pan-y; }
+html.ui-phone #tourCard.mode-card .b { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 html.ui-phone #tourCard.mode-text { width: min(52vw, 480px); top: 58px; font-size: 14px; padding: 8px 12px; }
 html.ui-phone #tourCard .t { font-size: 18px; } html.ui-phone #tourCard .c { font-size: 13px; }
 html.ui-phone #miniMap { left: max(10px, env(safe-area-inset-left)); top: 62px; bottom: auto; width: 110px; height: 110px; z-index: 8; pointer-events: auto; transition: width .15s, height .15s; }

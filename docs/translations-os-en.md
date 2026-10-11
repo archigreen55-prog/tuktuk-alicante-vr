@@ -58,8 +58,8 @@
 
 ### Casa de las Brujas (Будинок відьм) `brujas`
 
-- uk: Неоготичний особняк 1898 року з вежею, головами левів і слонів на фасаді. Відьом тут ніколи не було — місцеві просто так прозвали цей «похмурий» будинок, що зовсім не схожий на сусідні.
-- en: A neo-Gothic mansion from 1898 with a tower and the heads of lions and elephants on the facade. There were never any witches here: the locals simply nicknamed this “gloomy” house, so unlike its neighbours.
+- uk: Особняк 1898 року з неоготичною вежею (її додали в 1911-му), головами левів і слонів на фасаді. Відьом тут ніколи не було — місцеві просто так прозвали цей «похмурий» будинок, що зовсім не схожий на сусідні.
+- en: A mansion from 1898 with a neo-Gothic tower (added in 1911) and the heads of lions and elephants on the facade. There were never any witches here: the locals simply nicknamed this “gloomy” house, so unlike its neighbours.
 
 ### Університет — Sede Universitaria, Calle San Fernando, 40 `university`
 
@@ -123,13 +123,13 @@
 
 ### Mercado Central `mercado`
 
-- uk: Центральний ринок Аліканте, відкритий у 1921 році в стилі модерну. Тут продають свіжу рибу, хамон, фрукти й спеції. А біля входу — пам'ятна дошка жертвам бомбардування 1938 року, однієї з найстрашніших сторінок історії міста.
-- en: Alicante's central market, opened in 1921 in the Art Nouveau style. Fresh fish, jamón, fruit and spices are sold here. By the entrance there is a memorial plaque to the victims of the 1938 bombing, one of the most terrible pages in the city's history.
+- uk: Центральний ринок Аліканте, відкритий у 1922 році в стилі модерну. Тут продають свіжу рибу, хамон, фрукти й спеції. А біля входу — пам'ятна дошка жертвам бомбардування 1938 року, однієї з найстрашніших сторінок історії міста.
+- en: Alicante's central market, opened in 1922 in the Art Nouveau style. Fresh fish, jamón, fruit and spices are sold here. By the entrance there is a memorial plaque to the victims of the 1938 bombing, one of the most terrible pages in the city's history.
 
 ### Plaza de los Luceros `luceros`
 
-- uk: Кругла площа з фонтаном 1930 року і чотирма вершниками на конях. Це серце свята Хогерас: у червні тут щодня о другій дня гримить маскле́та — оглушлива піротехнічна «симфонія».
-- en: A round square with a fountain from 1930 and four horsemen on horses. It is the heart of the Hogueras festival: in June, at two o'clock every afternoon, the mascletà thunders here, a deafening pyrotechnic “symphony”.
+- uk: Кругла площа з фонтаном 1931 року і чотирма вершниками на конях. Це серце свята Хогерас: у червні тут щодня о другій дня гримить маскле́та — оглушлива піротехнічна «симфонія».
+- en: A round square with a fountain from 1931 and four horsemen on horses. It is the heart of the Hogueras festival: in June, at two o'clock every afternoon, the mascletà thunders here, a deafening pyrotechnic “symphony”.
 
 ### Calle San Francisco — «вулиця з грибами» `sanFrancisco`
 
@@ -167,16 +167,16 @@
 | Colegio San Antonio de Padua (францисканська школа) | Школа францисканців з 1926 року, поруч церква з блакитним куполом (65) | A Franciscan school since 1926, with a blue-domed church next door (66) |
 | Castillo de San Fernando | Замок San Fernando: проти Наполеона, але без жодного бою (56) | San Fernando castle: built against Napoleon, never fought a battle (66) |
 | Аудиторіо — ADDA (Auditorio de la Diputación de Alicante) | ADDA: білий концертний зал 2011 року, суворий і сучасний (56) | ADDA: a white concert hall from 2011, austere and modern (56) |
-| Mercado Central | Mercado Central, 1921: модерн, свіжа риба, хамон і спеції (57) | Mercado Central, 1921: Art Nouveau, fresh fish, jamón and spices (64) |
-| Plaza de los Luceros | Plaza de los Luceros: фонтан 1930 року й гуркіт маскле́ти (57) | Plaza de los Luceros: a 1930 fountain and the thunder of the mascletà (69) |
+| Mercado Central | Mercado Central, 1922: модерн, свіжа риба, хамон і спеції (57) | Mercado Central, 1922: Art Nouveau, fresh fish, jamón and spices (64) |
+| Plaza de los Luceros | Plaza de los Luceros: фонтан 1931 року й гуркіт маскле́ти (57) | Plaza de los Luceros: a 1931 fountain and the thunder of the mascletà (69) |
 | Calle San Francisco — «вулиця з грибами» | Calle San Francisco: вулиця велетенських грибів і жабок (55) | Calle San Francisco: the street of giant mushrooms and frogs (60) |
 
 ## 4. Докладніше (long)
 
 ### Casa Carbonell `casaCarbonell`
 
-- uk 1: Будинок замовив Енріке Карбонель — текстильний промисловець з Алькоя, який розбагатів на поставках під час Першої світової війни. Проєкт створив аліканський архітектор Хуан Відаль Рамос. Запам'ятайте це ім'я: далі ми побачимо його будинок ощадної каси на San Fernando (точка 6), а Центральний ринок (точка 18) він завершував. Роботи почалися в середині 1920-х.
-- en 1: The house was commissioned by Enrique Carbonell, a textile industrialist from Alcoy who grew rich supplying goods during the First World War. The project was designed by the Alicante architect Juan Vidal Ramos. Remember that name: later we will see his savings-bank building on San Fernando (point 6), and he also completed the Central Market (point 18). Work began in the mid-1920s.
+- uk 1: Будинок замовив Енріке Карбонель — текстильний промисловець з Алькоя, який розбагатів на поставках під час Першої світової війни. Проєкт створив аліканський архітектор Хуан Відаль Рамос. Запам'ятайте це ім'я: далі ми побачимо його будинок ощадної каси на San Fernando (точка 6), а Центральний ринок (точка 18) він завершував. Будували його в першій половині 1920-х, а відкрили в 1925 році.
+- en 1: The house was commissioned by Enrique Carbonell, a textile industrialist from Alcoy who grew rich supplying goods during the First World War. The project was designed by the Alicante architect Juan Vidal Ramos. Remember that name: later we will see his savings-bank building on San Fernando (point 6), and he also completed the Central Market (point 18). It was built in the first half of the 1920s and opened in 1925.
 
 - uk 2: Стиль — модерн з «французьким» акцентом: мармур, пісковик, кований метал, скло, купол на даху. Будинок займає цілий квартал і з моря здається справжнім палацом.
 - en 2: The style is Art Nouveau with a “French” accent: marble, sandstone, wrought iron, glass and a dome on the roof. The house takes up a whole block and from the sea it looks like a real palace.
@@ -235,8 +235,8 @@
 
 ### Casa de las Brujas (Будинок відьм) `brujas`
 
-- uk 1: Особняк стоїть на розі проспекту Doctor Gadea і вулиці San Fernando, 60. Його спроєктував архітектор Енріке Санчес Седеньо в 1898 році. Запам'ятайте це ім'я — ми ще зустрінемо його на Центральному ринку (точка 18).
-- en 1: The mansion stands on the corner of Avenida Doctor Gadea and Calle San Fernando, 60. It was designed by the architect Enrique Sánchez Sedeño in 1898. Remember that name: we will meet it again at the Central Market (point 18).
+- uk 1: Особняк стоїть на розі проспекту Doctor Gadea і вулиці San Fernando. Його спроєктував архітектор Енріке Санчес Седеньо в 1898 році, а в 1911-му Франсіско Фахардо Гуардіола розширив і перебудував будинок, додавши вежу з готичними мотивами.
+- en 1: The mansion stands on the corner of Avenida Doctor Gadea and Calle San Fernando. It was designed by the architect Enrique Sánchez Sedeño in 1898, and in 1911 Francisco Fajardo Guardiola enlarged and remodelled the house, adding a tower with Gothic motifs.
 
 - uk 2: Аліканте — середземноморське місто: світлі фасади, класичні пропорції, багато сонця. І раптом посеред цього — гостроверха неоготична вежа, темні деталі, химерний декор. Мешканці не знайшли кращого пояснення, ніж «тут живуть відьми». Назва закріпилася, і ще й досі так кажуть усі. Офіційна назва — Casa Martínez.
 - en 2: Alicante is a Mediterranean city: light facades, classical proportions, lots of sun. And suddenly in the middle of it all there is a pointed neo-Gothic tower, dark details and fanciful decoration. The locals found no better explanation than “witches live here”. The name stuck and everybody still says it today. The official name is Casa Martínez.
@@ -367,8 +367,8 @@
 
 ### Plaza de Toros `plazaDeToros`
 
-- uk 1: Першу арену на цьому місці збудували в 1848 році за проєктом архітектора Еміліо Ховера. У 1888 році її перебудував Хосе Гуардіола Піко, і вийшло майже 16 000 місць. А в самому Аліканте тоді жило близько 19 000 людей! Відкриття нової арени святкували три дні в червні 1888 року. Виступали зірки того часу — «Лагартіхо», «Геррита» і «Лагартіха».
-- en 1: The first arena on this site was built in 1848 to a design by the architect Emilio Jover. In 1888 it was rebuilt by José Guardiola Picó, and it came out with almost 16,000 seats. And in Alicante itself at that time lived about 19,000 people! The opening of the new arena was celebrated for three days in June 1888. The stars of the time performed: “Lagartijo”, “Guerrita” and “Lagartija”.
+- uk 1: Першу арену на цьому місці збудували в 1848 році за проєктом архітектора Еміліо Ховера. У 1888 році її перебудував Хосе Гуардіола Піко, і вийшло 15 235 місць. А в самому Аліканте тоді жило близько 19 000 людей! Відкриття нової арени святкували три дні в червні 1888 року. Виступали зірки того часу — «Лагартіхо», «Геррита» і «Лагартіха».
+- en 1: The first arena on this site was built in 1848 to a design by the architect Emilio Jover. In 1888 it was rebuilt by José Guardiola Picó, and it came out with 15,235 seats. And in Alicante itself at that time lived about 19,000 people! The opening of the new arena was celebrated for three days in June 1888. The stars of the time performed: “Lagartijo”, “Guerrita” and “Lagartija”.
 
 - uk 2: Сьогодні арена вміщує 15 235 глядачів. Вона має три яруси: tendidos знизу, gradas посередині, ложі нагорі. Кориди тут найчастіше проходять у червні, під час свята Хогерас. Але на арені бувають і концерти, і навіть тенісні матчі.
 - en 2: Today the arena holds 15,235 spectators. It has three tiers: tendidos below, gradas in the middle, boxes at the top. Bullfights are held here mostly in June, during the Hogueras festival. But the arena also hosts concerts and even tennis matches.
@@ -409,8 +409,8 @@
 - uk 1: 1808 рік. Наполеон захоплює Іспанію, починається Війна за незалежність. Аліканте боїться французького десанту з моря або удару з боку кварталу Сан-Блас. На пагорбі Тоссаль вирішують звести нову фортецю, щоб прикрити місто із заходу. Проєкт готовий у 1809 році, будівництво завершили в 1812-му. Керував інженер Пабло Ордовас-і-Састре, а працювали, як пишуть, чи не всі мешканці міста.
 - en 1: The year is 1808. Napoleon seizes Spain and the War of Independence begins. Alicante fears a French landing from the sea or an attack from the San Blas district. On the Tossal hill they decide to build a new fortress to cover the city from the west. The project was ready in 1809 and construction was finished in 1812. It was led by the engineer Pablo Ordovás y Sastre, and, it is said, nearly all the inhabitants of the city worked on it.
 
-- uk 2: І ось фінал: французи Аліканте так і не взяли. У січні 1812 року генерал Монбрен обстріляв місто з пагорба Альтосано, але на штурм не пішов. Замок San Fernando не зробив жодного бойового пострілу. Він мав бути ще й в'язницею для французьких полонених.
-- en 2: And here is the ending: the French never took Alicante. In January 1812 General Montbrun shelled the city from the Altozano hill but did not storm it. San Fernando Castle never fired a single shot in battle. It was also meant to serve as a prison for French prisoners of war.
+- uk 2: І ось фінал: французи Аліканте так і не взяли. У січні 1812 року генерал Монбрен обстріляв місто з пагорба Капучінос (Alto de los Capuchinos), але на штурм не пішов. Замок San Fernando участі в бою не брав. Він мав бути ще й в'язницею для французьких полонених.
+- en 2: And here is the ending: the French never took Alicante. In January 1812 General Montbrun shelled the city from the Alto de los Capuchinos but did not storm it. San Fernando Castle took no part in a battle. It was also meant to serve as a prison for French prisoners of war.
 
 - uk 3: Назву фортеця отримала на честь короля Фернандо VII. Сьогодні на Тоссалі — парк, стіни фортеці й оглядові майданчики. Звідси видно замок Санта-Барбара навпроти, де ми вже побували. Два замки дивляться один на одного через усе місто.
 - en 3: The fortress was named in honour of King Ferdinand VII. Today the Tossal is a park with the fortress walls and viewing terraces. From here you can see Santa Bárbara Castle opposite, where we have already been. Two castles look at each other across the whole city.
@@ -436,8 +436,8 @@
 
 ### Mercado Central `mercado`
 
-- uk 1: Пам'ятаєте архітектора Будинку відьм, Енріке Санчеса Седеньо? Він спроєктував і цей ринок. Будівництво тривало з 1911 по 1921 рік, завершував роботу Хуан Відаль Рамос. Той самий Відаль, що звів Casa Carbonell (точка 1) і будівлю ощадної каси на San Fernando (точка 6). Ринок стоїть там, де колись проходили міські мури. Роздивіться купол, вітражі й декор фасаду: так виглядав модерн у 1920-х.
-- en 1: Remember the architect of the House of the Witches, Enrique Sánchez Sedeño? He designed this market too. Construction lasted from 1911 to 1921, and the work was completed by Juan Vidal Ramos. The same Vidal who built Casa Carbonell (point 1) and the savings-bank building on San Fernando (point 6). The market stands where the city walls once ran. Look at the dome, the stained glass and the decoration of the facade: this is what Art Nouveau looked like in the 1920s.
+- uk 1: Ринок спроєктував архітектор Франсіско Фахардо Гуардіола (проєкт 1915 року), а завершив Хуан Відаль Рамос. Перший камінь заклали ще в 1911 році, а відкрили ринок у листопаді 1922-го. Той самий Відаль, що звів Casa Carbonell (точка 1) і будівлю ощадної каси на San Fernando (точка 6). Ринок стоїть там, де колись проходили міські мури. Роздивіться купол, вітражі й декор фасаду: так виглядав модерн у 1920-х.
+- en 1: The market was designed by the architect Francisco Fajardo Guardiola (the project dates from 1915) and completed by Juan Vidal Ramos. The foundation stone was laid as early as 1911, and the market opened in November 1922. The same Vidal who built Casa Carbonell (point 1) and the savings-bank building on San Fernando (point 6). The market stands where the city walls once ran. Look at the dome, the stained glass and the decoration of the facade: this is what Art Nouveau looked like in the 1920s.
 
 - uk 2: Вранці 25 травня 1938 року, під час громадянської війни, над Аліканте з'явилися італійські бомбардувальники Savoia-Marchetti SM.79. Вони воювали на боці франкістів. Скинули близько 90 бомб; частина влучила в ринок, повний людей. Загинули сотні мешканців. Ринок відновили, зберігши більшість декору. На площі поруч — меморіал жертвам.
 - en 2: On the morning of 25 May 1938, during the Civil War, Italian Savoia-Marchetti SM.79 bombers appeared over Alicante. They fought on the side of Franco's forces. They dropped about 90 bombs; some hit the market, which was full of people. Hundreds of residents were killed. The market was restored, keeping most of its decoration. In the square nearby there is a memorial to the victims.
@@ -451,11 +451,11 @@
 
 ### Plaza de los Luceros `luceros`
 
-- uk 1: Фонтан створив скульптор Даніель Баньюльс Мартінес. У 1930 році він виграв конкурс з проєктом «Levante» («Схід»). Центральна колона — з барельєфами в «східному» стилі й жіночими фігурами. Навколо — чотири однакові скульптури коней з вершниками. Кажуть, «luceros» — це чотири блукаючі зорі нічного неба, які надихнули автора. Через коней площу якийсь час навіть називали «площею коней».
-- en 1: The fountain was created by the sculptor Daniel Bañuls Martínez. In 1930 he won a competition with a project called “Levante” (“the East”). The central column has bas-reliefs in an “eastern” style and female figures. Around it are four identical sculptures of horses with riders. They say “luceros” are the four wandering stars of the night sky that inspired the author. Because of the horses, the square was for a while even called the “square of the horses”.
+- uk 1: Фонтан створив скульптор Даніель Баньюльс Мартінес. У 1929 році він виграв конкурс з проєктом «Levante» («Схід»); фонтан споруджували в 1930-му й відкрили 11 травня 1931 року. Центральна колона — з барельєфами в «східному» стилі й жіночими фігурами. Навколо — чотири однакові скульптури коней з вершниками. Кажуть, «luceros» — це чотири блукаючі зорі нічного неба, які надихнули автора. Через коней площу якийсь час навіть називали «площею коней».
+- en 1: The fountain was created by the sculptor Daniel Bañuls Martínez. In 1929 he won a competition with a project called “Levante” (“the East”); the fountain was built in 1930 and opened on 11 May 1931. The central column has bas-reliefs in an “eastern” style and female figures. Around it are four identical sculptures of horses with riders. They say “luceros” are the four wandering stars of the night sky that inspired the author. Because of the horses, the square was for a while even called the “square of the horses”.
 
-- uk 2: Головна подія — Hogueras de San Juan, 20–24 червня. Щодня о 14:00 на Лусерос проходить маскле́та. Це не феєрверк у небі, а ритмічна серія вибухів, від яких трясеться земля й дзвенить у грудях. Звук такий потужний, що з 2014 року скульптури фонтану на час свята закривають звукоізоляційними коробами.
-- en 2: The main event is the Hogueras de San Juan, 20–24 June. Every day at 14:00 the mascletà takes place on Luceros. It is not fireworks in the sky but a rhythmic series of explosions that make the ground shake and ring in your chest. The sound is so powerful that since 2014 the fountain's sculptures are covered with soundproof boxes for the festival.
+- uk 2: Головна подія — Hogueras de San Juan, 20–24 червня. Щодня о 14:00 на Лусерос проходить маскле́та. Це не феєрверк у небі, а ритмічна серія вибухів, від яких трясеться земля й дзвенить у грудях. Звук такий потужний, що скульптури фонтану на час маскле́т закривають захисними коробами від вібрації.
+- en 2: The main event is the Hogueras de San Juan, 20–24 June. Every day at 14:00 the mascletà takes place on Luceros. It is not fireworks in the sky but a rhythmic series of explosions that make the ground shake and ring in your chest. The sound is so powerful that the fountain's sculptures are covered with protective boxes against vibration during the mascletàs.
 
 - uk 3: Під площею — станція трамвая-метро Luceros. Від неї центр міста розходиться у всі боки, а Авеню Альфонсо Мудрого веде до Рамбли й Старого міста.
 - en 3: Under the square is the Luceros tram-metro station. From it the city centre spreads in all directions, and Avenida Alfonso el Sabio leads to the Rambla and the Old Town.
@@ -696,8 +696,8 @@
 - uk 2: **Коли свято Хогерас?** У червні, в дні навколо свята Сан-Хуана (20–24 червня).
 - en 2: **When is the Hogueras festival?** In June, in the days around the feast of Saint John (20–24 June).
 
-- uk 3: **Хто автор фонтану?** Даніель Баньюльс, 1930 рік.
-- en 3: **Who made the fountain?** Daniel Bañuls, 1930.
+- uk 3: **Хто автор фонтану?** Даніель Баньюльс; фонтан відкрили 1931 року.
+- en 3: **Who made the fountain?** Daniel Bañuls; the fountain opened in 1931.
 
 
 ### Calle San Francisco — «вулиця з грибами» `sanFrancisco`

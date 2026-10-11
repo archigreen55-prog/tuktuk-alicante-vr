@@ -649,16 +649,17 @@ function tourPanel() {
     return { mode: 'card', title: T.card.title, body: T.card.body, footer: T.card.footer, credit: [photoCreditText(pl.photo), T.card.credit].filter(Boolean).join(' · '), counter: `${T.stopsDone + (st === 'photo' ? 1 : 0)}/${T.stopCount}`,
       photo: pl.photo ? pl.photo.thumb || pl.photo.src : pl.icon || null, more: !!(pl.long && pl.long.length) };
   }
+  const rc = T.recent && T.t < T.recent.until ? { title: T.recent.title } : null;   // the stop just left: a chip with "Read more"
   const tg = T.target;
   const d = tg ? Math.hypot(tg.x - phys.x, tg.z - phys.z) : 0;
   if (st === 'waiting' || st === 'boarding') {
     return { mode: 'drive', line1: t('tour.boardingLine', { v: T.def.title }), title: t('tour.waiting', { v: T.start.title }), line3: fmtDist(d), dial: true, group: T.group,
       hint: t(st === 'boarding' ? 'tour.seating' : 'tour.approach'), text: T.text };
   }
-  if (!tg) return { mode: 'drive', line1: T.def.title, title: t('tour.leaving'), line3: '', mood: T.mood, tips: T.tipsEstimate, group: T.group, text: T.text };
+  if (!tg) return { mode: 'drive', line1: T.def.title, title: t('tour.leaving'), line3: '', mood: T.mood, tips: T.tipsEstimate, group: T.group, text: T.text, recent: rc };
   const line1 = tg.kind === 'pass' ? t('tour.factAhead', { a: T.stopIndex, b: T.stopCount }) : tg.kind === 'finish' ? t('tour.finishLine') : t('tour.stop', { a: T.stopIndex, b: T.stopCount });
   return { mode: 'drive', line1, title: tg.title, line3: `${fmtDist(d)} · ⏱ ${fmtClock(T.clock)} / ${fmtClock(T.targetTime)}`,
-    mood: T.mood, tips: T.tipsEstimate, group: T.group, dial: true, text: T.text };
+    mood: T.mood, tips: T.tipsEstimate, group: T.group, dial: true, text: T.text, recent: rc };
 }
 
 // ---------- VR session ----------
@@ -728,7 +729,7 @@ function mapIcons() {
 // the full description of a place ("Read more" on the card of a stop); the game stands still while it is open, like for the full map
 const pauseFor = (p) => { paused = p; arcadeSound.duck(p); if (p && touch) touch.releaseAll(); if (!p) last = performance.now(); };
 const placeDetail = createPlaceDetail({ setPaused: pauseFor });
-hud.onMore = () => { if (tour && tour.card && tour.card.place) placeDetail.open(tour.card.place); };
+hud.onMore = (recent) => { const pl = recent ? tour && tour.recent && tour.recent.place : tour && tour.card && tour.card.place; if (pl) placeDetail.open(pl); };
 const fullMap = createFullMap({
   city, graph, getTour: () => tour || arcadeAsTour(), getTrail: () => (tour || run ? trail : null),
   getTuk: () => ({ x: phys.x, z: phys.z, heading: phys.heading }),
