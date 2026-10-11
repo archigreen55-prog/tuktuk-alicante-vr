@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Basílica de Santa María">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · Santa María: дві різні дзвіниці і бароковий портал -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="54" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- ліва дзвіниця: старша, масивна -->
+    <rect x="14" y="30" width="28" height="78" fill="#E3C79A"/>
+    <path d="M12 30 h32 l-16 -18 z" fill="#D9734E"/>
+    <rect x="22" y="40" width="12" height="16" rx="6" fill="#2B2D42"/>
+    <!-- права дзвіниця: молодша, стрункіша, з ліхтариком -->
+    <rect x="88" y="42" width="24" height="66" fill="#EFD9B4"/>
+    <rect x="93" y="28" width="14" height="14" fill="#EFD9B4"/>
+    <path d="M91 28 h18 l-9 -14 z" fill="#8EC5E0"/>
+    <rect x="95" y="50" width="10" height="14" rx="5" fill="#2B2D42"/>
+    <!-- неф -->
+    <path d="M42 108 v-50 l23 -16 l23 16 v50 z" fill="#EFD9B4"/>
+    <!-- бароковий портал -->
+    <path d="M52 108 v-30 q13 -16 26 0 v30 z" fill="#E3C79A"/>
+    <path d="M58 108 v-20 q7 -9 14 0 v20 z" fill="#8A5A3C"/>
+    <circle cx="65" cy="64" r="5" fill="#F6C343"/>
+    <line x1="8" y1="108" x2="120" y2="108"/>
+  </g>
+</svg>

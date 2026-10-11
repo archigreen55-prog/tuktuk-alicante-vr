@@ -2,10 +2,11 @@
 // data/arcade-via.json (via points, tools/arcade-vias.mjs) and data/arcade-par.json (the measured par, tools/sim-arcade.mjs --par --write).
 //   node tools/make-levels.mjs
 // Levels of the owner (from the editor) are NOT touched: they are added by hand as data/levels/<id>.json plus a line in the index (see docs/level-editor.md).
+import { loadSpec } from './lib/load-spec.mjs';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { levelFromTour, validateLevel, levelTitle } from '../src/game/levels.js';
 
-const spec = JSON.parse(await readFile('data/tour.json', 'utf8'));
+const spec = await loadSpec();
 const city = JSON.parse(await readFile('data/city.json', 'utf8'));
 const via = JSON.parse(await readFile('data/arcade-via.json', 'utf8'));
 const par = JSON.parse(await readFile('data/arcade-par.json', 'utf8'));

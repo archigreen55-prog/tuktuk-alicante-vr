@@ -1,6 +1,8 @@
 // The editor's model (src/game/levelEdit.js) on the real city: adding / moving / deleting / reordering, the 3-12 gates rule, undo / redo,
 // snapping to the road, the via point goes into the nearest segment, and a level made this way runs in Arcade.
 //   node tools/test-level-edit.mjs
+import { loadSpec } from './lib/load-spec.mjs';
+import { arcadeLines } from '../src/game/placesData.js';
 import { readFile } from 'node:fs/promises';
 import { RoadGraph } from '../src/game/route.js';
 import { Arcade } from '../src/game/arcade.js';
@@ -10,8 +12,8 @@ import { driveGraph, checkLevel, PATH } from '../src/game/pathfind.js';
 import { buildWorld } from './sim-tour.mjs';
 import { encodeLevel, decodeLevel } from '../src/game/levelShare.js';
 
-const city = JSON.parse(await readFile('data/city.json', 'utf8')), spec = JSON.parse(await readFile('data/tour.json', 'utf8'));
-const graph = new RoadGraph(city.tour.graph), facts = JSON.parse(await readFile('data/arcade-facts.json', 'utf8')).uk;
+const city = JSON.parse(await readFile('data/city.json', 'utf8')), spec = await loadSpec();
+const graph = new RoadGraph(city.tour.graph), facts = arcadeLines(spec, 'uk');
 const ctx = { graph, places: city.tour.places, spec, facts };
 let bad = 0; const check = (c, m, x = '') => { if (!c) bad++; console.log(c ? 'ok  ' : 'FAIL', m, x); };
 
@@ -49,11 +51,11 @@ for (let i = 0; i < 40; i++) doc.setTitle('en', 'x' + i);
 check(doc.undoStack.length === 30, 'undo is capped at 30', doc.undoStack.length);
 // drag a place gate: it becomes a free gate that keeps its name and fact
 const d2 = new LevelDoc(levelFromTour(spec, 'short'), ctx);
-const i = d2.items.findIndex((q) => q.place === 'explanada');
+const i = d2.items.findIndex((q) => q.place === 'casaCarbonell');
 d2.beginDrag(); d2.dragTo(i, d2.pointOf(d2.items[i])[0] + 12, d2.pointOf(d2.items[i])[1]); d2.dragTo(i, d2.pointOf(d2.items[i])[0] + 3, d2.pointOf(d2.items[i])[1]); d2.endDrag();
-check(!d2.items[i].place && d2.items[i].title === spec.places.explanada.title && d2.items[i].fact === facts.explanada, 'a moved place gate keeps title and fact', JSON.stringify(d2.items[i]));
-check(d2.undoStack.length === 1, 'a drag is one undo step'); d2.undo(); check(d2.items[i].place === 'explanada', 'undo of the drag restores the place gate');
-d2.beginDrag(); d2.dragTo(i, 0, 0); d2.cancelDrag(); check(d2.items[i].place === 'explanada', 'cancelDrag restores it');
+check(!d2.items[i].place && d2.items[i].title === spec.places.casaCarbonell.title && d2.items[i].fact === facts.casaCarbonell, 'a moved place gate keeps title and fact', JSON.stringify(d2.items[i]));
+check(d2.undoStack.length === 1, 'a drag is one undo step'); d2.undo(); check(d2.items[i].place === 'casaCarbonell', 'undo of the drag restores the place gate');
+d2.beginDrag(); d2.dragTo(i, 0, 0); d2.cancelDrag(); check(d2.items[i].place === 'casaCarbonell', 'cancelDrag restores it');
 // the built-in levels are valid
 for (const t of spec.tours) check(validateLevel(levelFromTour(spec, t.id), { places: city.tour.places }).length === 0, `${t.id} is valid`);
 // validation: no uk title, 2 gates, finish not last, via after the finish, too long a fact
@@ -105,7 +107,10 @@ for (const t of spec.tours) { const c = checkLevel(new LevelDoc(levelFromTour(sp
   const dd = new LevelDoc(stayLv(), ctx); dd.setType('standard'); dd.setType('stay-on-road');
   check(dd.level.rules.margin === 1, 'choosing the type puts the default margin into the rules', JSON.stringify(dd.level.rules));
   // a point on a residential street and one beside it
-  const e = graph.nearestEdge(468, 191, 80), a = graph.ea[e.e], b = graph.eb[e.e];
+  // (a street away from every gate and via point of the level: the run must not collect anything while the test feeds positions)
+  const busy = shortLv.items.map((q) => q.p || (city.tour.places[q.place] && city.tour.places[q.place].p)).filter(Boolean);
+  const spot = [[468, 191], [300, 100], [100, 100], [200, 200], [-100, 300], [350, 250]].find(([x, z]) => busy.every((q) => Math.hypot(q[0] - x, q[1] - z) > 60) && graph.nearestEdge(x, z, 40));
+  const e = graph.nearestEdge(spot[0], spot[1], 80), a = graph.ea[e.e], b = graph.eb[e.e];
   const dx = graph.x[b] - graph.x[a], dz = graph.z[b] - graph.z[a], l = Math.hypot(dx, dz), nx = -dz / l, nz = dx / l, half = graph.roadHalf(e.e);
   const feed = (run, x, z, secs) => { const ev = []; for (let t = 0; t < secs; t += 1 / 72) { run.update({ dt: 1 / 72, x, z, speed: 22, impact: 0, contact: false, blocked: false, nitroActive: false, clearance: null, drifting: false }); ev.push(...run.events); } return ev; };
   const mk = (lv) => new Arcade(lv, { places: city.tour.places, spec, graph, drive }, { facts, useRoute: false });

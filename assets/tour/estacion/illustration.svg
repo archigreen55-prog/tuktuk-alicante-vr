@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Залізничний вокзал">
+  <!-- TukTuk · власна ілюстрація (agent-svg), заглушка до підтвердження точки · вокзал: фасад XIX ст. з годинником і аркою -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="56" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- корпус -->
+    <rect x="12" y="56" width="104" height="52" fill="#F3DDC2"/>
+    <!-- центральний ризаліт з годинником -->
+    <rect x="44" y="40" width="40" height="68" fill="#EFD9B4"/>
+    <path d="M42 40 h44 l-22 -12 z" fill="#D9734E"/>
+    <circle cx="64" cy="52" r="6" fill="#FFFDF7" stroke-width="2.5"/>
+    <path d="M64 48 v4 h3" fill="none" stroke-width="2"/>
+    <!-- арка входу -->
+    <path d="M54 108 v-24 q10 -12 20 0 v24 z" fill="#8EC5E0"/>
+    <!-- вікна-арки по боках -->
+    <g fill="#F6C343" stroke-width="2.5">
+      <path d="M20 90 v-14 q5 -7 10 0 v14 z"/><path d="M34 90 v-14 q5 -7 10 0 v14 z"/>
+      <path d="M84 90 v-14 q5 -7 10 0 v14 z"/><path d="M98 90 v-14 q5 -7 10 0 v14 z"/>
+    </g>
+    <!-- рейки на передньому плані -->
+    <path d="M8 114 h112 M8 118 h112" fill="none" stroke="#8A8F9C" stroke-width="2"/>
+  </g>
+</svg>

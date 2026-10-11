@@ -4,10 +4,10 @@
   "title": {"uk":"30 хв: до замку","en":"30 min: to the castle","es":"30 min: al castillo"},
   "type": "standard",
   "start": {"place":"melia"},
-  "time": {"mode":"auto","par":595},
+  "time": {"mode":"auto","par":571},
   "items": [
     {"k":"via","p":[585,123]},
-    {"k":"gate","place":"explanada"},
+    {"k":"gate","place":"casaCarbonell"},
     {"k":"gate","place":"santaMaria"},
     {"k":"gate","place":"postiguet"},
     {"k":"via","p":[605,-33]},

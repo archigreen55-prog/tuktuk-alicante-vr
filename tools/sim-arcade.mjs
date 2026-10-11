@@ -4,6 +4,7 @@
 // that corner), each driver's run (time, speeds, hits, gates), and the par time the game uses for its clock.
 //   node tools/sim-arcade.mjs [tourId] [driver]     (default: short, all three)
 //   node tools/sim-arcade.mjs short --par           recomputes the par (the normal driver × margin); --write stores it in data/arcade-par.json
+import { loadSpec } from './lib/load-spec.mjs';
 import { readFile } from 'node:fs/promises';
 import { TukTukPhysics, ARCADE } from '../src/vehicle/physics.js';
 import { RoadGraph, polylineDistance } from '../src/game/route.js';
@@ -37,7 +38,7 @@ import { Terrain } from '../src/city/terrain.js';
 
 const city = JSON.parse(await readFile('data/city.json', 'utf8'));
 const terrain = city.meta.terrain ? Terrain.fromBin(city.meta.terrain, (await readFile(city.meta.terrain.file)).buffer.slice(0)) : null;
-const spec = JSON.parse(await readFile('data/tour.json', 'utf8'));
+const spec = await loadSpec();
 // levels: by id from data/levels/index.json, or a path to a level file (node tools/sim-arcade.mjs data/levels-submitted/x.json)
 const LEVELS = {};
 for (const row of JSON.parse(await readFile('data/levels/index.json', 'utf8')).levels) LEVELS[row.id] = JSON.parse(await readFile(`data/levels/${row.file}`, 'utf8'));

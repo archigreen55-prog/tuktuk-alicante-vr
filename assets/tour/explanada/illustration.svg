@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Explanada de España">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · Explanada: пальма і хвиляста мармурова мозаїка -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="54" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- мозаїка: смуга з хвилями трьох кольорів -->
+    <path d="M8 88 h112 v24 h-112 z" fill="#FFF4E0"/>
+    <path d="M8 96 q10 -8 20 0 t20 0 t20 0 t20 0 t20 0 t12 -3" fill="none" stroke="#C0392B" stroke-width="5"/>
+    <path d="M8 105 q10 -8 20 0 t20 0 t20 0 t20 0 t20 0 t12 -3" fill="none" stroke="#2B2D42" stroke-width="4"/>
+    <path d="M8 88 h112 v24 h-112 z" fill="none"/>
+    <!-- стовбур пальми -->
+    <path d="M60 88 q-2 -30 6 -58 l6 2 q-7 28 -4 56 z" fill="#C8955C"/>
+    <g stroke-width="2"><line x1="61" y1="76" x2="68" y2="77"/><line x1="62" y1="62" x2="69" y2="63"/><line x1="64" y1="48" x2="71" y2="49"/></g>
+    <!-- листя -->
+    <g fill="#6BAF62">
+      <path d="M69 30 q-22 -10 -40 6 q20 -4 40 -6 z"/>
+      <path d="M69 30 q-12 -22 -34 -20 q20 6 34 20 z"/>
+      <path d="M69 30 q10 -22 32 -18 q-20 4 -32 18 z"/>
+      <path d="M69 30 q24 -6 38 12 q-20 -8 -38 -12 z"/>
+      <path d="M69 30 q-4 20 -22 32 q12 -16 22 -32 z"/>
+      <path d="M69 30 q8 18 26 26 q-16 -10 -26 -26 z"/>
+    </g>
+    <!-- ліхтар -->
+    <line x1="102" y1="88" x2="102" y2="60"/>
+    <circle cx="102" cy="56" r="5" fill="#F6C343"/>
+  </g>
+</svg>

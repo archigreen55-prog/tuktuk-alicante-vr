@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Monumento a Canalejas">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · пам'ятник Каналехасу з левом біля ніг -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="46" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- постамент -->
+    <path d="M40 108 v-10 h48 v10 z" fill="#E3C79A"/>
+    <path d="M48 98 v-40 h32 v40 z" fill="#EFD9B4"/>
+    <path d="M44 58 h40 v-6 h-40 z" fill="#E3C79A"/>
+    <!-- бронзова фігура -->
+    <circle cx="64" cy="18" r="7" fill="#8A6A4A"/>
+    <path d="M54 52 l2 -22 q8 -6 16 0 l2 22 z" fill="#8A6A4A"/>
+    <path d="M56 32 l-8 14" fill="none" stroke-width="4"/>
+    <!-- лев біля підніжжя -->
+    <path d="M58 98 q-2 -14 12 -16 q10 -1 12 8 h8 q4 0 4 8 z" fill="#C8955C"/>
+    <circle cx="70" cy="80" r="8" fill="#B07A45"/>
+    <circle cx="68" cy="79" r="1.5" fill="#2B2D42" stroke="none"/>
+  </g>
+</svg>

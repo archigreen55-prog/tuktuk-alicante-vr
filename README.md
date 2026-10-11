@@ -46,11 +46,17 @@ when you pass them (full tour). A compass arrow on the dashboard and a heading-u
 one-way-aware streets only) guide you. Smooth driving matters: hard braking, fast turns and wall hits upset the
 tourists; at the end you get tips, 1–5 stars, a review line and your best result.
 
-- **`data/tour.json`** holds everything a guide edits: tours (start place + route of `{ "stop": id }` /
-  `{ "pass": id }`), places (title, fact text, how to find them in OSM) and review lines. Texts, order and tours work
-  after a page reload (the file is never cached). A new place or a changed `osm` / `road` / `at` needs
-  `node tools/build-city.mjs`, which finds it in OSM by name (also `wikipedia` / `wikimedia_commons`), snaps it to
-  the nearest drivable street connected to the city and prints the route lengths.
+- **`data/tour.json`** holds the tours (start place + route of `{ "stop": id }` / `{ "pass": id }`), the review lines and, per place,
+  the hints how to find it in OSM (`osm`, `road`). Tours and reviews work after a page reload (the file is never cached); a changed
+  `osm` / `road` or a new place needs `node tools/build-city.mjs`, which finds it in OSM by name (also `wikipedia` / `wikimedia_commons`),
+  snaps it to the nearest drivable street connected to the city and prints the route lengths.
+- **The places themselves come from TukTuk OS** (0.20.0, [docs/plan-tuktuk-os-sync-2.md](docs/plan-tuktuk-os-sync-2.md)): coordinates, names,
+  short and long texts, questions, sources, icons and photos. `node tools/sync-tuktuk-os.mjs` pulls them from the branch named in
+  `data/tuktuk-os-map.json` ("source"; `--ref`, `--repo <dir>` or `--clone`, `--dry-run`, `--check`) into the generated `data/places-os.json`
+  and `assets/tour/`, prints what changed (added, moved, text changed), which English texts (`data/places-os.en.json`) and Crazy Tuk lines
+  (`data/tuktuk-os-arcade.json`, ≤ 90 characters) are missing or out of date, and rebuilds `data/city.json`. After a change in the original
+  texts: edit the English by hand, then `--stamp-translations`; `--translations-doc` writes `docs/translations-os-en.md` for the review.
+  Which point of TukTuk OS is which place of the game: `points` in `data/tuktuk-os-map.json`.
 - `node tools/sim-tour.mjs [tourId] [careful|rough]` drives the tours with an autopilot in Node (same physics,
   collisions, routes and scoring as the game) to check the data and the scoring.
 - Code: `src/game/route.js` (street graph, A*), `tour.js` (states, stops, facts, clock), `scoring.js` (comfort
@@ -254,7 +260,7 @@ the stake, the clock counts down and every gate adds time. Reports: [a1](docs/re
 - **Game:** `?mode=arcade`; auto-gas (a switch in the menu / on the start screen, remembered), chase camera
   (`src/game/arcadeCam.js`: higher and farther with the speed, a wider view, a light shake on the nitro, pulled in by walls),
   clock (+ the seconds a gate gives) / tips / gate line on top, a compact landmark card after each gate (name + one line from
-  `data/arcade-facts.json`, uk/en/es, ≤ 70 characters; 4 s, fades), the minimap shows only the gates (the next one big and blinking,
+  `data/tuktuk-os-arcade.json`, uk/en, ≤ 90 characters; 4 s, fades), the minimap shows only the gates (the next one big and blinking,
   an arrow on the rim when it is out of the disc), a light pillar + ring on the next gate (pulses; a flash on passing), a 3D arrow over
   the tuk-tuk (half size, translucent, swings smoothly, never flips at a gate; `src/game/arcadeFx.js`), drift smoke and tyre marks, a summary with the record (localStorage),
   "Ще раз", "Справжній тур" and "Забронювати" (WhatsApp, number in `src/config.js`). T: run again (twice).

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Sede Universitaria">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · класичний фасад колишньої ощадної каси -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="52" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- цоколь і сходи -->
+    <path d="M14 108 h100 v-6 h-100 z" fill="#E3C79A"/>
+    <!-- фасад -->
+    <rect x="18" y="52" width="92" height="50" fill="#FFF4E0"/>
+    <!-- фронтон -->
+    <path d="M14 52 h100 l-50 -24 z" fill="#EFD9B4"/>
+    <circle cx="64" cy="42" r="4" fill="#F6C343"/>
+    <!-- колони -->
+    <g fill="#FFFDF7">
+      <rect x="26" y="56" width="8" height="46"/><rect x="46" y="56" width="8" height="46"/>
+      <rect x="74" y="56" width="8" height="46"/><rect x="94" y="56" width="8" height="46"/>
+    </g>
+    <!-- вхід -->
+    <path d="M58 102 v-22 q6 -8 12 0 v22 z" fill="#8A5A3C"/>
+  </g>
+</svg>

@@ -1,0 +1,107 @@
+{
+ "_help": [
+  "Рядки Crazy Tuk про місця: ≤ 90 знаків, складені зі short TukTuk OS (картка висить 3 секунди). Пише Claude, перевіряє власник (docs/translations-os-en.md, розділ 3). from — хеш short, з якого складено."
+ ],
+ "places": {
+  "melia": {
+   "uk": "Готель Meliá: тут тур починається й закінчується",
+   "en": "Hotel Meliá: where every tour starts and ends",
+   "from": "f981e8a8"
+  },
+  "casaCarbonell": {
+   "uk": "Casa Carbonell, 1920-ті: палац назло готелю? Так каже легенда",
+   "en": "Casa Carbonell, 1920s: a palace built to spite a hotel? So goes the legend",
+   "from": "c0d168ac"
+  },
+  "explanada": {
+   "uk": "Explanada de España: хвилі з мільйонів мармурових плиток",
+   "en": "Explanada de España: waves of millions of marble tiles",
+   "from": "033adaca"
+  },
+  "canalejas": {
+   "uk": "Бульвар Canalejas: бронзовий прем’єр і фікуси-велетні",
+   "en": "Canalejas boulevard: a bronze prime minister and giant fig trees",
+   "from": "9cb07859"
+  },
+  "ficus": {
+   "uk": "Фікуси з Австралії: крона до 30 м, коріння-лавки",
+   "en": "Australian figs: a crown up to 30 m, roots like benches",
+   "from": "125ea8a1"
+  },
+  "brujas": {
+   "uk": "Casa de las Brujas, 1898: леви, слони й жодної відьми",
+   "en": "Casa de las Brujas, 1898: lions, elephants and not one witch",
+   "from": "3d6829c8"
+  },
+  "university": {
+   "uk": "Колишня ощадна каса 1923 року, тепер — університет у центрі",
+   "en": "A 1923 savings bank, now a university in the city centre",
+   "from": "0e2ea680"
+  },
+  "rambla": {
+   "uk": "Rambla: колись міська стіна, тепер вулиця крамниць і ходів",
+   "en": "Rambla: once a city wall, now a street of shops and processions",
+   "from": "3c72eae2"
+  },
+  "townHall": {
+   "uk": "Мерія XVIII ст.: від її сходів міряли висоту над морем",
+   "en": "Town hall, 18th c.: sea level for all Spain is measured from its steps",
+   "from": "07e98f2b"
+  },
+  "santaMaria": {
+   "uk": "Santa María: найстаріший храм Аліканте, на місці мечеті",
+   "en": "Santa María: the oldest church in Alicante, on a mosque site",
+   "from": "e67365b4"
+  },
+  "postiguet": {
+   "uk": "Postiguet: міський пляж під замком і «Обличчям мавра»",
+   "en": "Postiguet: the city beach under the castle and the “Moor’s Face”",
+   "from": "2802d5ee"
+  },
+  "marq": {
+   "uk": "MARQ: археологічний музей, Європейський музей року 2004",
+   "en": "MARQ: archaeological museum, European Museum of the Year 2004",
+   "from": "122b18a2"
+  },
+  "castle": {
+   "uk": "Санта-Барбара: 166 м над морем і найкращий вид на місто",
+   "en": "Santa Bárbara: 166 m above the sea, the best view of the city",
+   "from": "c8e9f8bc"
+  },
+  "plazaDeToros": {
+   "uk": "Plaza de Toros: арена, де місць майже як городян у 1888-му",
+   "en": "Plaza de Toros: an arena with almost as many seats as citizens in 1888",
+   "from": "00b9a4b5"
+  },
+  "colegioSanAntonio": {
+   "uk": "Школа францисканців з 1926 року, поруч церква з блакитним куполом",
+   "en": "A Franciscan school since 1926, with a blue-domed church next door",
+   "from": "70bdcfdf"
+  },
+  "sanFernando": {
+   "uk": "Замок San Fernando: проти Наполеона, але без жодного бою",
+   "en": "San Fernando castle: built against Napoleon, never fought a battle",
+   "from": "d029ffc7"
+  },
+  "adda": {
+   "uk": "ADDA: білий концертний зал 2011 року, суворий і сучасний",
+   "en": "ADDA: a white concert hall from 2011, austere and modern",
+   "from": "535e19ff"
+  },
+  "mercado": {
+   "uk": "Mercado Central, 1921: модерн, свіжа риба, хамон і спеції",
+   "en": "Mercado Central, 1921: Art Nouveau, fresh fish, jamón and spices",
+   "from": "ee08e092"
+  },
+  "luceros": {
+   "uk": "Plaza de los Luceros: фонтан 1930 року й гуркіт маскле́ти",
+   "en": "Plaza de los Luceros: a 1930 fountain and the thunder of the mascletà",
+   "from": "dcb23f11"
+  },
+  "sanFrancisco": {
+   "uk": "Calle San Francisco: вулиця велетенських грибів і жабок",
+   "en": "Calle San Francisco: the street of giant mushrooms and frogs",
+   "from": "b1083988"
+  }
+ }
+}

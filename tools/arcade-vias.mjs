@@ -4,6 +4,7 @@
 // ground 2), and when the straight line is blocked or the way is more than 1.4 times longer than it, the corners of that way
 // become via points. Writes data/arcade-via.json: { tourId: { gateId: [[x, z], ...] } } (the finish gate: "<id>:finish").
 //   node tools/arcade-vias.mjs [--write]
+import { loadSpec } from './lib/load-spec.mjs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { buildWorld } from './sim-tour.mjs';
 import { Terrain } from '../src/city/terrain.js';
@@ -11,7 +12,7 @@ import { RoadGraph } from '../src/game/route.js';
 import { viasFromPath } from '../src/game/pathfind.js';
 
 const city = JSON.parse(await readFile('data/city.json', 'utf8'));
-const spec = JSON.parse(await readFile('data/tour.json', 'utf8'));
+const spec = await loadSpec();
 const terrain = Terrain.fromBin(city.meta.terrain, (await readFile(city.meta.terrain.file)).buffer.slice(0));
 const { world, bounds } = buildWorld();
 const R_CAR = 1.0, SLOPE = 0.33, MARGIN = 150, STEP = 2;

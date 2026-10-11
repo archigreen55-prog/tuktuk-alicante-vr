@@ -1,0 +1,1373 @@
+{
+ "_help": [
+  "ЗГЕНЕРОВАНО tools/sync-tuktuk-os.mjs з TukTuk OS. Не редагуй: зміни йдуть у TukTuk OS (або в data/tuktuk-os-map.json) і підтягуються командою node tools/sync-tuktuk-os.mjs."
+ ],
+ "source": {
+  "repo": "archigreen55-prog/tuktuk-os",
+  "ref": "feat/route-preview",
+  "commit": "db6660fb66b1",
+  "route": "alicante-classic"
+ },
+ "places": {
+  "casaCarbonell": {
+   "os": "casa-carbonell",
+   "order": 1,
+   "role": "poi",
+   "zone": "waterfront",
+   "stop": "drive-by",
+   "lat": 38.344433,
+   "lng": -0.480883,
+   "coordSource": "wikidata Q5657613 + адреса Explanada 2 (8 м)",
+   "title": "Casa Carbonell",
+   "short": "Тут починається наш тур. Розкішний білий палац 1920-х років на березі моря, на початку Explanada de España. За легендою, його збудував багатий текстильник, якого не пустили в сусідній готель через брудний одяг.",
+   "long": [
+    "Будинок замовив Енріке Карбонель — текстильний промисловець з Алькоя, який розбагатів на поставках під час Першої світової війни. Проєкт створив аліканський архітектор Хуан Відаль Рамос. Запам'ятайте це ім'я: далі ми побачимо його будинок ощадної каси на San Fernando (точка 6), а Центральний ринок (точка 18) він завершував. Роботи почалися в середині 1920-х.",
+    "Стиль — модерн з «французьким» акцентом: мармур, пісковик, кований метал, скло, купол на даху. Будинок займає цілий квартал і з моря здається справжнім палацом.",
+    "А тепер легенда. Карбонель нібито приїхав до Аліканте лікуватися після довгої дороги, запилений і втомлений. У розкішному готелі поруч йому відмовили в номері через неохайний вигляд. Ображений мільйонер вирішив збудувати поруч будинок, більший і пишніший за той готель. Гарна історія, але документальних підтверджень їй немає. Подавайте її саме як легенду.",
+    "Ще два факти. Сам Карбонель у палаці так і не пожив: помер у 1924 році, до завершення будівництва. А невдовзі після відкриття в одну з щогл на даху врізався гідроплан, що летів з Алжиру. Двоє людей на борту загинули.",
+    "З тук-тука найкраще видно фасад з боку моря. Звідси рушаємо на Explanada — наступна точка."
+   ],
+   "questions": [
+    {
+     "q": "Правда, що його збудували на зло готелю?",
+     "a": "Це міська легенда, документів про неї немає."
+    },
+    {
+     "q": "Хто тут живе?",
+     "a": "Це житловий будинок з квартирами й офісами. Всередину туристів не пускають."
+    },
+    {
+     "q": "Хто архітектор?",
+     "a": "Хуан Відаль Рамос, один з головних архітекторів Аліканте 1920-х."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (es) — Casa Carbonell",
+     "url": "https://es.wikipedia.org/wiki/Casa_Carbonell"
+    },
+    {
+     "title": "Alicante Plaza — Casa Carbonell: historia y curiosidades",
+     "url": "https://alicanteplaza.es/casa-carbonell-historia-y-curiosidades"
+    },
+    {
+     "title": "Ayuntamiento de Alicante — exposición de la Casa Carbonell con motivo de su centenario",
+     "url": "https://www.alicante.es/es/noticias/archivo-municipal-acoge-exposicion-casa-carbonell-motivo-centenario"
+    }
+   ],
+   "icon": "assets/tour/casaCarbonell/illustration.svg",
+   "photo": {
+    "src": "assets/tour/casaCarbonell/photo.webp",
+    "thumb": "assets/tour/casaCarbonell/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAAAwAgCdASoQAAwAA4BaJaACdGuAApiO5s03AADxl/O6zfXN5dkGgXLcfXC3Hi6wvyu6lNl8wO4y9b6qUjqlFFyWlCIRJ6BNYZKHD41CPHF5ulADqmugAA==",
+    "alt": "Casa Carbonell — білий палац з куполами за пальмами Explanada",
+    "credit": {
+     "title": "File:Casa Carbonell 2017.jpg",
+     "author": "Choinowski",
+     "license": "CC BY-SA 4.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Casa_Carbonell_2017.jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "explanada": {
+   "os": "explanada",
+   "order": 2,
+   "role": "poi",
+   "zone": "waterfront",
+   "stop": "drive-by",
+   "lat": 38.342881,
+   "lng": -0.48378,
+   "coordSource": "wikidata Q130044702 + OSM way 515871894 (1 м), музичний павільйон",
+   "title": "Explanada de España",
+   "short": "Головний променад Аліканте: чотири ряди пальм уздовж порту і хвиляста мозаїка під ногами з мільйонів мармурових плиток. Це найвпізнаваніший кадр міста.",
+   "long": [
+    "Колись тут був просто берег біля міських мурів. Із XIX століття на цьому місці поступово з'являвся променад, а свій нинішній вигляд він отримав у 1959 році. Тоді його й назвали Explanada de España. Проєкт підтримав мер Агатанхело Солер Льорка, авторами називають архітекторів Мігеля Лопеса й Альфонсо Фахардо.",
+    "Головне диво — під ногами. Бруківка складена з дрібних мармурових плиток трьох кольорів: червоного «аліканського», кремового marfil і чорного Marquina. Разом вони малюють хвилі, що «біжать» уздовж моря. Скільки там плиток — 6,5 мільйона чи 7,5 мільйона — джерела розходяться. Надихнув цей візерунок бруківка площі Россіу в Лісабоні.",
+    "Променад має близько пів кілометра й чотири ряди пальм. Удень тут повно кафе з терасами та ятками з сувенірами. Увечері місцеві гуляють, як на старовинному «пасео». Влітку в ротонді бувають концерти.",
+    "З тук-тука роздивіться хвилі бруківки (найкраще видно, коли їдете вздовж), пальми й яхти в порту праворуч. Для фото добре зупинитися біля ротонди. У західному кінці променаду стоїть пам'ятник Каналехасу — наступна точка."
+   ],
+   "questions": [
+    {
+     "q": "Скільки тут плиток?",
+     "a": "Мільйони: джерела пишуть про 6,5–7,5 мільйона."
+    },
+    {
+     "q": "Чому візерунок у вигляді хвиль?",
+     "a": "Щоб нагадувати море поруч. Натхненням стала бруківка площі Россіу в Лісабоні."
+    },
+    {
+     "q": "Коли тут найкраще гуляти?",
+     "a": "Увечері, коли спадає спека: місцеві виходять на пасео, працюють тераси."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (es) — Paseo de la Explanada",
+     "url": "https://es.wikipedia.org/wiki/Paseo_de_la_Explanada"
+    },
+    {
+     "title": "Mármol de Alicante — Mármol de Alicante en la Explanada de España",
+     "url": "https://marmoldealicante.com/marmol-de-alicante-en-la-explanada-de-espana/"
+    },
+    {
+     "title": "ExplanadaAlicante — La Explanada de España",
+     "url": "https://explanadaalicante.com/la-explanada-de-espana/"
+    },
+    {
+     "title": "Hogueras.com — Paseo de la Explanada",
+     "url": "https://hogueras.com/alicante/que-ver/paseo-de-la-explanada/"
+    }
+   ],
+   "icon": "assets/tour/explanada/illustration.svg",
+   "photo": {
+    "src": "assets/tour/explanada/photo.webp",
+    "thumb": "assets/tour/explanada/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRlgAAABXRUJQVlA4IEwAAADwAQCdASoQAAwAA4BaJYwAAlcNngqMcAAA/tq0mDeb3VAS3e8+Iv1YmELLPCYWFkzK4wCjMaIbKgHzl8vMorFlThyhNo/3Qv4ADgAA",
+    "alt": "Хвиляста мозаїка Explanada de España між рядами пальм",
+    "credit": {
+     "title": "File:Explanada de España Alicante 1.jpg",
+     "author": "kallerna",
+     "license": "CC BY-SA 4.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Explanada_de_Espa%C3%B1a_Alicante_1.jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "canalejas": {
+   "os": "canalejas",
+   "order": 3,
+   "role": "poi",
+   "zone": "waterfront",
+   "stop": "drive-by",
+   "lat": 38.341982,
+   "lng": -0.486173,
+   "coordSource": "власник, редактор 2026-09-27 (було 38.34193, -0.48638; зсув 19 м)",
+   "title": "Paseo / Monumento de Canalejas",
+   "short": "Тінистий бульвар між портом і центром, у західному кінці Explanada. Тут стоїть бронзовий пам'ятник Хосе Каналехасу, прем'єр-міністру Іспанії, а над головою — крони величезних австралійських фікусів.",
+   "long": [
+    "Ще в 1880-х тут був берег моря. Під час робіт у порту суходіл «насипали», і на новій землі з'явився бульвар, який назвали на честь Хосе Каналехаса. Каналехас був одним із найсильніших політиків Іспанії початку XX століття. Його застрелив анархіст у 1912 році в самому центрі Мадрида, на Пуерта-дель-Соль, коли він зупинився біля вітрини книгарні. З Аліканте його пов'язувало політичне життя: він балотувався до парламенту від провінції.",
+    "Пам'ятник створив місцевий скульптор Вісенте Баньюльс. Статую встановили в 1914 році, а вся композиція була готова до 1916-го. Подивіться на лева, що лежить біля ніг Каналехаса на щиті з гербами. Він наче охороняє політика й досі.",
+    "З тук-тука варто роздивитись три речі. Перша — сам пам'ятник на розвилці, де бульвар виходить до Explanada de España. Друга — фікуси з повітряним корінням, що звисає з гілок (про них наступна точка). Третя — яхти в порту за деревами: саме там колись плескалося море."
+   ],
+   "questions": [
+    {
+     "q": "Хто такий Каналехас?",
+     "a": "Прем'єр-міністр Іспанії з 1910 по 1912 рік, реформатор. Його вбили в Мадриді, і багато міст назвали на його честь вулиці та площі."
+    },
+    {
+     "q": "Цей бульвар завжди тут був?",
+     "a": "Ні. Кінець XIX століття — це берег моря, землю тут відвоювали під час розширення порту."
+    },
+    {
+     "q": "Хто автор пам'ятника?",
+     "a": "Вісенте Баньюльс Арасіль, аліканський скульптор. Статуя стоїть з 1914 року."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Alicantepedia — Inauguración de la estatua de Canalejas (1914)",
+     "url": "https://alicantepedia.com/fotografias/inauguraci%C3%B3n-de-la-estatua-de-canalejas-1914"
+    },
+    {
+     "title": "Alicante Vivo — La evolución en fotografías del monumento a Canalejas",
+     "url": "http://www.alicantevivo.org/2008/02/la-evolucin-en-fotografas-del-monumento.html"
+    },
+    {
+     "title": "Wikipedia (es) — Vicente Bañuls",
+     "url": "https://es.wikipedia.org/wiki/Vicente_Ba%C3%B1uls"
+    },
+    {
+     "title": "Alamy — Monument to José Canalejas by Vicente Bañuls Aracil (1916)",
+     "url": "https://www.alamy.com/stock-photo-europe-spain-alicante-monument-to-jos-canalejas-by-vicente-bauls-aracil-48457764.html"
+    }
+   ],
+   "icon": "assets/tour/canalejas/illustration.svg",
+   "photo": {
+    "src": "assets/tour/canalejas/photo.webp",
+    "thumb": "assets/tour/canalejas/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRmwAAABXRUJQVlA4IGAAAADwAQCdASoQAAwAA4BaJZgCdAC58eLrtiAA8Z8pE4hUEtD3oFj5sUn2xQmciNqhpeAENy3EZEJEAxOyaFYpmJa/SFWBeJMecaV2jN/3x2rzi1oUqeyXJo6yE75FPPCAAAA=",
+    "alt": "Пам'ятник Каналехасу на розвилці бульвару, позаду — Casa Alberola",
+    "credit": {
+     "title": "File:Casa Alberola y monumento a Canalejas, Alicante 02.jpg",
+     "author": "Varondán",
+     "license": "CC BY-SA 4.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Casa_Alberola_y_monumento_a_Canalejas,_Alicante_02.jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "ficus": {
+   "os": "ficus-canalejas",
+   "order": 4,
+   "role": "poi",
+   "zone": "waterfront",
+   "stop": "drive-by",
+   "lat": 38.341344,
+   "lng": -0.486681,
+   "coordSource": "власник, редактор 2026-09-27 (було 38.340742, -0.487201; зсув 81 м)",
+   "title": "Австралійський фікус (Ficus macrophylla)",
+   "short": "Ці велетні приїхали з Австралії. Їм від 50 до понад 100 років, крона сягає 30 метрів у діаметрі, а коріння над землею утворює справжні «лавки». Місто внесло їх до каталогу монументальних дерев.",
+   "long": [
+    "Ficus macrophylla, або «фікус Моретон-Бей», — родом зі східного узбережжя Австралії. В Аліканте його почали садити на початку XX століття, коли з'явився бульвар Каналехас. Клімат тут майже такий, як на батьківщині: тепло, сонячно, морозів немає. Дерева прижилися так добре, що стали символом міста.",
+    "У парку Каналехас їх найбільше в місті — кілька дерев віком від 50 до 100 років. Висота 13–20 метрів — це «лише» п'ятиповерхівка. Зате крона розкидається до 30 метрів, і в спеку під нею на кілька градусів прохолодніше. Обхват стовбура найстарішого дерева, ближче до порту, перевищує вісім метрів. Щоб обійняти його, треба п'ятеро дорослих.",
+    "Подивіться на дві речі. Перша — повітряне коріння: тонкі «мотузки» звисають з гілок, торкаються землі й з роками стають новими стовбурами. Друга — дошкоподібне коріння біля основи, яке розходиться землею, наче стіни. Діти сидять на ньому, як на лавці. Біля дерев місто поставило інформаційні таблички.",
+    "Прохання до пасажирів: не лізьте на дерева й не обривайте коріння. Вони під охороною."
+   ],
+   "questions": [
+    {
+     "q": "Скільки років цим деревам?",
+     "a": "Від 50 до понад 100 років. Перші садили на початку XX століття."
+    },
+    {
+     "q": "Вони дають плоди?",
+     "a": "Так, дрібні «інжирини», але їх не їдять. Для людей вони несмачні."
+    },
+    {
+     "q": "Що це за «мотузки» звисають з гілок?",
+     "a": "Повітряне коріння. Коли воно досягає землі, то твердне й підпирає крону, як колона."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Alicante Vivo — Ficus en el Paseo de Canalejas",
+     "url": "http://www.alicantevivo.org/2008/01/ficus-en-paseo-de-canalejas-de-alicante.html"
+    },
+    {
+     "title": "Ayuntamiento de Alicante — placas informativas en sus ficus monumentales",
+     "url": "https://www.alicante.es/es/noticias/ayuntamiento-instala-placas-informativas-poner-valor-sus-ficus-monumentales"
+    },
+    {
+     "title": "plantasyjardines.es — Los ficus gigantes de Alicante",
+     "url": "https://www.plantasyjardines.es/los-ficus-gigantes-de-alicante/"
+    }
+   ],
+   "icon": "assets/tour/ficus/illustration.svg",
+   "photo": {
+    "src": "assets/tour/ficus/photo.webp",
+    "thumb": "assets/tour/ficus/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRloAAABXRUJQVlA4IE4AAADQAQCdASoQAAwAA4BaJYwAAcZ4FcSEAAD+6VwXaf7OPLNShL/Pe9V/zOWP3XMrswhVCfXr5gpCivvnAOA3+F08yjZPQWDBZKFaft/J4AA=",
+    "alt": "Велетенський фікус у парку Canalejas з повітряним корінням",
+    "credit": {
+     "title": "File:Giant Ficus tree, Parque de Canalejas, Alicante, 16 July 2016.JPG",
+     "author": "Kolforn",
+     "license": "CC BY 3.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Giant_Ficus_tree,_Parque_de_Canalejas,_Alicante,_16_July_2016.JPG",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "brujas": {
+   "os": "casa-de-las-brujas",
+   "order": 5,
+   "role": "poi",
+   "zone": "old-town",
+   "stop": "drive-by",
+   "lat": 38.342146,
+   "lng": -0.487632,
+   "coordSource": "власник, редактор 2026-09-27 (було 38.342175, -0.487508; зсув 11 м)",
+   "title": "Casa de las Brujas (Будинок відьм)",
+   "short": "Неоготичний особняк 1898 року з вежею, головами левів і слонів на фасаді. Відьом тут ніколи не було — місцеві просто так прозвали цей «похмурий» будинок, що зовсім не схожий на сусідні.",
+   "long": [
+    "Особняк стоїть на розі проспекту Doctor Gadea і вулиці San Fernando, 60. Його спроєктував архітектор Енріке Санчес Седеньо в 1898 році. Запам'ятайте це ім'я — ми ще зустрінемо його на Центральному ринку (точка 18).",
+    "Аліканте — середземноморське місто: світлі фасади, класичні пропорції, багато сонця. І раптом посеред цього — гостроверха неоготична вежа, темні деталі, химерний декор. Мешканці не знайшли кращого пояснення, ніж «тут живуть відьми». Назва закріпилася, і ще й досі так кажуть усі. Офіційна назва — Casa Martínez.",
+    "Стиль ближчий до валенсійського модерну, ніж до місцевої традиції. Роздивіться декор: рослинні орнаменти, голови левів на бічних фасадах і голови слонів на кутах будинку. Слони в Аліканте! Звідки така ідея в архітектора — точно невідомо.",
+    "Сьогодні тут не відьми, а уряд: будинок — представництво президента Генералітету Валенсії в Аліканте. Там кабінет, бібліотека і зала для прийомів. Тому всередину туристів не пускають, дивимося з вулиці.",
+    "З тук-тука найкраще видно вежу й кутові слонячі голови — пригальмуйте на розі."
+   ],
+   "questions": [
+    {
+     "q": "Чому «будинок відьм»?",
+     "a": "Через неоготичний, «похмурий» вигляд, дуже незвичний для Аліканте. Реальних легенд про відьом немає."
+    },
+    {
+     "q": "Можна зайти всередину?",
+     "a": "Зазвичай ні, це офіційна установа Генералітету. Іноді бувають дні відкритих дверей."
+    },
+    {
+     "q": "Що там за тварини на фасаді?",
+     "a": "Голови левів з боків і голови слонів на кутах."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (es) — Casa de las Brujas",
+     "url": "https://es.wikipedia.org/wiki/Casa_de_las_Brujas"
+    },
+    {
+     "title": "Alicantepedia — Casa de Brujas",
+     "url": "https://alicantepedia.com/edificios-historicos/casa-de-brujas"
+    },
+    {
+     "title": "Alicante Plaza — Descubra el enigma de la Casa de las Brujas",
+     "url": "https://alicanteplaza.es/descubra-el-enigma-de-la-casa-de-las-brujas"
+    },
+    {
+     "title": "El Español — ¿Por qué hay en Alicante una \"Casa de las Brujas\"?",
+     "url": "https://www.elespanol.com/alicante/alicante-ciudad/20241029/alicante-casa-brujas/896910550_0.html"
+    }
+   ],
+   "icon": "assets/tour/brujas/illustration.svg",
+   "photo": {
+    "src": "assets/tour/brujas/photo.webp",
+    "thumb": "assets/tour/brujas/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRl4AAABXRUJQVlA4IFIAAADQAQCdASoQAAwAA4BaJZwAAwFq+T2UwAD++LPffbvbsI5vEVD0u3rGRK4Y25fISaSi0DDbpdSdMXsYTG7knWrSSoLrYrTf9fL6Jt4Gj7vV8nwA",
+    "alt": "Неоготичний фасад Casa de las Brujas з еркером",
+    "credit": {
+     "title": "File:Casa de les Bruixes d'Alacant, mirador.JPG",
+     "author": "Joanbanjo",
+     "license": "CC BY-SA 3.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Casa_de_les_Bruixes_d%27Alacant,_mirador.JPG",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "university": {
+   "os": "sede-universitaria",
+   "order": 6,
+   "role": "poi",
+   "zone": "old-town",
+   "stop": "drive-by",
+   "lat": 38.34297,
+   "lng": -0.48537,
+   "coordSource": "оцінка за номерами будинків San Fernando 34/42 (±40 м)",
+   "title": "Університет — Sede Universitaria, Calle San Fernando, 40",
+   "short": "Колишній «храм грошей» 1923 року — штаб-квартира ощадної каси Аліканте, яку перебудували під міський осередок Університету Аліканте. Тут лекції, виставки й концерти в самому центрі міста.",
+   "long": [
+    "Сто років тому ця будівля була символом добробуту. Тут розмістилася Caja de Ahorros — ощадна каса, де аліканці тримали заощадження. Пізніше вона стала однією з найбільших регіональних кас Іспанії, CAM (Caja de Ahorros del Mediterráneo). Проєкт створив Хуан Відаль — автор Casa Carbonell, з якої почався наш тур. Пізніше він завершував і Центральний ринок (точка 18). Будівлю відкрили в 1923 році, і вона одразу стала однією з найпомітніших на вулиці San Fernando.",
+    "Після фінансової кризи 2008–2012 років CAM зникла. Історична будівля перейшла до Університету Аліканте, який відкрив тут міську «сцену» — Sede Universitaria Ciudad de Alicante. Корпус має близько 6 000 м², зали для конференцій, виставок і концертів, а також зону для навчання.",
+    "Головний кампус університету — не тут, а в Сан-Вісенте-дель-Распейч, за кілька кілометрів від центру. Це один із найбільших кампусів Іспанії з садами й сучасною архітектурою. А міська резиденція потрібна, щоб університет був ближче до людей.",
+    "З тук-тука роздивіться парадний фасад 1920-х: так тоді будували банки, щоб клієнт бачив солідність і довіряв."
+   ],
+   "questions": [
+    {
+     "q": "Це і є університет?",
+     "a": "Це його міський осередок. Основний кампус — у Сан-Вісенте-дель-Распейч."
+    },
+    {
+     "q": "Що тут було раніше?",
+     "a": "Штаб-квартира ощадної каси Аліканте (згодом CAM), з 1923 року."
+    },
+    {
+     "q": "Туди можна зайти?",
+     "a": "Під час відкритих заходів — так: виставки, лекції, концерти. Розклад — на сайті Sede Universitaria."
+    }
+   ],
+   "sources": [
+    {
+     "title": "UA — La Universidad de Alicante aglutinará en el edificio de Ramón y Cajal toda su actividad",
+     "url": "https://s.ua.es/es/Z1D3"
+    },
+    {
+     "title": "UA — Sede Ciudad de Alicante",
+     "url": "https://web.ua.es/es/sedealicante/sede-ciudad-de-alicante.html"
+    },
+    {
+     "title": "UA — Dónde estamos",
+     "url": "https://web.ua.es/es/sedealicante/donde-estamos.html"
+    },
+    {
+     "title": "El Cantarano — Sede Universitaria Ciudad de Alicante",
+     "url": "https://elcantarano.com/sede-universitaria-ciudad-de-alicante/"
+    },
+    {
+     "title": "Eje Cultural San Fernando — Sede Universidad de Alicante",
+     "url": "https://ejesanfernando.es/sede-universidad-de-alicante/"
+    }
+   ],
+   "icon": "assets/tour/university/illustration.svg",
+   "photo": {
+    "src": "assets/tour/university/photo.webp",
+    "thumb": "assets/tour/university/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAABQAgCdASoQAAwAA4BaJYwCdAEXXNHmousLmQAA/geAo7XehK4VBqgti1Hkia7jOaAI7njr8O3LcFuwuQzfakyxtj+ztgTbz9XZTEGoGYUL7yrr4HSAAA==",
+    "alt": "Фасад колишньої ощадної каси на вулиці San Fernando",
+    "credit": {
+     "title": "File:Edificio Caja de Ahorros de Alicante -1.jpg",
+     "author": "Varondán",
+     "license": "CC BY-SA 4.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Edificio_Caja_de_Ahorros_de_Alicante_-1.jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "rambla": {
+   "os": "rambla-mendez-nunez",
+   "order": 7,
+   "role": "poi",
+   "zone": "old-town",
+   "stop": "drive-by",
+   "lat": 38.343816,
+   "lng": -0.482944,
+   "coordSource": "власник, редактор 2026-09-27 (було 38.34469, -0.48343; зсув 106 м)",
+   "title": "Rambla de Méndez Núñez",
+   "short": "Головна «вісь» центру, що відділяє Старе місто від нового. Колись тут стояла міська стіна, а за нею був яр, куди стікала вода після злив. Тепер це вулиця магазинів і святкових ходів.",
+   "long": [
+    "Уявіть XVIII століття. Аліканте обнесене мурами, і по лінії нинішньої Рамбли тягнеться стіна XVI століття. Всередині — вулиця, яку так і називали: calle del Muro, «вулиця Стіни». Зовні — Barranco de Canicia, яр, куди під час рідкісних, але злих середземноморських злив ринула вода з пагорбів.",
+    "На початку XIX століття мури знесли, а уламками засипали яр. Так з'явилася широка вулиця — rambla. У Каталонії та Валенсії так називають бульвари, прокладені саме по висохлих руслах.",
+    "Назву вулиці дали на честь Касто Мендеса Нуньєса (1824–1869) — адмірала з Віго, героя тихоокеанської кампанії 1860-х років. Йому приписують фразу «Краще честь без кораблів, ніж кораблі без честі».",
+    "Ліворуч від Рамбли (якщо їхати до моря) — Старе місто: вузькі вулички, церкви, фасади з балконами. Праворуч — «новий» центр XIX–XX століть. У червні Рамблою проходять ходи свята Хогерас (Hogueras de San Juan), а на Страсний тиждень — процесії.",
+    "З тук-тука дивіться вниз по вулиці: у кінці Рамбли видно море й пальми Explanada, з якої ми почали."
+   ],
+   "questions": [
+    {
+     "q": "Чому «Рамбла»?",
+     "a": "Так у цьому регіоні називають вулицю по руслу висохлого потоку. Тут був яр Canicia."
+    },
+    {
+     "q": "Хто такий Мендес Нуньєс?",
+     "a": "Іспанський адмірал XIX століття, національний морський герой."
+    },
+    {
+     "q": "Де тут Старе місто?",
+     "a": "Ліворуч, якщо дивитися в бік моря: квартали Санта-Крус і Ель-Барріо."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (es) — Rambla de Méndez Núñez",
+     "url": "https://es.wikipedia.org/wiki/Rambla_de_M%C3%A9ndez_N%C3%BA%C3%B1ez"
+    },
+    {
+     "title": "Alicante Vivo — Alicante en el recuerdo: la Rambla",
+     "url": "http://www.alicantevivo.org/2007/06/alicante-en-el-recuerdo-la-rambla-ii.html"
+    }
+   ],
+   "icon": "assets/tour/rambla/illustration.svg",
+   "photo": {
+    "src": "assets/tour/rambla/photo.webp",
+    "thumb": "assets/tour/rambla/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRmgAAABXRUJQVlA4IFwAAAAwAgCdASoQAAwAA4BaJYwAD5JuLmCB8R8sgAD+8hXbgZYgjZwfzANfq+6pwUQTKGPmgcjreUYaXNJJ+40QYR+Xqfv8253KpPfx81kcRX5Z2NMfOnOtSBnWfQPAAA==",
+    "alt": "Rambla de Méndez Núñez з деревами і будинками обабіч",
+    "credit": {
+     "title": "File:Alicante - Rambla de Méndez Núñez 02.jpg",
+     "author": "Zarateman",
+     "license": "CC0 1.0",
+     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Alicante_-_Rambla_de_M%C3%A9ndez_N%C3%BA%C3%B1ez_02.jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "townHall": {
+   "os": "ayuntamiento",
+   "order": 8,
+   "role": "poi",
+   "zone": "old-town",
+   "stop": "drive-by",
+   "lat": 38.345231,
+   "lng": -0.481331,
+   "coordSource": "wikidata Q5573377 + адреса Plaça de l'Ajuntament 7 (38 м)",
+   "title": "Ayuntamiento (Мерія)",
+   "short": "Барокова мерія XVIII століття з двома вежами. Усередині, біля підніжжя парадних сходів, є «нульова позначка»: від неї колись міряли висоту над рівнем моря для всієї Іспанії.",
+   "long": [
+    "Будували мерію майже 80 років — з 1701 по 1780-й. Першим архітектором був Мінгот, а після його смерті роботу завершив Лоренсо Чапулі. Фасад симетричний: у центрі три поверхи, по краях — дві високі вежі. Через проходи під будівлею можна пройти з площі Ayuntamiento на площу Santísima Faz з іншого боку.",
+    "Головна цікавинка — cota cero, «нульова позначка». На опорі парадних сходів усередині є мітка, від якої вимірювали висоту над рівнем моря для всіх точок Іспанії. Чому саме Аліканте? Середземне море тут спокійне, майже без припливів, тож рівень моря можна виміряти точно. Коли турист на горі в Мадриді бачить табличку «667 м над рівнем моря», це буквально «667 м над аліканськими сходами».",
+    "Над балюстрадою даху видно купол над сходовою залою. Кажуть, що всередині є зали з колекцією живопису, серед них робота Далі. Під час Хогерас на площі перед мерією ставлять головне вогнище міста.",
+    "З тук-тука добре видно обидві вежі та балюстраду з куполом. Це гарний кадр, якщо пригальмувати на площі."
+   ],
+   "questions": [
+    {
+     "q": "Що таке «нульова позначка»?",
+     "a": "Точка відліку висоти над рівнем моря для всієї Іспанії. Вона на сходах усередині мерії."
+    },
+    {
+     "q": "Можна подивитися позначку?",
+     "a": "Мерія пускає відвідувачів у певні години."
+    },
+    {
+     "q": "Скільки років будівлі?",
+     "a": "Будували з 1701 по 1780 рік, тож їй майже 250 років."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (es) — Casa consistorial de Alicante",
+     "url": "https://es.wikipedia.org/wiki/Casa_consistorial_de_Alicante"
+    },
+    {
+     "title": "Alicantepedia — Ayuntamiento",
+     "url": "https://alicantepedia.com/edificios-historicos/ayuntamiento"
+    },
+    {
+     "title": "Alicante Turismo — Alicante City Hall",
+     "url": "https://alicanteturismo.com/en/monumentos/alicante-city-hall/"
+    }
+   ],
+   "icon": "assets/tour/townHall/illustration.svg",
+   "photo": {
+    "src": "assets/tour/townHall/photo.webp",
+    "thumb": "assets/tour/townHall/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAADwAQCdASoQAAwAA4BaJZgCdGuAAnUqk6AA/pT8nSdC9/BD7n6q5+aorUp1znWj81o0rHHnc187rQqNC8TBvouteWTPq+pI47gxXyITdDipJivy5N4AAA==",
+    "alt": "Барокова мерія Аліканте з двома вежами",
+    "credit": {
+     "title": "File:Ayuntamiento de Alicante, España, 2014-07-04, DD 34.JPG",
+     "author": "Diego Delso",
+     "license": "CC BY-SA 3.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ayuntamiento_de_Alicante,_Espa%C3%B1a,_2014-07-04,_DD_34.JPG",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "santaMaria": {
+   "os": "santa-maria",
+   "order": 9,
+   "role": "poi",
+   "zone": "old-town",
+   "stop": "drive-by",
+   "lat": 38.346167,
+   "lng": -0.479306,
+   "coordSource": "wikidata Q3395771 + TripAdvisor (15 м)",
+   "title": "Basílica de Santa María",
+   "short": "Найстаріший храм Аліканте. Звели його в XIV столітті на місці головної мечеті мусульманського міста. Помітите дві дзвіниці різного віку — між ними приблизно чотириста років.",
+   "long": [
+    "Коли Аліканте перейшло до християн у XIII столітті, на місці головної мечеті почали будувати церкву. Так робили в багатьох містах Іспанії: новий храм на старому священному місці. Готичну будову звели в XIV столітті. У XV столітті вона постраждала від пожежі, тож її перебудовували, а фасад отримав барокове оформлення.",
+    "Подивіться на вежі: вони не однакові. Одна — XIV століття, друга — XVIII. Такий «асиметричний» силует і є головною прикметою базиліки. Портал — зразок місцевого бароко: скульптури створив Хуан Баутиста Борха. У центрі порталу — Богородиця.",
+    "Всередині одна широка нава, бічні каплиці між контрфорсами й багатий золочений вівтар у стилі рококо. Площа перед базилікою — одна з найзатишніших у Старому місті. Ліворуч, у будинку поруч, розташований музей сучасного мистецтва MACA.",
+    "З тук-тука найкраще видно фасад і обидві вежі з площі — варто пригальмувати, щоб пасажири порівняли дзвіниці."
+   ],
+   "questions": [
+    {
+     "q": "Чому вежі різні?",
+     "a": "Їх будували з різницею приблизно в чотири століття: XIV і XVIII."
+    },
+    {
+     "q": "Тут справді була мечеть?",
+     "a": "Так, базиліку звели на місці головної мечеті мусульманського Аліканте."
+    },
+    {
+     "q": "Можна зайти?",
+     "a": "Так, це діючий храм. Під час служби слід поводитися тихо."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (es) — Basílica de Santa María (Alicante)",
+     "url": "https://es.wikipedia.org/wiki/Bas%C3%ADlica_de_Santa_Mar%C3%ADa_(Alicante)"
+    },
+    {
+     "title": "Alicantepedia — Basílica de Santa María",
+     "url": "https://alicantepedia.com/edificios-historicos/bas%C3%ADlica-de-santa-mar%C3%ADa"
+    },
+    {
+     "title": "Barceló Experiences — Basílica de Santa María",
+     "url": "https://www.barcelo.com/guia-turismo/es/espana/alicante/que-ver/basilica-de-santa-maria/"
+    }
+   ],
+   "icon": "assets/tour/santaMaria/illustration.svg",
+   "photo": {
+    "src": "assets/tour/santaMaria/photo.webp",
+    "thumb": "assets/tour/santaMaria/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRn4AAABXRUJQVlA4IHIAAACQAgCdASoQAAwAA4BaJagCdGuAiwDeAAVjJs0IeAD+h0sUl2LH/KJKzL2eEXL40dnwnQx3LF2cPmSvJZ7NE6Z5ljunHnb6mkk+mbDMjEoOxkGN3iW/8+CLncdDHBqibAQnvpr1Tl4qHWGgOCI1A4gAAAA=",
+    "alt": "Фасад базиліки Santa María з двома дзвіницями і бароковим порталом",
+    "credit": {
+     "title": "File:Basílica de Santa María, Alicante, España, 2014-07-04, DD 41.JPG",
+     "author": "Diego Delso",
+     "license": "CC BY-SA 3.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bas%C3%ADlica_de_Santa_Mar%C3%ADa,_Alicante,_Espa%C3%B1a,_2014-07-04,_DD_41.JPG",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "postiguet": {
+   "os": "postiguet",
+   "order": 10,
+   "role": "poi",
+   "zone": "waterfront",
+   "stop": "drive-by",
+   "lat": 38.346789,
+   "lng": -0.476955,
+   "coordSource": "OSM node 3670782351 (ліфт до замку) + зупинка «Ascensor Castillo» (12 м)",
+   "title": "Playa del Postiguet",
+   "short": "Міський пляж просто в центрі, під горою із замком Санта-Барбара. Звідси найкраще видно скелю «Обличчя мавра».",
+   "long": [
+    "Назва походить від «postigo» — малої хвіртки в старому міському мурі, через яку виходили до моря. Коли мурів уже не було, уздовж берега проклали променад. Перша його частина називалася Paseo de Gómiz на честь мера Мануеля Гоміса, що керував містом у 1890–1893 роках.",
+    "Пляж має довжину близько 667 метрів і ширину до 40 метрів, пісок світлий і дрібний. Кілька сезонів поспіль Постігет отримує «Блакитний прапор» за чистоту води. Влітку тут повно людей, адже до моря можна дійти пішки з будь-якої частини центру.",
+    "Головне, що варто показати, — гора Бенакантіль над пляжем. Якщо придивитися до скелі, видно профіль людини з носом і підборіддям. Це Cara del Moro, «Обличчя мавра». Біля пляжу — вхід до ліфта, що піднімає тунелем у горі до замку.",
+    "З тук-тука покажіть пасажирам «обличчя» на скелі й замок нагорі. Це гарний момент, щоб розповісти, куди ви поїдете далі: повз MARQ (наступна точка) нагору до замку."
+   ],
+   "questions": [
+    {
+     "q": "Тут можна купатися?",
+     "a": "Так, це офіційний міський пляж з рятувальниками в сезон."
+    },
+    {
+     "q": "Де «обличчя мавра»?",
+     "a": "На скелі гори над пляжем. Найкраще його видно з середини пляжу."
+    },
+    {
+     "q": "Звідки йде ліфт до замку?",
+     "a": "Вхід навпроти пляжу, з боку Avenida de Jovellanos."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (es) — Playa del Postiguet",
+     "url": "https://es.wikipedia.org/wiki/Playa_del_Postiguet"
+    },
+    {
+     "title": "Barceló Experiences — Postiguet beach",
+     "url": "https://www.barcelo.com/guia-turismo/en/spain/alicante/things-to-do/postiguet-beach/"
+    },
+    {
+     "title": "AlicanteOut — Playa del Postiguet",
+     "url": "https://alicanteout.com/playas-de-alicante/playa-del-postiguet-en-alicante/"
+    }
+   ],
+   "icon": "assets/tour/postiguet/illustration.svg",
+   "photo": {
+    "src": "assets/tour/postiguet/photo.webp",
+    "thumb": "assets/tour/postiguet/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAADQAQCdASoQAAwAA4BaJZgCdAEX8/yqLAD1llCqBpZDmFLdIeHYvEtp0X429nNivBP3mhXl+9cwikmsdeDbolDjyAA=",
+    "alt": "Пляж Postiguet під скелею з замком Санта-Барбара",
+    "credit": {
+     "title": "File:Playa del Postiguet 2.jpg",
+     "author": "kallerna",
+     "license": "CC BY-SA 4.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Playa_del_Postiguet_2.jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "marq": {
+   "os": "marq",
+   "order": 11,
+   "role": "poi",
+   "zone": "castle",
+   "stop": "drive-by",
+   "lat": 38.35375,
+   "lng": -0.476389,
+   "coordSource": "wikidata Q636891 + TripAdvisor (21 м)",
+   "title": "MARQ — Археологічний музей",
+   "short": "Археологічний музей провінції Аліканте в будівлі колишнього госпіталю. У 2004 році він отримав премію «Європейський музей року», і в Іспанії її до нього мали лише найвідоміші музеї.",
+   "long": [
+    "MARQ займає перебудований корпус старого госпіталю Сан-Хуан-де-Дьос біля підніжжя гори Бенакантіль. У 2000 році музей переїхав сюди й переосмислив, як показувати археологію. Замість нескінченних вітрин тут світло, звук, відео й занурення. Можна «пройти» крізь розкопки, середньовічне місто, підводну археологію.",
+    "У 2004 році Європейський музейний форум назвав MARQ Європейським музеєм року. Серед іспанських лауреатів — Музей Гуггенгайма в Більбао й CosmoCaixa в Барселоні. Для провінційного музею — дуже висока компанія.",
+    "Що всередині: іберійська кераміка, римські знахідки з давнього Lucentum (римське місто на околиці Аліканте), мусульманська й середньовічна зали. Часто проходять великі тимчасові виставки: Єгипет, Помпеї, скарби інших музеїв світу.",
+    "Порада для туриста: якщо спекотно чи похмуро, MARQ — ідеальний план на 2–3 години після туру. Від музею майже поруч є під'їзд до замку Санта-Барбара — наступної точки туру.",
+    "З тук-тука видно сучасний вхід і старі стіни госпіталю — поєднання історичної й нової архітектури."
+   ],
+   "questions": [
+    {
+     "q": "Що там найцікавіше?",
+     "a": "Зали з іберійською й римською археологією та тимчасові виставки світового рівня."
+    },
+    {
+     "q": "Скільки часу потрібно?",
+     "a": "Постійна експозиція — 1,5–2 години, з тимчасовою виставкою — 3 години."
+    },
+    {
+     "q": "Що означає «Європейський музей року»?",
+     "a": "Це премія Європейського музейного форуму за інноваційну роботу музею. MARQ отримав її в 2004 році."
+    }
+   ],
+   "sources": [
+    {
+     "title": "MARQ — El Marq, museo de Europa",
+     "url": "https://www.marqalicante.com/en/el-marq-museo-de-europa/"
+    },
+    {
+     "title": "Wikipedia (en) — Archaeological Museum of Alicante",
+     "url": "https://en.wikipedia.org/wiki/Archaeological_Museum_of_Alicante"
+    },
+    {
+     "title": "Arqueología Medieval — El MARQ, premio europeo al mejor museo",
+     "url": "http://www.arqueologiamedieval.com/noticias1/111/el-marq-de-alicante-premio-europeo-al-mejor-museo"
+    }
+   ],
+   "icon": "assets/tour/marq/illustration.svg",
+   "photo": {
+    "src": "assets/tour/marq/photo.webp",
+    "thumb": "assets/tour/marq/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRmQAAABXRUJQVlA4IFgAAADwAQCdASoQAAwAA4BaJZgCdADiWhwkUxAA/vTnglmY+IHrnRxYqd21X+mxjnr7hNcyDlJ+fy38S7T4i5jIM8LbMjUEPhncy62tJYx6zGJCT1kkNKzr9QAA",
+    "alt": "Будівля Археологічного музею MARQ",
+    "credit": {
+     "title": "File:VIEW , ®'s - DigiGraf - Ð - ┼ , ALICANTE MARQ (MUSEO ARQUEOLÓGICO de ALICANTE) - panoramio (11).jpg",
+     "author": "Concepcion AMAT ORTA",
+     "license": "CC BY 3.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:VIEW_,_%C2%AE%27s_-_DigiGraf_-_%C3%90_-_%E2%94%BC_,_ALICANTE_MARQ_(MUSEO_ARQUEOL%C3%93GICO_de_ALICANTE)_-_panoramio_(11).jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "castle": {
+   "os": "castillo-santa-barbara",
+   "order": 12,
+   "role": "poi",
+   "zone": "castle",
+   "stop": "viewpoint",
+   "lat": 38.349036,
+   "lng": -0.477997,
+   "coordSource": "wikidata Q43133006 + OSM way 20490181 (17 м), верх замку; точка висадки — уточнити",
+   "title": "Castillo de Santa Bárbara",
+   "short": "Фортеця на вершині гори Бенакантіль, 166 метрів над морем. Звідси відкривається найкращий вид на Аліканте. Назву замок отримав від дня, коли його взяли кастильці, — 4 грудня 1248 року, свята святої Варвари.",
+   "long": [
+    "На горі Бенакантіль люди жили ще до римлян, але фортецю, яку ми бачимо, почали будувати мусульмани (IX століття). 4 грудня 1248 року, у день святої Варвари, фортецю взяв інфант Альфонсо Кастильський — майбутній король Альфонсо X Мудрий. Відтоді замок і носить ім'я святої.",
+    "Протягом століть замок перебудовували, укріплювали, облягали. Сьогодні це кілька рівнів: верхній з найстарішими частинами, середній і нижній — з бастіонами XVI–XVIII століть. На вершині — оглядові майданчики, з яких видно все: порт, Explanada, пляж Постігет, Табарку в ясну погоду.",
+    "Пам'ятаєте скелю над пляжем Постігет (точка 10)? Якщо дивитися на гору з пляжу, вона нагадує профіль людини. Аліканці називають її Cara del Moro — «Обличчя мавра». Це один із символів міста. Існує легенда про мавританську принцесу та її коханого.",
+    "Як піднятися: тук-тук їде дорогою вгору до вхідних воріт замку й там розвертається. Інші способи — пішки або ліфтом, який іде тунелем усередині гори з боку пляжу Постігет.",
+    "Порада. Хочете роздивитися замок ближче? Гід може висадити вас біля воріт і повернутися за вами через 10–15 хвилин. Цього вистачить, щоб пройти за ворота, зробити фото з оглядового майданчика і глянути на місто згори. Домовтеся з водієм про точний час і місце зустрічі."
+   ],
+   "questions": [
+    {
+     "q": "Чому «Санта-Барбара»?",
+     "a": "Замок узяли кастильці 4 грудня 1248 року, у день святої Варвари."
+    },
+    {
+     "q": "Де «обличчя мавра»?",
+     "a": "На скелі гори, якщо дивитися з пляжу Постігет. Схоже на профіль людини."
+    },
+    {
+     "q": "Можна вийти й погуляти?",
+     "a": "Так. Тук-тук висадить вас біля воріт і повернеться через 10–15 хвилин. Вхід до замку безкоштовний, платний лише ліфт."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Castillo de Santa Bárbara — Castle information",
+     "url": "https://castillodesantabarbara.com/en/castle-information/"
+    },
+    {
+     "title": "Ayuntamiento de Alicante — Castillo de Santa Bárbara",
+     "url": "https://www.alicante.es/es/patrimonio-cultural/castillo-santa-barbara"
+    },
+    {
+     "title": "Alicante Turismo — Santa Bárbara Castle",
+     "url": "https://alicanteturismo.com/en/santa-barbara-castle/"
+    },
+    {
+     "title": "Wikipedia (en) — Santa Bàrbara Castle",
+     "url": "https://en.wikipedia.org/wiki/Santa_B%C3%A0rbara_Castle"
+    }
+   ],
+   "icon": "assets/tour/castle/illustration.svg",
+   "photo": {
+    "src": "assets/tour/castle/photo.webp",
+    "thumb": "assets/tour/castle/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRmgAAABXRUJQVlA4IFwAAADwAQCdASoQAAwAA4BaJagCdAC90qQaTUAA/u/ktVTu6F7pi41n/r18hQ8NtqNF4IzLs353iasNgAYHc1xPgFVXplSQsOev2ilDrzToxVkn0diz7XFV7gddqAAAAA==",
+    "alt": "Замок Санта-Барбара на вершині скелі Бенакантіль",
+    "credit": {
+     "title": "File:Alicante - Castillo de Santa Bárbara 22.11.2010 16.JPG",
+     "author": "Michael Kranewitter",
+     "license": "CC BY-SA 3.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Alicante_-_Castillo_de_Santa_B%C3%A1rbara_22.11.2010_16.JPG",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "plazaDeToros": {
+   "os": "plaza-de-toros",
+   "order": 13,
+   "role": "poi",
+   "zone": "west",
+   "stop": "drive-by",
+   "lat": 38.352245,
+   "lng": -0.484883,
+   "coordSource": "власник, редактор 2026-09-27 (було 38.352219, -0.48484; зсув 5 м)",
+   "title": "Plaza de Toros",
+   "short": "Арена для кориди середини XIX століття, розрахована на понад 15 тисяч глядачів. Коли в 1888 році її розширили, місць стало майже стільки, скільки жило людей у всьому місті. Усередині є музей кориди.",
+   "long": [
+    "Першу арену на цьому місці збудували в 1848 році за проєктом архітектора Еміліо Ховера. У 1888 році її перебудував Хосе Гуардіола Піко, і вийшло майже 16 000 місць. А в самому Аліканте тоді жило близько 19 000 людей! Відкриття нової арени святкували три дні в червні 1888 року. Виступали зірки того часу — «Лагартіхо», «Геррита» і «Лагартіха».",
+    "Сьогодні арена вміщує 15 235 глядачів. Вона має три яруси: tendidos знизу, gradas посередині, ложі нагорі. Кориди тут найчастіше проходять у червні, під час свята Хогерас. Але на арені бувають і концерти, і навіть тенісні матчі.",
+    "При арені працює Museo Taurino: костюми тореро, плакати, бібліотека приблизно на 700 томів. Для туриста, який хоче зрозуміти, чому корида для Іспанії важлива, але не хоче дивитися саму кориду, — хороший компроміс.",
+    "Тема кориди суперечлива. Гід може сказати про це прямо: в Іспанії є і прихильники, і дедалі більше противників.",
+    "З тук-тука видно кругле цегляне тіло арени з арочними вікнами."
+   ],
+   "questions": [
+    {
+     "q": "Тут і досі бувають кориди?",
+     "a": "Так, переважно в сезон Хогерас у червні."
+    },
+    {
+     "q": "Скільки глядачів вміщує?",
+     "a": "15 235."
+    },
+    {
+     "q": "Можна подивитися всередині?",
+     "a": "Через Museo Taurino. Години роботи — на сайті."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (es) — Plaza de toros de Alicante",
+     "url": "https://es.wikipedia.org/wiki/Plaza_de_toros_de_Alicante"
+    },
+    {
+     "title": "Alicantepedia — Plaza de Toros",
+     "url": "https://alicantepedia.com/edificios-historicos/plaza-de-toros"
+    },
+    {
+     "title": "Portal Taurino — Plaza de Alicante",
+     "url": "https://portaltaurino.net/enciclopedia/doku.php/plaza_de_alicante"
+    }
+   ],
+   "icon": "assets/tour/plazaDeToros/illustration.svg"
+  },
+  "colegioSanAntonio": {
+   "os": "colegio-san-antonio",
+   "order": 14,
+   "role": "poi",
+   "zone": "west",
+   "stop": "drive-by",
+   "lat": 38.350862,
+   "lng": -0.48758,
+   "coordSource": "wikidata Q134319371 (церква) + адреса Plaza San Antonio 6 (82 м); вхід у школу — уточнити",
+   "title": "Colegio San Antonio de Padua (францисканська школа)",
+   "short": "Католицька школа ордену францисканців, відкрита в 1926 році, — у 2026-му їй виповнюється 100 років. Поруч стоїть її «сестра» — парафіяльна церква Sant Antoni de Pàdua з блакитним куполом.",
+   "long": [
+    "Школа стоїть на Plaza de San Antonio, 1. Її історія починається в 1919 році, коли в Аліканте повернулися францисканці з провінції Картахени. Спершу вони жили в кварталі Лас-Каролінас: проповідували, доглядали хворих, навчали. 4 липня 1926 року брати відкрили новий монастир у кварталі, який тоді називали Les Oliveretes («оливкові гайочки»), і присвятили його святому Антонію Падуанському.",
+    "Головним завданням монастиря була школа. Вона мала дати дітям християнську освіту як альтернативу світським «Escuelas Modelo» — зразковим школам міста, де релігію не викладали.",
+    "Далі — важкі роки. У 1931 і 1936 роках будівлі францисканців згоріли під час антиклерикальних заворушень. Після громадянської війни брати повернулися. Поруч зі школою в 1941–1949 роках вони звели церкву San Antonio de Padua, яка в 1969 році стала парафією. На Страсний тиждень із неї виходять процесії братства Ecce Homo.",
+    "Сьогодні це «concertada» — приватна школа з державним фінансуванням, від садочка до середньої школи. Вона входить до мережі з 15 шкіл францисканської провінції Непорочного Зачаття. У 2026 році школа святкує 100 років.",
+    "Цікавий факт — гра слів. Святого Франциска Ассизького при хрещенні назвали Джованні. «Francesco», тобто «французик», — це прізвисько, яке дав йому батько-купець, закоханий у Францію. Тож «францисканці» за звучанням трохи «французи», хоча орден італійський, а ця школа — іспанська.",
+    "З тук-тука видно шкільну будівлю й поруч блакитний кахельний купол церкви. Якщо їдете в годину, коли закінчуються уроки, пригальмуйте: навколо багато дітей."
+   ],
+   "questions": [
+    {
+     "q": "Хто заснував школу?",
+     "a": "Францисканці з провінції Картахени. Монастир і школу відкрили в 1926 році."
+    },
+    {
+     "q": "Скільки років школі?",
+     "a": "Її відкрили в 1926 році, тож у 2026-му їй 100 років."
+    },
+    {
+     "q": "А що за церква поруч?",
+     "a": "Парафія Sant Antoni de Pàdua тих самих францисканців, збудована в 1941–1949 роках. Її видно по блакитному куполу."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Franciscans.cat — 90 aniversario Colegio franciscano San Antonio de Padua de Alicante",
+     "url": "https://www.franciscans.cat/actualidad/13-provincia/1338-90-aniversario-colegio-franciscano-san-antonio-de-padua-de-alicante"
+    },
+    {
+     "title": "Colegio San Antonio de Padua — Somos franciscanos",
+     "url": "https://www.colegiosanantoniodepadua.com/nuestro-colegio/somos-franciscanos"
+    },
+    {
+     "title": "Colegios Franciscanos — San Antonio de Padua",
+     "url": "https://colegiosfranciscanos.org/contacto-2.html?view=article&id=45&catid=15"
+    },
+    {
+     "title": "Wikipedia (es) — Parroquia San Antonio de Padua",
+     "url": "https://es.wikipedia.org/wiki/Parroquia_San_Antonio_de_Padua"
+    },
+    {
+     "title": "Cofradía Ecce-Homo y Redención — Sede canónica",
+     "url": "https://www.eccehomoyredencion.com/cofrad%C3%ADa/sede-can%C3%B3nica"
+    }
+   ],
+   "icon": "assets/tour/colegioSanAntonio/illustration.svg",
+   "photo": {
+    "src": "assets/tour/colegioSanAntonio/photo.webp",
+    "thumb": "assets/tour/colegioSanAntonio/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRmAAAABXRUJQVlA4IFQAAAAQAgCdASoQAAwAA4BaJQBOgBl54O8T7ZQAAP7roptoXL87tkJaKgI2KTqsZXRZghw7jjgevfNzYpozsZBOmitJRvXiRsmJHIO9K8jd3rzkz2EisAA=",
+    "alt": "Будівля францисканської школи San Antonio de Padua",
+    "credit": {
+     "title": "File:Colegio San Antonio de Padua - Franciscanos, Alicante.jpg",
+     "author": "Varondán",
+     "license": "CC BY-SA 4.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Colegio_San_Antonio_de_Padua_-_Franciscanos,_Alicante.jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "sanFernando": {
+   "os": "castillo-san-fernando",
+   "order": 15,
+   "role": "poi",
+   "zone": "west",
+   "stop": "stop",
+   "lat": 38.351944,
+   "lng": -0.491111,
+   "coordSource": "wikidata Q8342539 + TripAdvisor (31 м)",
+   "title": "Castillo de San Fernando",
+   "short": "«Замок, що ніколи не воював». Його спорудили в 1809–1812 роках проти армії Наполеона. Французи так і не прийшли на штурм, тож фортеця жодного разу не бачила бою. Тепер це парк з видом на місто.",
+   "long": [
+    "1808 рік. Наполеон захоплює Іспанію, починається Війна за незалежність. Аліканте боїться французького десанту з моря або удару з боку кварталу Сан-Блас. На пагорбі Тоссаль вирішують звести нову фортецю, щоб прикрити місто із заходу. Проєкт готовий у 1809 році, будівництво завершили в 1812-му. Керував інженер Пабло Ордовас-і-Састре, а працювали, як пишуть, чи не всі мешканці міста.",
+    "І ось фінал: французи Аліканте так і не взяли. У січні 1812 року генерал Монбрен обстріляв місто з пагорба Альтосано, але на штурм не пішов. Замок San Fernando не зробив жодного бойового пострілу. Він мав бути ще й в'язницею для французьких полонених.",
+    "Назву фортеця отримала на честь короля Фернандо VII. Сьогодні на Тоссалі — парк, стіни фортеці й оглядові майданчики. Звідси видно замок Санта-Барбара навпроти, де ми вже побували. Два замки дивляться один на одного через усе місто.",
+    "З тук-тука видно мури на вершині пагорба. Якщо маршрут іде вище, покажіть пасажирам панораму: Санта-Барбара, порт і море."
+   ],
+   "questions": [
+    {
+     "q": "Чому він «ніколи не воював»?",
+     "a": "Французи так і не прийшли штурмувати Аліканте, тож фортеця не брала участі в бою."
+    },
+    {
+     "q": "Навіщо в місті два замки?",
+     "a": "Санта-Барбара — середньовічна, над морем. San Fernando збудували в 1809–1812 роках, щоб прикрити місто з заходу."
+    },
+    {
+     "q": "Можна піднятися?",
+     "a": "Так, на Тоссалі парк з оглядовими майданчиками."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (es) — Castillo de San Fernando (Alicante)",
+     "url": "https://es.wikipedia.org/wiki/Castillo_de_San_Fernando_(Alicante)"
+    },
+    {
+     "title": "Ayuntamiento de Alicante — Castillo de San Fernando",
+     "url": "https://www.alicante.es/es/patrimonio-cultural/castillo-san-fernando"
+    },
+    {
+     "title": "Alicante Plaza — ¿Qué castillo de Alicante nació para la guerra, pero sirvió para la paz?",
+     "url": "https://alicanteplaza.es/que-castillo-de-alicante-nacio-para-la-guerra-pero-sirvio-para-la-paz"
+    },
+    {
+     "title": "Alicante Vivo — Castillo de San Fernando, el olvidado",
+     "url": "http://www.alicantevivo.org/2007/09/castillo-de-san-fernando-el-olvidado.html"
+    }
+   ],
+   "icon": "assets/tour/sanFernando/illustration.svg",
+   "photo": {
+    "src": "assets/tour/sanFernando/photo.webp",
+    "thumb": "assets/tour/sanFernando/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAADQAQCdASoQAAwAA4BaJbACdAEOcICRsADdZwokntH1pvH6p+YLxVlnnMhndu0M3NJr1vnuOlwicQl0s1Vf/rI4zgIPxB7jDKH6KvtA0I4CffjnCCgAAA==",
+    "alt": "Мури замку San Fernando на пагорбі Тоссал",
+    "credit": {
+     "title": "File:Castillo de San Fernando, Alicante -2.jpg",
+     "author": "Varondán",
+     "license": "CC BY-SA 4.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Castillo_de_San_Fernando,_Alicante_-2.jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "ricoPerez": {
+   "os": "estadio-rico-perez",
+   "order": 16,
+   "role": "poi",
+   "zone": "west",
+   "stop": "drive-by",
+   "lat": 38.357222,
+   "lng": -0.4925,
+   "coordSource": "wikidata Q945070 + OSM way 43292292 (20 м), центр стадіону",
+   "title": "Футбольний стадіон — Estadio José Rico Pérez",
+   "short": "Домашній стадіон клубу «Еркулес» (Hércules CF) з 1974 року. Під час чемпіонату світу 1982 року тут грала Аргентина з юним Марадоною, а також відбувся матч за третє місце: Польща — Франція.",
+   "long": [
+    "Стадіон відкрили в 1974 році й назвали на честь тодішнього президента «Еркулеса» Хосе Ріко Переса. «Еркулес» — клуб із назвою античного героя. Місцеві вболівальники дуже віддані йому, хоча в останні роки команда здебільшого грає в нижчих лігах.",
+    "Найзоряніші дні стадіону — чемпіонат світу 1982 року в Іспанії. Тут зіграли два матчі групового етапу за участі Аргентини, Угорщини й Сальвадору. Тобто на цьому полі виходив молодий Дієго Марадона. А 10 липня 1982 року тут пройшов матч за третє місце: Польща перемогла Францію 3:2.",
+    "Стадіон вміщує близько 30 тисяч глядачів. Неподалік проходить нова «культурна» зона міста — Paseo de Campoamor і ADDA, наступна точка.",
+    "З тук-тука видно чашу стадіону. Для любителів футболу можна порадити: у день матчу атмосфера навколо дуже гучна, з біло-блакитними шарфами «Еркулеса»."
+   ],
+   "questions": [
+    {
+     "q": "Який клуб тут грає?",
+     "a": "«Еркулес» (Hércules CF), клуб з Аліканте."
+    },
+    {
+     "q": "Тут грали на чемпіонаті світу?",
+     "a": "Так, у 1982 році: матчі Аргентини й матч за третє місце Польща — Франція (3:2)."
+    },
+    {
+     "q": "Можна потрапити на матч?",
+     "a": "Квитки продаються на сайті клубу й у касах стадіону."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (en) — Estadio José Rico Pérez",
+     "url": "https://en.wikipedia.org/wiki/Estadio_Jos%C3%A9_Rico_P%C3%A9rez"
+    },
+    {
+     "title": "FIFA — Poland v France 3-2, match for third place, 1982",
+     "url": "https://www.fifa.com/en/match-centre/match/17/59/676/921?date=2025-07-09"
+    },
+    {
+     "title": "España Estadios — España 82, Alicante",
+     "url": "https://espanaestadios.com/2021/07/26/espana-82-alicante-estadio-jose-rico-perez/"
+    }
+   ],
+   "icon": "assets/tour/ricoPerez/illustration.svg",
+   "photo": {
+    "src": "assets/tour/ricoPerez/photo.webp",
+    "thumb": "assets/tour/ricoPerez/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRkYAAABXRUJQVlA4IDoAAAAQAgCdASoQAAwAA4BaJZgCdAEPhkfsApHAAPk3oK90nKwEvyg4AcJmAZoEqvrEipn/rEUWUULwgAAA",
+    "alt": "Трибуни і поле стадіону José Rico Pérez",
+    "credit": {
+     "title": "File:Estadio José Rico Pérez en obras.jpg",
+     "author": "Dilema",
+     "license": "Public domain",
+     "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Estadio_Jos%C3%A9_Rico_P%C3%A9rez_en_obras.jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "adda": {
+   "os": "adda",
+   "order": 17,
+   "role": "poi",
+   "zone": "west",
+   "stop": "drive-by",
+   "lat": 38.354481,
+   "lng": -0.486185,
+   "coordSource": "wikidata Q5399060 + TripAdvisor (73 м)",
+   "title": "Аудиторіо — ADDA (Auditorio de la Diputación de Alicante)",
+   "short": "Сучасний концертний зал провінції Аліканте, відкритий у 2011 році. Біла будівля з чистими, строгими лініями, зовсім не схожа на пишний старий центр. Тут грає симфонічний оркестр і проходять великі концерти.",
+   "long": [
+    "ADDA — «Auditorio de la Diputación de Alicante», концертний зал провінційної ради. Його спроєктував аліканський архітектор Хуан Антоніо Гарсія Солера. Відкрили зал у 2011 році. Це велика будівля: близько 28 000 м² площі й 29 метрів заввишки.",
+    "На відміну від старого центру з бароко й модерном, ADDA — чиста сучасна архітектура: прості об'єми, біле світло, скло. Усередині — великий симфонічний зал, камерний зал і репетиційні приміщення. Тут базується оркестр ADDA Simfònica, а в програмі — класика, джаз, фламенко, дитячі концерти.",
+    "Цікаво, як місто «переїздить» на захід: поруч з'являються сучасні культурні й спортивні простори. Якщо вам цікавий зовсім інший Аліканте — не туристичний, а той, де живуть місцеві, — то вечір в ADDA дасть саме це.",
+    "З тук-тука видно білий фасад і майдан перед входом. Найкрасивіше він виглядає ввечері, з підсвіткою."
+   ],
+   "questions": [
+    {
+     "q": "Що тут відбувається?",
+     "a": "Концерти класичної музики, джаз, фламенко, великі гастролі."
+    },
+    {
+     "q": "Коли будівлю збудували?",
+     "a": "Відкрили в 2011 році."
+    },
+    {
+     "q": "Як купити квитки?",
+     "a": "На сайті ADDA або в касі."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (es) — Auditorio de la Diputación de Alicante",
+     "url": "https://es.wikipedia.org/wiki/Auditorio_de_la_Diputaci%C3%B3n_de_Alicante"
+    },
+    {
+     "title": "Alicante Vivo — ADDA",
+     "url": "http://www.alicantevivo.org/2011/04/adda-auditorio-de-la-diputacion-de.html"
+    },
+    {
+     "title": "Alicantepedia — García Solera, Juan Antonio",
+     "url": "https://alicantepedia.com/biografias/garc%C3%ADa-solera-juan-antonio"
+    }
+   ],
+   "icon": "assets/tour/adda/illustration.svg",
+   "photo": {
+    "src": "assets/tour/adda/photo.webp",
+    "thumb": "assets/tour/adda/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRl4AAABXRUJQVlA4IFIAAADQAQCdASoQAAwAA4BaJQAAX0JTtr0xAAD+yJ27AEPDjiwhE2942UE21ZwhWAFxWD2SJhLvOI4P8fI0Iy20IS4ET6m/XB0i/9AC1B2/qAD2AAAA",
+    "alt": "Біла будівля Аудиторіо ADDA",
+    "credit": {
+     "title": "File:Auditorio de la Diputación de Alicante 03.jpg",
+     "author": "Varondán",
+     "license": "CC BY-SA 4.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Auditorio_de_la_Diputaci%C3%B3n_de_Alicante_03.jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "mercado": {
+   "os": "mercado-central",
+   "order": 18,
+   "role": "poi",
+   "zone": "center",
+   "stop": "drive-by",
+   "lat": 38.347928,
+   "lng": -0.485996,
+   "coordSource": "власник, редактор 2026-09-27 (було 38.34775, -0.4862; зсув 27 м)",
+   "title": "Mercado Central",
+   "short": "Центральний ринок Аліканте, відкритий у 1921 році в стилі модерну. Тут продають свіжу рибу, хамон, фрукти й спеції. А біля входу — пам'ятна дошка жертвам бомбардування 1938 року, однієї з найстрашніших сторінок історії міста.",
+   "long": [
+    "Пам'ятаєте архітектора Будинку відьм, Енріке Санчеса Седеньо? Він спроєктував і цей ринок. Будівництво тривало з 1911 по 1921 рік, завершував роботу Хуан Відаль Рамос. Той самий Відаль, що звів Casa Carbonell (точка 1) і будівлю ощадної каси на San Fernando (точка 6). Ринок стоїть там, де колись проходили міські мури. Роздивіться купол, вітражі й декор фасаду: так виглядав модерн у 1920-х.",
+    "Вранці 25 травня 1938 року, під час громадянської війни, над Аліканте з'явилися італійські бомбардувальники Savoia-Marchetti SM.79. Вони воювали на боці франкістів. Скинули близько 90 бомб; частина влучила в ринок, повний людей. Загинули сотні мешканців. Ринок відновили, зберігши більшість декору. На площі поруч — меморіал жертвам.",
+    "Сьогодні ринок — улюблене місце місцевих і рай для гурманів. Нижній поверх — риба й морепродукти, верхній — м'ясо, хамон, сири, фрукти. Порада туристам: приходьте до обіду, після 14:00 багато ятки зачиняються.",
+    "З тук-тука варто показати фасад і годинник над входом."
+   ],
+   "questions": [
+    {
+     "q": "Коли працює ринок?",
+     "a": "Зазвичай з ранку до обіду, у неділю вихідний."
+    },
+    {
+     "q": "Що обов'язково скуштувати?",
+     "a": "Хамон, місцеві оливки, свіжу рибу, туррон (нуга з Хіхони)."
+    },
+    {
+     "q": "Що сталося в 1938 році?",
+     "a": "Італійська авіація, союзник Франко, розбомбила ринок уранці, коли там було повно людей. Загинули сотні."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (es) — Mercado Central de Alicante",
+     "url": "https://es.wikipedia.org/wiki/Mercado_Central_de_Alicante"
+    },
+    {
+     "title": "Wikipedia (es) — Bombardeo del mercado central de Alicante",
+     "url": "https://es.wikipedia.org/wiki/Bombardeo_del_mercado_central_de_Alicante"
+    },
+    {
+     "title": "UA, La memoria recuperada — Las víctimas del bombardeo del 25 de mayo de 1938",
+     "url": "https://memoriarecuperada.ua.es/documentos/las-victimas-del-bombardeo-sobre-el-mercado-y-la-ciudad-de-alicante-sufrido-el-25-de-mayo-de-1938/"
+    },
+    {
+     "title": "El Español — Mercado Central, un siglo de vida",
+     "url": "https://www.elespanol.com/alicante/cultura/20220217/mercado-central-alicante-siglo-vida-gastronomico-ciudad/650685431_0.html"
+    }
+   ],
+   "icon": "assets/tour/mercado/illustration.svg",
+   "photo": {
+    "src": "assets/tour/mercado/photo.webp",
+    "thumb": "assets/tour/mercado/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRngAAABXRUJQVlA4IGwAAAAQAgCdASoQAAwAA4BaJbACdAYtA/SC7CgAAP6ilrbnUS/JyCgTt9DBMC6ceO4mS7XE3pdD3RrS4Oq+1emCF9tdUBd+r+Td+3YkdEBhrDzv1xmdRqFFLUqC6Qtn0vLpkRvOushM/BZ7MRwAAAA=",
+    "alt": "Модерновий фасад Центрального ринку зі сходами і пальмами",
+    "credit": {
+     "title": "File:Mercado Central de Alicante 03.jpg",
+     "author": "Varondán",
+     "license": "CC BY-SA 4.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mercado_Central_de_Alicante_03.jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "luceros": {
+   "os": "luceros",
+   "order": 19,
+   "role": "poi",
+   "zone": "center",
+   "stop": "drive-by",
+   "lat": 38.34602,
+   "lng": -0.49068,
+   "coordSource": "wikidata Q9060985 + OSM way 22780080 (2 м), фонтан",
+   "title": "Plaza de los Luceros",
+   "short": "Кругла площа з фонтаном 1930 року і чотирма вершниками на конях. Це серце свята Хогерас: у червні тут щодня о другій дня гримить маскле́та — оглушлива піротехнічна «симфонія».",
+   "long": [
+    "Фонтан створив скульптор Даніель Баньюльс Мартінес. У 1930 році він виграв конкурс з проєктом «Levante» («Схід»). Центральна колона — з барельєфами в «східному» стилі й жіночими фігурами. Навколо — чотири однакові скульптури коней з вершниками. Кажуть, «luceros» — це чотири блукаючі зорі нічного неба, які надихнули автора. Через коней площу якийсь час навіть називали «площею коней».",
+    "Головна подія — Hogueras de San Juan, 20–24 червня. Щодня о 14:00 на Лусерос проходить маскле́та. Це не феєрверк у небі, а ритмічна серія вибухів, від яких трясеться земля й дзвенить у грудях. Звук такий потужний, що з 2014 року скульптури фонтану на час свята закривають звукоізоляційними коробами.",
+    "Під площею — станція трамвая-метро Luceros. Від неї центр міста розходиться у всі боки, а Авеню Альфонсо Мудрого веде до Рамбли й Старого міста.",
+    "З тук-тука видно фонтан з усіх боків — можна зробити коло навколо площі, щоб пасажири роздивилися всіх чотирьох вершників."
+   ],
+   "questions": [
+    {
+     "q": "Що таке маскле́та?",
+     "a": "Денна піротехнічна вистава: серія гучних вибухів у ритмі, яку відчуваєш тілом. Проходить щодня під час Хогерас о 14:00."
+    },
+    {
+     "q": "Коли свято Хогерас?",
+     "a": "У червні, в дні навколо свята Сан-Хуана (20–24 червня)."
+    },
+    {
+     "q": "Хто автор фонтану?",
+     "a": "Даніель Баньюльс, 1930 рік."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Hogueras.com — Plaza de los Luceros: ¿qué hay tras las figuras de la fuente?",
+     "url": "https://hogueras.com/alicante/que-ver/plaza-de-los-luceros/"
+    },
+    {
+     "title": "Alicante Vivo — Luceros y su fuente",
+     "url": "http://www.alicantevivo.org/2007/07/alicante-en-el-recuerdo-luceros-y-su.html"
+    },
+    {
+     "title": "Barceló Experiences — La Plaza de los Luceros",
+     "url": "https://www.barcelo.com/guia-turismo/es/espana/alicante/que-ver/la-plaza-de-los-luceros/"
+    }
+   ],
+   "icon": "assets/tour/luceros/illustration.svg"
+  },
+  "sanFrancisco": {
+   "os": "calle-san-francisco",
+   "order": 20,
+   "role": "poi",
+   "zone": "center",
+   "stop": "drive-by",
+   "lat": 38.343836,
+   "lng": -0.485777,
+   "coordSource": "wikidata Q22696499 + TripAdvisor (10 м), середина вулиці",
+   "title": "Calle San Francisco — «вулиця з грибами»",
+   "short": "Пішохідна вулиця з велетенськими грибами, намальованими «класиками» й жабками на бруківці. Колись це був один із найзанедбаніших куточків центру, а тепер — улюблене місце для фото в Аліканте.",
+   "long": [
+    "Ще наприкінці XX — на початку XXI століття вулицю San Francisco місцеві обходили: погане освітлення, облуплені фасади, вулична проституція, сумнівні заклади. Місто довго думало, що з нею робити.",
+    "Наприкінці 2013 року тодішня мерка Соня Кастедо вирішила перетворити вулицю на казку. Сюди поставили гігантські гриби, під якими можна стояти, як під парасолькою. Бруківку розфарбували в зелене й жовте, намалювали «класики» для дітей. Фігури створив митець Хосе Марія Ескріва, що працює для свята Хогерас. Проєкт коштував близько 60 000 євро, і спочатку багато хто критикував витрати.",
+    "А потім сталося те, на що мало хто розраховував: вулиця ожила. Прийшли туристи, за ними відкрилися кафе й бари. Сьогодні це одна з найбільш фотографованих вулиць міста. Деякі туристи спеціально шукають «Calle de las Setas» на карті.",
+    "Гриби в Аліканте — це не про ліс. Це про те, як дивна, смішна ідея може врятувати район.",
+    "Тут наш тур закінчується. З тук-тука вулицю видно з перехрестя. Вона пішохідна, тож краще запропонувати туристам вийти, пройтися пішки й зробити фото на згадку."
+   ],
+   "questions": [
+    {
+     "q": "Чому тут гриби?",
+     "a": "У 2013 році місто вирішило «перезапустити» занедбану вулицю через яскравий дизайн. Це спрацювало."
+    },
+    {
+     "q": "Можна тут поїсти?",
+     "a": "Так, на вулиці багато кафе й барів з терасами."
+    },
+    {
+     "q": "Скільки грибів?",
+     "a": "Кілька великих фігур уздовж вулиці."
+    }
+   ],
+   "sources": [
+    {
+     "title": "Wikipedia (es) — Calle San Francisco (Alicante)",
+     "url": "https://es.wikipedia.org/wiki/Calle_San_Francisco_(Alicante)"
+    },
+    {
+     "title": "El Español — La calle de las setas en Alicante",
+     "url": "https://www.elespanol.com/alicante/vivir/20211004/calle-setas-alicante-lugar-cuento-pasear-echarse/616688513_0.html"
+    },
+    {
+     "title": "Atlas Obscura — Calle de las Setas",
+     "url": "https://assets.atlasobscura.com/places/calle-de-las-setas-the-mushroom-street"
+    }
+   ],
+   "icon": "assets/tour/sanFrancisco/illustration.svg",
+   "photo": {
+    "src": "assets/tour/sanFrancisco/photo.webp",
+    "thumb": "assets/tour/sanFrancisco/thumb.webp",
+    "w": 640,
+    "ratio": 1.333,
+    "placeholder": "data:image/webp;base64,UklGRmgAAABXRUJQVlA4IFwAAAAwAgCdASoQAAwAA4BaJYwC7ADp1MkBJhtygAD+28sNAAhTDojT/vR+khyEeyYucezskhmqfNvZfoghnyTal+Yf+twWpwgqK6lHUW7e3cB8Xt9yJsPb7GqMr5gAAA==",
+    "alt": "Вулиця San Francisco з великими грибами",
+    "credit": {
+     "title": "File:Alicante en julio de 2022 149.jpg",
+     "author": "Emilio J. Rodríguez Posada",
+     "license": "CC BY-SA 4.0",
+     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Alicante_en_julio_de_2022_149.jpg",
+     "modifications": "обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено",
+     "status": "prototype"
+    }
+   }
+  },
+  "melia": {
+   "os": "melia",
+   "role": "hub",
+   "zone": "waterfront",
+   "stop": "hub",
+   "lat": 38.342628,
+   "lng": -0.478838,
+   "coordSource": "власник, редактор 2026-09-27 (було 38.3441, -0.4776; зсув 196 м)",
+   "title": "Готель Meliá Alicante",
+   "short": "Зустріч біля головного входу в готель. Звідси починається кожен тур."
+  },
+  "palmeral": {
+   "os": "palmeral",
+   "role": "hub",
+   "zone": "south",
+   "stop": "hub",
+   "lat": 38.322944,
+   "lng": -0.512844,
+   "coordSource": "власник, редактор 2026-09-27 (було 38.3247, -0.5083; зсув 442 м)",
+   "title": "Parque El Palmeral",
+   "short": "Парк з пальмами, водоспадами й озером на південному краю міста. Тут тур закінчується: є де погуляти."
+  },
+  "estacion": {
+   "os": "estacion",
+   "role": "poi",
+   "zone": "station",
+   "stop": "drive-by",
+   "lat": 38.344433,
+   "lng": -0.494874,
+   "coordSource": "власник, редактор 2026-09-27 (було 38.3442, -0.4936; зсув 114 м)",
+   "title": "Залізничний вокзал",
+   "short": "",
+   "icon": "assets/tour/estacion/illustration.svg"
+  },
+  "diputacion": {
+   "os": "diputacion",
+   "role": "poi",
+   "zone": "station",
+   "stop": "drive-by",
+   "lat": 38.34557,
+   "lng": -0.49228,
+   "coordSource": "власник, редактор 2026-09-27 (було 38.3455, -0.4925; зсув 21 м)",
+   "title": "Palacio Provincial — Diputación",
+   "short": "",
+   "icon": "assets/tour/diputacion/illustration.svg"
+  },
+  "teatroPrincipal": {
+   "os": "teatro-principal",
+   "role": "poi",
+   "zone": "old-town",
+   "stop": "drive-by",
+   "lat": 38.3456,
+   "lng": -0.4839,
+   "coordSource": "wikipedia (es) Teatro Principal de Alicante 38°20′44″N 0°29′02″W, Plaza de Ruperto Chapí",
+   "title": "Teatro Principal",
+   "short": "",
+   "icon": "assets/tour/teatroPrincipal/illustration.svg"
+  },
+  "teatroArniches": {
+   "os": "teatro-arniches",
+   "role": "poi",
+   "zone": "center",
+   "stop": "drive-by",
+   "lat": 38.343088,
+   "lng": -0.494902,
+   "coordSource": "власник, редактор 2026-09-27 (було 38.3451, -0.4911; зсув 400 м)",
+   "title": "Teatro Arniches",
+   "short": "",
+   "icon": "assets/tour/teatroArniches/illustration.svg"
+  }
+ }
+}

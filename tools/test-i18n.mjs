@@ -1,7 +1,9 @@
 // The interface languages (0.19.0): both dictionaries carry the same keys, the English one has no Cyrillic, the {placeholders} match,
-// data/tour.json has the English titles and reviews, and the facts of arcade-facts.json exist in both languages for every place.
+// data/tour.json + the data of TukTuk OS have the English titles, short texts, Crazy Tuk lines and the reviews.
 // Usage: node tools/test-i18n.mjs
 import { readFileSync } from 'node:fs';
+import { loadSpec } from './lib/load-spec.mjs';
+import { LINE_MAX, arcadeLines } from '../src/game/placesData.js';
 import { dictionaries, t, setLang, pick } from '../src/i18n.js';
 let bad = 0; const check = (c, m, x = '') => { if (!c) bad++; console.log(c ? 'ok  ' : 'FAIL', m, x); };
 const { en, uk } = dictionaries;
@@ -18,12 +20,15 @@ setLang('en', { save: false });
 check(t('sum.gatesLine', { e: 1, g: 2, o: 3, m: 4, n: 6 }) === 'exact 1 · good 2 · hit 3 · missed 4 of 6', 't() fills the placeholders');
 check(t('no.such.key') === 'no.such.key', 'an unknown key comes back as the key');
 check(pick({ uk: 'У', en: 'E' }) === 'E' && (setLang('uk', { save: false }), pick({ uk: 'У', en: 'E' }) === 'У'), 'pick() follows the language');
-const tour = JSON.parse(readFileSync(new URL('../data/tour.json', import.meta.url), 'utf8'));
+const tour = await loadSpec();   // data/tour.json with the data of TukTuk OS merged in
 const places = Object.entries(tour.places);
 check(places.every(([, p]) => p.title_en), 'every place has title_en', places.filter(([, p]) => !p.title_en).map(([id]) => id).join(','));
 check(tour.reviews_en && Object.keys(tour.reviews).every((k) => Array.isArray(tour.reviews_en[k]) && tour.reviews_en[k].length === tour.reviews[k].length), 'reviews_en mirrors reviews');
-const facts = JSON.parse(readFileSync(new URL('../data/arcade-facts.json', import.meta.url), 'utf8'));
-check(places.every(([id]) => facts.uk[id] && facts.en[id]), 'arcade facts in uk and en for every place', places.filter(([id]) => !(facts.uk[id] && facts.en[id])).map(([id]) => id).join(','));
+const cityPlaces = JSON.parse(readFileSync(new URL('../data/city.json', import.meta.url), 'utf8')).tour.places;
+const withText = places.filter(([id, p]) => cityPlaces[id] && p.fact);
+check(withText.every(([, p]) => p.line && p.line_en && p.line.length <= LINE_MAX && p.line_en.length <= LINE_MAX), `Crazy Tuk lines in uk and en (≤ ${LINE_MAX} characters) for every place of the game with a text`, withText.filter(([, p]) => !(p.line && p.line_en && p.line.length <= LINE_MAX && p.line_en.length <= LINE_MAX)).map(([id]) => id).join(','));
+check(withText.every(([, p]) => p.fact_en), 'English short text for every place of the game with a text', withText.filter(([, p]) => !p.fact_en).map(([id]) => id).join(','));
+check(Object.values(arcadeLines(tour, 'en')).length === Object.values(arcadeLines(tour, 'uk')).length, 'arcadeLines() has as many lines in en as in uk');
 
 // no local variable may be called t in a file that binds the translation function as t (0.19.0 bug: the full map's `const t = getTuk()`
 // shadowed it and t('map.title') threw)

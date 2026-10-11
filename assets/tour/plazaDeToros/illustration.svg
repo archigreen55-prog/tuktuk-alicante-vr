@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Plaza de Toros">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · кругла арена з арками -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="56" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- стіна арени -->
+    <path d="M10 106 v-40 q54 -26 108 0 v40 q-54 12 -108 0 z" fill="#FFF4E0"/>
+    <path d="M10 66 q54 20 108 0" fill="none"/>
+    <!-- верхній ярус -->
+    <path d="M10 66 q54 -26 108 0" fill="#D9734E"/>
+    <!-- арки -->
+    <g fill="#D9734E" stroke-width="2.5">
+      <path d="M20 100 v-14 q5 -7 10 0 v16 z"/><path d="M40 104 v-14 q5 -7 10 0 v15 z"/>
+      <path d="M59 105 v-14 q5 -7 10 0 v14 z"/><path d="M78 104 v-14 q5 -7 10 0 v14 z"/>
+      <path d="M98 102 v-16 q5 -7 10 0 v14 z"/>
+    </g>
+    <!-- прапор -->
+    <line x1="64" y1="53" x2="64" y2="32"/>
+    <path d="M64 32 l12 4 l-12 4 z" fill="#F6C343"/>
+  </g>
+</svg>

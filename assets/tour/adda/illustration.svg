@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="ADDA — Аудиторіо">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · білий сучасний об'єм зі скляними смугами -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="56" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- білий об'єм -->
+    <path d="M12 108 v-58 l26 -14 h78 v72 z" fill="#FFFDF7"/>
+    <path d="M38 36 v72" fill="none"/>
+    <!-- скляні смуги -->
+    <g fill="#8EC5E0" stroke-width="2.5">
+      <rect x="46" y="48" width="62" height="8"/><rect x="46" y="64" width="62" height="8"/><rect x="46" y="80" width="62" height="8"/>
+    </g>
+    <path d="M18 58 l14 -8 v58 h-14 z" fill="#EFE7DA" stroke-width="2.5"/>
+    <!-- вхід -->
+    <rect x="66" y="94" width="22" height="14" fill="#2B2D42"/>
+  </g>
+</svg>

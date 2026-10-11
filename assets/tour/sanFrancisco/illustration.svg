@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Calle San Francisco">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · вулиця з великими грибами -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="54" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- розфарбована бруківка -->
+    <path d="M8 108 h112 v-10 h-112 z" fill="#9FD18F"/>
+    <path d="M24 108 v-10 M44 108 v-10 M64 108 v-10 M84 108 v-10 M104 108 v-10" fill="none" stroke="#F6C343" stroke-width="3"/>
+    <!-- великий гриб -->
+    <path d="M36 98 v-36 h16 v36 z" fill="#FFF4E0"/>
+    <path d="M12 64 q32 -52 64 0 z" fill="#D9473B"/>
+    <g fill="#FFFDF7" stroke-width="2"><circle cx="30" cy="50" r="5"/><circle cx="46" cy="38" r="6"/><circle cx="62" cy="52" r="4"/></g>
+    <!-- малий гриб -->
+    <path d="M90 98 v-20 h10 v20 z" fill="#FFF4E0"/>
+    <path d="M76 80 q19 -30 38 0 z" fill="#E07A5F"/>
+    <g fill="#FFFDF7" stroke-width="2"><circle cx="88" cy="70" r="3.5"/><circle cx="101" cy="72" r="3"/></g>
+  </g>
+</svg>

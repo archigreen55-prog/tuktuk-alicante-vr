@@ -7,7 +7,7 @@
     "Точки поза зоною гри випадають, крім тих, що мають vr (тоді у грі використовується місце vr). exclude — не брати точку взагалі.",
     "stops — зупинки з карткою й фото; passes: \"all\" — решта точок лінії стають фактами на ходу, [] — без фактів (точки лишаються лише вершинами лінії).",
     "legs: поправки окремих плечей «звідки→куди». use: \"astar\" — автоматичну лінію не брати, лише наш A*. Лінія власника з редактора TukTuk OS однаково має пріоритет.",
-    "points: vr — id місця в data/tour.json зараз; exclude — причина, чому точку не беремо. credits — для assets/tour/CREDITS.md (крок 2)."
+    "points: vr — id місця гри (його кличуть рівні й тури); title — чиста назва без ролі («старт туру»); exclude — лише для ліній імпорту. Нове: node tools/sync-tuktuk-os.mjs читає цей розділ (переліку точок у грі нема, всі точки TukTuk OS стають місцями; ті, що поза зоною, не мають дороги й не можуть бути воротами)."
   ],
   "source": {
     "repo": "~/projects/_ref/TukTuk-OS",
@@ -23,12 +23,24 @@
       "line": "order",
       "start": "melia",
       "finish": "melia",
-      "stops": ["casa-carbonell","ayuntamiento","santa-maria","postiguet","mercado-central"],
+      "stops": [
+        "casa-carbonell",
+        "ayuntamiento",
+        "santa-maria",
+        "postiguet",
+        "mercado-central"
+      ],
       "passes": "all"
     },
     "short": {
       "sameLineAs": "full",
-      "stops": ["casa-carbonell","ayuntamiento","santa-maria","postiguet","mercado-central"],
+      "stops": [
+        "casa-carbonell",
+        "ayuntamiento",
+        "santa-maria",
+        "postiguet",
+        "mercado-central"
+      ],
       "passes": []
     }
   },
@@ -41,19 +53,23 @@
   "points": {
     "melia": {
       "vr": "melia",
-      "note": "крок 2: зону посадки перенести на точку власника з редактора"
+      "title": "Готель Meliá Alicante"
     },
     "casa-carbonell": {
-      "vr": "explanada",
-      "note": "одна зупинка з карткою Casa Carbonell"
+      "vr": "casaCarbonell",
+      "title": "Casa Carbonell",
+      "note": "старий вузол гри \"explanada\" був саме тут (50 м): рівні short / castle / full тепер ідуть через casaCarbonell"
     },
     "explanada": {
-      "note": "факт на ходу одразу після Casa Carbonell"
+      "vr": "explanada",
+      "note": "музичний павільйон Explanada (330 м західніше Casa Carbonell)"
     },
     "canalejas": {
       "vr": "canalejas"
     },
-    "ficus-canalejas": {},
+    "ficus-canalejas": {
+      "vr": "ficus"
+    },
     "casa-de-las-brujas": {
       "vr": "brujas"
     },
@@ -71,10 +87,29 @@
     },
     "postiguet": {
       "vr": "postiguet",
-      "note": "точка TukTuk OS (ліфт до замку) за межею зони; у грі — наше місце postiguet"
+      "note": "точка TukTuk OS (ліфт до замку) стоїть на односторонній вуличці у глухому куті: ворота прив'язані до Avinguda de Juan Bautista Lafora (hint road у tour.json, 200 м західніше, той самий пляж). Інакше маршрут до Mercado робить петлю 1.9 км на схід"
+    },
+    "marq": {
+      "vr": "marq"
+    },
+    "castillo-santa-barbara": {
+      "vr": "castle"
+    },
+    "plaza-de-toros": {
+      "vr": "plazaDeToros"
     },
     "colegio-san-antonio": {
-      "exclude": "у зоні, але плечі до нього й від нього виходять за зону (інші тури — пізніше)"
+      "vr": "colegioSanAntonio",
+      "exclude": "для ліній імпорту (tools/import-tuktuk-os.mjs): плечі виходять за зону. Як місце гри — є"
+    },
+    "castillo-san-fernando": {
+      "vr": "sanFernando"
+    },
+    "estadio-rico-perez": {
+      "vr": "ricoPerez"
+    },
+    "adda": {
+      "vr": "adda"
     },
     "mercado-central": {
       "vr": "mercado"
@@ -83,7 +118,24 @@
       "vr": "luceros"
     },
     "calle-san-francisco": {
-      "vr": "sanFrancisco"
+      "vr": "sanFrancisco",
+      "title": "Calle San Francisco — «вулиця з грибами»"
+    },
+    "palmeral": {
+      "vr": "palmeral",
+      "title": "Parque El Palmeral"
+    },
+    "estacion": {
+      "vr": "estacion"
+    },
+    "diputacion": {
+      "vr": "diputacion"
+    },
+    "teatro-principal": {
+      "vr": "teatroPrincipal"
+    },
+    "teatro-arniches": {
+      "vr": "teatroArniches"
     }
   },
   "credits": {

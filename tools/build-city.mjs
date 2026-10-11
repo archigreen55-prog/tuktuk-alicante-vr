@@ -4,6 +4,7 @@
 // Data © OpenStreetMap contributors, ODbL.
 import { readFile, writeFile } from 'node:fs/promises';
 import { RoadGraph } from '../src/game/route.js';
+import { mergePlaces } from '../src/game/placesData.js';
 import { Terrain } from '../src/city/terrain.js';
 import { BBOX, ORIGIN, M_LAT, M_LON, proj, unproj, rectOf } from './area.mjs';
 import { roadProfile, pinJunctions, carveRoad, shapeInside } from './terrain-ops.mjs';
@@ -577,6 +578,7 @@ for (const [key, L] of Object.entries(LANDMARKS)) {
 // never on pedestrian streets and at least EDGE_MARGIN inside the play area.
 const TOUR_CLASS = { primary: 0, primary_link: 1, secondary: 0, secondary_link: 1, tertiary: 2, tertiary_link: 2, residential: 3, unclassified: 3, living_street: 4, service: 1 };
 const EDGE_MARGIN = 30;
+const OUT_OF_ZONE = 150;   // m from a point of TukTuk OS to the nearest street: further = outside the play area
 const normName = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 const searchNames = (t) => [t.name, t['name:es'], t['name:ca'], t['name:en'], t.official_name, t.alt_name,
   t.wikipedia && t.wikipedia.replace(/^\w+:/, ''), t.wikimedia_commons && t.wikimedia_commons.replace(/^Category:/, '')].filter(Boolean).map(normName);
@@ -584,6 +586,8 @@ const drivable = (t) => TOUR_CLASS[t.highway] !== undefined && t.area !== 'yes' 
 const inPlay = (p, m = EDGE_MARGIN) => p[0] >= RECT.minX + m && p[0] <= RECT.maxX - m && p[1] >= RECT.minZ + m && p[1] <= RECT.maxZ - m;
 let tourSpec = null;
 try { tourSpec = JSON.parse(await readFile('data/tour.json', 'utf8')); } catch (err) { console.warn('data/tour.json:', err.message); }
+// the points of TukTuk OS (tools/sync-tuktuk-os.mjs): their coordinates are the truth for where a place is
+try { mergePlaces(tourSpec, JSON.parse(await readFile('data/places-os.json', 'utf8')), null, null); } catch (err) { console.warn('data/places-os.json:', err.message); }
 
 // drivable street graph (OSM nodes, cut like the rendered roads: no mount, inside the play area)
 const graphIdx = new Map(), graphN = [], graphE = [];
@@ -681,6 +685,11 @@ function nearestRoadPoint(p, roadName) {
     if (c.d > found[0].d + 80) break;
     if (tourGraph.route(c.q, HUB) && tourGraph.route(HUB, c.q)) return c;
   }
+  // nothing connected within 80 m of the nearest street (the Postiguet lift of TukTuk OS stands at a dead end): the nearest connected one within 250 m
+  for (const c of found) {
+    if (c.d > found[0].d + 250) break;
+    if (tourGraph.route(c.q, HUB) && tourGraph.route(HUB, c.q)) { console.warn(`tour: no connected street within 80 m of ${p.map(Math.round)}, took one ${Math.round(c.d)} m away`); return c; }
+  }
   if (found.length) console.warn(`tour: no connected street near ${p.map(Math.round)}, using a dead end`);
   return found[0] || null;
 }
@@ -726,6 +735,8 @@ for (const [id, spec] of Object.entries(tourSpec?.places || {})) {
   const roadName = spec.road || (found?.street && found.els.some((e) => drivable(e.tags)) ? spec.osm : null);
   const rp = nearestRoadPoint(at || look, roadName);
   if (!rp) { tourIssues.push(`${id}: no drivable street nearby`); continue; }
+  // a point of TukTuk OS outside the play area has no street of the game near it (the Palmeral, the stadium): not a place of the game (a place with a road hint is snapped on purpose: Postiguet)
+  if (spec.os && !spec.road && rp.d > OUT_OF_ZONE) { tourIssues.push(`${id}: outside the play area (the nearest street is ${Math.round(rp.d)} m away)`); console.log(`place ${id.padEnd(13)} outside the play area (the nearest street is ${Math.round(rp.d)} m away): not a place of the game`); continue; }
   tourPlaces[id] = {
     name: osmName, osm: osmIds.slice(0, 6), street: found?.street || false,
     look: [r1(look[0]), r1(look[1])], p: [r1(rp.q[0]), r1(rp.q[1])], d: rp.dir.map((v) => +v.toFixed(3)),

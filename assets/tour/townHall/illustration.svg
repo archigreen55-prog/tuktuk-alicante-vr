@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Ayuntamiento">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · барокова мерія з двома вежами -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="56" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- центральний корпус -->
+    <rect x="30" y="54" width="68" height="54" fill="#E3C79A"/>
+    <!-- дві вежі по краях -->
+    <rect x="10" y="36" width="24" height="72" fill="#D9B98B"/>
+    <rect x="94" y="36" width="24" height="72" fill="#D9B98B"/>
+    <path d="M10 36 q12 -18 24 0 z" fill="#8EC5E0"/>
+    <path d="M94 36 q12 -18 24 0 z" fill="#8EC5E0"/>
+    <line x1="22" y1="27" x2="22" y2="18"/><line x1="106" y1="27" x2="106" y2="18"/>
+    <!-- балкони і вікна -->
+    <g fill="#2B2D42" stroke-width="2">
+      <rect x="17" y="50" width="10" height="14" rx="5"/><rect x="101" y="50" width="10" height="14" rx="5"/>
+      <rect x="40" y="64" width="10" height="14" rx="5"/><rect x="59" y="64" width="10" height="14" rx="5"/><rect x="78" y="64" width="10" height="14" rx="5"/>
+    </g>
+    <path d="M36 80 h56" fill="none" stroke-width="3"/>
+    <!-- портал -->
+    <path d="M56 108 v-18 q8 -10 16 0 v18 z" fill="#8A5A3C"/>
+    <!-- прапор над центром -->
+    <line x1="64" y1="54" x2="64" y2="36"/>
+    <path d="M64 36 l12 4 l-12 4 z" fill="#F6C343"/>
+  </g>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Playa del Postiguet">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · пляж під скелею «Обличчя мавра» -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="58" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- скеля з профілем -->
+    <path d="M60 80 l6 -30 l12 -12 l10 4 l-4 8 l8 2 l-6 6 l8 6 l6 16 z" fill="#D9B98B"/>
+    <!-- море -->
+    <path d="M6 84 h116 v14 h-116 z" fill="#8EC5E0"/>
+    <path d="M12 90 q6 -4 12 0 t12 0 t12 0" fill="none" stroke="#FFFDF7" stroke-width="2.5"/>
+    <!-- пісок -->
+    <path d="M6 98 q58 -8 116 0 v12 h-116 z" fill="#F2D6A2"/>
+    <!-- парасолька -->
+    <line x1="30" y1="106" x2="30" y2="70"/>
+    <path d="M12 72 q18 -20 36 0 z" fill="#D9734E"/>
+    <path d="M24 72 q6 -14 12 0" fill="none" stroke-width="2.5"/>
+  </g>
+</svg>

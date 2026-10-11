@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="MARQ — Археологічний музей">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · амфора на підставці -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="44" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- підставка -->
+    <path d="M40 108 v-8 h48 v8 z" fill="#E3C79A"/>
+    <!-- амфора -->
+    <path d="M56 100 q-14 -24 -10 -48 q2 -10 10 -14 h16 q8 4 10 14 q4 24 -10 48 z" fill="#D9734E"/>
+    <path d="M58 38 v-10 h12 v10" fill="#D9734E"/>
+    <path d="M54 26 h20" fill="none" stroke-width="4"/>
+    <!-- ручки -->
+    <path d="M58 32 q-12 2 -10 18" fill="none" stroke-width="3.5"/>
+    <path d="M70 32 q12 2 10 18" fill="none" stroke-width="3.5"/>
+    <!-- орнамент -->
+    <path d="M50 64 h28 M52 74 q12 6 24 0" fill="none" stroke="#F6C343" stroke-width="3"/>
+  </g>
+</svg>

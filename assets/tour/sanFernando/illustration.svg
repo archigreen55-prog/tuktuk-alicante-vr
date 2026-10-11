@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Castillo de San Fernando">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · зіркоподібні мури на пагорбі -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="56" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- пагорб -->
+    <path d="M6 110 q20 -34 58 -36 q38 2 58 36 z" fill="#8DBF7A"/>
+    <!-- мури з бастіонами -->
+    <path d="M22 76 l14 -10 l10 6 l18 -12 l18 12 l10 -6 l14 10 v10 h-84 z" fill="#E3C79A"/>
+    <g fill="#EFD9B4" stroke-width="2.5">
+      <path d="M28 66 v-6 h6 v4 h6 v-4 h6 v8"/><path d="M82 68 v-8 h6 v4 h6 v-4 h6 v6"/>
+    </g>
+    <!-- амбразури -->
+    <g fill="#2B2D42" stroke="none"><rect x="40" y="78" width="4" height="5"/><rect x="62" y="76" width="4" height="5"/><rect x="84" y="78" width="4" height="5"/></g>
+    <!-- прапорець -->
+    <line x1="64" y1="60" x2="64" y2="42"/>
+    <path d="M64 42 l12 4 l-12 4 z" fill="#F6C343"/>
+  </g>
+</svg>

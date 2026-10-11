@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Rambla de Méndez Núñez">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · бульвар з пальмами в перспективі -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="56" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- дорога в перспективі -->
+    <path d="M22 110 l34 -62 h16 l34 62 z" fill="#E3C79A"/>
+    <path d="M64 52 v10 M64 72 v12 M64 94 v14" fill="none" stroke="#FFFDF7" stroke-width="3"/>
+    <!-- пальми ліворуч і праворуч -->
+    <path d="M24 106 q-2 -28 4 -54" fill="none" stroke="#C8955C" stroke-width="5"/>
+    <path d="M104 106 q2 -28 -4 -54" fill="none" stroke="#C8955C" stroke-width="5"/>
+    <g fill="#6BAF62">
+      <path d="M28 52 q-16 -8 -24 6 q12 -6 24 -6 z"/><path d="M28 52 q2 -18 18 -18 q-12 6 -18 18 z"/><path d="M28 52 q16 -6 22 6 q-10 -6 -22 -6 z"/>
+      <path d="M100 52 q16 -8 24 6 q-12 -6 -24 -6 z"/><path d="M100 52 q-2 -18 -18 -18 q12 6 18 18 z"/><path d="M100 52 q-16 -6 -22 6 q10 -6 22 -6 z"/>
+    </g>
+    <!-- маленькі пальми вдалині -->
+    <path d="M50 58 v-12 M78 58 v-12" fill="none" stroke="#C8955C" stroke-width="3"/>
+    <circle cx="50" cy="44" r="5" fill="#6BAF62" stroke-width="2.5"/><circle cx="78" cy="44" r="5" fill="#6BAF62" stroke-width="2.5"/>
+  </g>
+</svg>

@@ -1,6 +1,7 @@
 // Drives a whole tour in Node with an autopilot (no rendering): the same physics, collisions, route
 // graph, tour logic and scoring as the game. For checking the tour data and calibrating the scoring.
 // Usage: node tools/sim-tour.mjs [tourId] [careful|rough]    (defaults: every tour, both drivers)
+import { loadSpec } from './lib/load-spec.mjs';
 import { readFile } from 'node:fs/promises';
 import { CollisionWorld, KIND } from '../src/vehicle/collision.js';
 import { TukTukPhysics } from '../src/vehicle/physics.js';
@@ -10,7 +11,7 @@ import { Terrain } from '../src/city/terrain.js';
 
 const city = JSON.parse(await readFile('data/city.json', 'utf8'));
 const terrain = city.meta.terrain && !process.env.FLAT ? Terrain.fromBin(city.meta.terrain, (await readFile(city.meta.terrain.file)).buffer.slice(0)) : null;
-const spec = JSON.parse(await readFile('data/tour.json', 'utf8'));
+const spec = await loadSpec();
 const DT = 1 / 72;
 
 // driver styles: max sideways acceleration planned in corners, braking, pedal limits

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Castillo de Santa Bárbara">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · Санта-Барбара: фортеця на скелі Бенакантіль -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="56" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- скеля -->
+    <path d="M6 112 l18 -30 l10 4 l14 -26 l32 0 l14 22 l10 -4 l18 34 z" fill="#D9B98B"/>
+    <path d="M30 96 l8 -6 M56 92 l6 -8 M88 94 l6 6" fill="none" stroke-width="2.5"/>
+    <!-- зелень на схилі -->
+    <path d="M14 106 q6 -8 12 0 q6 -8 12 0" fill="#6BAF62" stroke-width="2.5"/>
+    <path d="M92 106 q6 -8 12 0 q6 -8 12 0" fill="#6BAF62" stroke-width="2.5"/>
+    <!-- мури з зубцями -->
+    <path d="M42 60 v-14 h6 v5 h6 v-5 h6 v5 h6 v-5 h6 v5 h6 v-5 h6 v14 z" fill="#EFD9B4"/>
+    <!-- вежа -->
+    <path d="M56 46 v-26 h4 v-5 h5 v5 h4 v-5 h5 v5 h4 v26 z" fill="#E3C79A"/>
+    <rect x="63" y="26" width="6" height="9" rx="3" fill="#2B2D42"/>
+    <!-- прапорець -->
+    <line x1="66" y1="15" x2="66" y2="4"/>
+    <path d="M66 4 l10 3 l-10 3 z" fill="#F6C343"/>
+  </g>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Plaza de los Luceros">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · фонтан з колоною і вершниками -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="54" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- чаша фонтана -->
+    <path d="M10 96 h108 q-6 14 -54 14 q-48 0 -54 -14 z" fill="#E3C79A"/>
+    <path d="M18 96 q46 -10 92 0" fill="#8EC5E0" stroke-width="2.5"/>
+    <!-- центральна колона -->
+    <rect x="58" y="34" width="12" height="60" fill="#EFD9B4"/>
+    <path d="M54 34 h20 l-10 -16 z" fill="#E3C79A"/>
+    <circle cx="64" cy="14" r="4" fill="#F6C343"/>
+    <!-- вершники на дибах (силуети) -->
+    <g fill="#8A6A4A">
+      <path d="M24 90 l6 -16 q4 -8 12 -6 l4 -6 l4 4 l-2 8 q6 4 4 16 z"/>
+      <path d="M104 90 l-6 -16 q-4 -8 -12 -6 l-4 -6 l-4 4 l2 8 q-6 4 -4 16 z"/>
+    </g>
+    <!-- струмені води -->
+    <path d="M58 44 q-12 6 -16 26 M70 44 q12 6 16 26" fill="none" stroke="#5FA8D3" stroke-width="3"/>
+  </g>
+</svg>

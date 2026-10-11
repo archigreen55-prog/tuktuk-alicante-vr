@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Mercado Central">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · Mercado Central: модерновий фасад зі ступінчастим фронтоном, аркою і сходами -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="56" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- корпус -->
+    <rect x="10" y="60" width="108" height="42" fill="#EBCBA6"/>
+    <!-- вертикальні вікна-смуги -->
+    <g stroke-width="2.5" fill="#8A5A3C">
+      <rect x="17" y="68" width="5" height="22"/><rect x="27" y="68" width="5" height="22"/>
+      <rect x="96" y="68" width="5" height="22"/><rect x="106" y="68" width="5" height="22"/>
+    </g>
+    <!-- ступінчастий фронтон -->
+    <path d="M36 60 v-14 h8 v-8 h8 v-8 h24 v8 h8 v8 h8 v14 z" fill="#F3DDC2"/>
+    <!-- башточки-шпилі -->
+    <path d="M40 46 v-8 h6 v8" fill="#F3DDC2"/><path d="M82 46 v-8 h6 v8" fill="#F3DDC2"/>
+    <path d="M58 30 v-10 h12 v10" fill="#F3DDC2"/>
+    <circle cx="64" cy="14" r="4" fill="#D9734E"/>
+    <!-- велике арочне вікно і вхід -->
+    <path d="M44 102 v-30 q20 -24 40 0 v30 z" fill="#8EC5E0"/>
+    <path d="M52 102 v-20 q12 -14 24 0 v20" fill="none" stroke-width="2.5"/>
+    <line x1="64" y1="64" x2="64" y2="102" stroke-width="2.5"/>
+    <!-- годинник -->
+    <circle cx="64" cy="40" r="5" fill="#FFFDF7" stroke-width="2.5"/>
+    <!-- сходи -->
+    <path d="M38 102 h52 v5 h-52 z" fill="#F3DDC2" stroke-width="2.5"/>
+    <path d="M32 107 h64 v5 h-64 z" fill="#F3DDC2" stroke-width="2.5"/>
+    <!-- пальма збоку -->
+    <path d="M114 102 q-1 -16 2 -30" fill="none" stroke-width="3"/>
+    <path d="M116 72 q-10 -6 -18 2 M116 72 q8 -8 12 -2 M116 72 q-2 -10 -10 -12" fill="none" stroke="#5E9A5A" stroke-width="3.5"/>
+  </g>
+</svg>

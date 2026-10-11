@@ -10,6 +10,7 @@ import { CollisionWorld, KIND } from './vehicle/collision.js';
 import { TukTukPhysics, TUNING, ARCADE } from './vehicle/physics.js';
 import { Arcade } from './game/arcade.js';
 import { levelFromTour, validateLevel, levelTitle, LEVEL, BUILTIN_TITLES } from './game/levels.js';
+import { mergePlaces, arcadeLines } from './game/placesData.js';
 import { loadMine, saveMine } from './game/levelStore.js';
 import { editorEnabled } from './game/editorAccess.js';
 import { driveGraph } from './game/pathfind.js';
@@ -178,10 +179,15 @@ try {
   try { tourSpec = JSON.parse(text); } catch (e) { tourError = `помилка в data/tour.json: ${e.message}`; }
   if (tourSpec && (!Array.isArray(tourSpec.tours) || !tourSpec.places)) { tourError = 'data/tour.json: немає "tours" або "places"'; tourSpec = null; }
 } catch (e) { tourError = `data/tour.json не завантажився: ${e.message}`; }
+// the points of TukTuk OS (names, texts, photos, icons; tools/sync-tuktuk-os.mjs), their English texts and the Crazy Tuk lines are merged into the places of the tour
+if (tourSpec) {
+  const fresh = async (name) => { try { return await (await fetch(`data/${name}?v=${VERSION}`)).json(); } catch (e) { console.warn(`data/${name}: ${e.message}`); return null; } };
+  const [osPlaces, osEn, osLines] = await Promise.all([fresh('places-os.json'), fresh('places-os.en.json'), fresh('tuktuk-os-arcade.json')]);
+  mergePlaces(tourSpec, osPlaces, osEn, osLines);
+}
 if (!city.tour) tourError = tourError || 'city.json без даних туру (node tools/build-city.mjs)';
-// Crazy Tuk: the one-line facts (edited by hand) and the par times (tools/sim-arcade.mjs --write); both optional
-let arcadeFacts = null, arcadeSmash = {}, driveDropped = [];
-try { arcadeFacts = await (await fetch(`data/arcade-facts.json?t=${Date.now()}`, { cache: 'no-store' })).json(); } catch (e) { console.warn(`data/arcade-facts.json: ${e.message}`); }
+// Crazy Tuk: the smashable things; the dropped edges of the drivable graph
+let arcadeSmash = {}, driveDropped = [];
 try { arcadeSmash = await (await fetch(`data/smashables.json?v=${VERSION}`)).json(); } catch (e) { console.warn(`data/smashables.json: ${e.message}`); }
 // Crazy Tuk levels (data/levels/index.json -> <id>.json, src/game/levels.js); the three tours of data/tour.json when they cannot be loaded
 // builtinLevels: the files of data/levels; mineLevels: the owner's own levels from the editor (this device only, localStorage); levels: what can be chosen to play
@@ -325,19 +331,24 @@ let frameTag = '';   // what happened in this frame (gate, hit, drift...), for t
 const arcadeSound = new ArcadeSound(horn);
 // the CC BY works among the sounds must be credited (name, author, link, licence): a line in the credits at the bottom and in the phone menu
 const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-// Crazy Tuk's one-line facts in the language of the interface (arcade-facts.json has uk / en / es)
-const factsOf = (lang) => (arcadeFacts ? arcadeFacts[lang] || arcadeFacts.uk : null);
+// Crazy Tuk's one-line facts in the language of the interface (data/tuktuk-os-arcade.json, merged into the places)
+const factsOf = (lang) => (tourSpec ? arcadeLines(tourSpec, lang) : null);
 const tourTitleOf = (tr) => (BUILTIN_TITLES[tr.id] ? BUILTIN_TITLES[tr.id] : { uk: tr.title || tr.id, en: tr.title_en || tr.title || tr.id });
-// data/tour.json in the language of the interface: the place titles (title_en), the reviews (reviews_en), the tour titles; the facts that are
-// still placeholders ("ЗАГЛУШКА") become the approved one-line facts of arcade-facts.json, the placeholder intro / outro generic lines
+// data/tour.json (with the data of TukTuk OS merged in) in the language of the interface: the place titles and short texts (title_en, fact_en), the
+// reviews (reviews_en), the tour titles; the placeholder intro / outro become generic lines
+let specMemo = null;   // { lang, spec }: the map asks for the titles every frame
 function localizedSpec() {
   if (!tourSpec) return null;
-  const lang = getLang(), facts = factsOf(lang), places = {};
+  const lang = getLang();
+  if (specMemo && specMemo.lang === lang) return specMemo.spec;
+  const places = {};
   const isStub = (v) => !v || /^(ЗАГЛУШКА|PLACEHOLDER)/.test(Array.isArray(v) ? v[0] || '' : v);
+  const en = lang === 'en';
   for (const [id, pl] of Object.entries(tourSpec.places)) {
-    const title = lang === 'en' ? pl.title_en || pl.title : pl.title;
-    const fact = isStub(pl.fact) ? (facts && facts[id]) || '' : lang === 'en' && pl.fact_en ? pl.fact_en : pl.fact;
-    places[id] = { ...pl, title, fact };
+    places[id] = {
+      ...pl, title: en ? pl.title_en || pl.title : pl.title, fact: (en && pl.fact_en) || pl.fact || '',
+      ...(pl.long ? { long: (en && pl.long_en) || pl.long } : {}), ...(pl.questions ? { questions: (en && pl.questions_en) || pl.questions } : {}),
+    };
   }
   const tours = tourSpec.tours.map((tr) => {
     const stops = tr.route.filter((r) => r.stop).map((r) => places[r.stop] && places[r.stop].title).filter(Boolean).join(', ');
@@ -346,7 +357,8 @@ function localizedSpec() {
     return { ...tr, title: pick(tourTitleOf(tr)), intro, outro };
   });
   const reviews = lang === 'en' && tourSpec.reviews_en ? tourSpec.reviews_en : tourSpec.reviews;
-  return { ...tourSpec, places, tours, reviews };
+  specMemo = { lang, spec: { ...tourSpec, places, tours, reviews } };
+  return specMemo.spec;
 }
 const soundAttribution = () => { const a = arcadeSound.attribution; return a.length ? t('credit.sounds') + a.map((x) => `«${esc(x.title)}», ${esc(x.author)}, <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.license)}</a>`).join('; ') : ''; };
 arcadeSound.init(VERSION).then(() => { const line = soundAttribution(), at = document.getElementById('attr'); if (line && at) at.insertAdjacentHTML('beforeend', `<br>${line}`); });   // the sound files of assets/audio (manifest.json); none yet = silent
@@ -517,7 +529,7 @@ function arcadeAsTour() {
   if (!run) return null;
   return { items: run.gates.map((g) => ({ kind: g.finish ? 'finish' : 'stop', place: { id: g.id, p: g.p, title: g.title } })),
     done: run.results.map((r) => (r === 'missed' ? 'missed' : r ? 'done' : null)), state: run.done ? 'summary' : 'driving',
-    start: run.start, target: run.target, route: null, routeVersion: 0, next: run.next, spec: tourSpec };
+    start: run.start, target: run.target, route: null, routeVersion: 0, next: run.next, spec: localizedSpec() };
 }
 // the passengers: a body reaction + a voice from the sound bank (one voice per ~1.5 s, `gap` s for the rare ones)
 let passengersAt = -9;
@@ -700,6 +712,7 @@ const fullMap = createFullMap({
   getTuk: () => ({ x: phys.x, z: phys.z, heading: phys.heading }),
   setPaused: (p) => { paused = p; arcadeSound.duck(p); if (p && touch) touch.releaseAll(); if (!p) last = performance.now(); },
   canOpen: () => !renderer.xr.isPresenting && !(rotateGuard && rotateGuard.portrait),
+  placeTitle: (id) => { const sp = localizedSpec(); return sp && sp.places[id] && sp.places[id].title; },   // the names of TukTuk OS in the language of the interface, in every mode
 });
 { const mm = $('miniMap'); if (mm) { mm.style.cursor = 'pointer'; mm.addEventListener('click', () => fullMap.open()); } }
 // the level editor: only for the owner (src/game/editorAccess.js); not even created for anybody else
@@ -718,7 +731,7 @@ if (editorOn) {
 }
 if (editorOn && tourSpec && graph) {
   levelEditor = createLevelEditor({
-    fullMap, graph, places: city.tour.places, spec: tourSpec, facts: arcadeFacts && arcadeFacts.uk,   // the editor stays Ukrainian (the owner's tool)
+    fullMap, graph, places: city.tour.places, spec: tourSpec, facts: factsOf('uk'),   // the editor stays Ukrainian (the owner's tool)
     drive: getDrive(), clear: (x, z, r) => world.penetration(x, z, r) === 0,
     builtin: () => builtinLevels, mine: mineLevels,
     saveMine: (list) => saveMine(list), tryLevel, getTuk: () => ({ x: phys.x, z: phys.z, heading: phys.heading }),

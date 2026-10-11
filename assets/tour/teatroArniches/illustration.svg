@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Teatro Arniches">
+  <!-- TukTuk · власна ілюстрація (agent-svg), заглушка до підтвердження точки · сучасний театр біля трамвая: афіша й трамвайна колія -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="56" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- будівля -->
+    <rect x="16" y="46" width="88" height="60" fill="#FFF4E0"/>
+    <path d="M16 46 h88 v-10 h-88 z" fill="#D9734E"/>
+    <!-- афіша -->
+    <rect x="26" y="56" width="30" height="40" fill="#F6C343"/>
+    <path d="M32 66 h18 M32 74 h18 M32 82 h12" fill="none" stroke-width="2.5"/>
+    <!-- скляний вхід -->
+    <rect x="64" y="60" width="32" height="46" fill="#8EC5E0"/>
+    <line x1="80" y1="60" x2="80" y2="106" stroke-width="2.5"/>
+    <!-- трамвайна колія і стовп -->
+    <path d="M6 112 h116 M6 116 h116" fill="none" stroke="#8A8F9C" stroke-width="2"/>
+    <line x1="112" y1="106" x2="112" y2="30"/>
+    <path d="M100 30 h24" fill="none" stroke-width="2.5"/>
+  </g>
+</svg>

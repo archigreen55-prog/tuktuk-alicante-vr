@@ -27,7 +27,7 @@ const CSS = `
 .fm .fm-title { position: absolute; left: max(10px, env(safe-area-inset-left)); top: max(8px, env(safe-area-inset-top)); padding: 8px 14px; border-radius: 12px; background: rgba(16, 22, 28, .82); color: #fff; font: 700 15px system-ui, sans-serif; pointer-events: none; }
 `;
 
-export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPaused, canOpen = () => true }) {
+export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPaused, canOpen = () => true, placeTitle = () => '' }) {
   let root = null, cv = null, g = null, built = null;
   let open = false, pushed = false, ignorePop = false, dirty = false, raf = 0;
   const view = { cx: 0, cz: 0, s: 0.5, W: 0, H: 0, dpr: 1 };
@@ -234,7 +234,7 @@ export function createFullMap({ city, getTour, getTrail, getTuk, graph, setPause
     items.forEach((it, i) => { if (it.kind !== 'finish') inTour.set(it.place.id, { kind: it.kind, i, state: tour.done[i] }); });
     const target = tour ? tour.target : null;
     for (const [id, pl] of Object.entries(city.tour.places)) {
-      const title = (spec && spec.places[id] && spec.places[id].title) || pl.name || id;
+      const title = (spec && spec.places[id] && spec.places[id].title) || placeTitle(id) || pl.name || id;
       const tk = inTour.get(id);
       const isStart = tour && tour.start.id === id;
       const isTarget = target && Math.hypot(target.x - pl.p[0], target.z - pl.p[1]) < 1;

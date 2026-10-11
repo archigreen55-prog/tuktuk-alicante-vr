@@ -1,0 +1,233 @@
+{
+ "_help": [
+  "Англійські тексти точок TukTuk OS: пише Claude, перевіряє власник (docs/translations-os-en.md). from — хеші українських оригіналів, з яких перекладено; якщо оригінал у TukTuk OS змінився, tools/sync-tuktuk-os.mjs покаже, що переклад застарів. draft: true — чекає перевірки власника."
+ ],
+ "places": {
+  "casaCarbonell": {
+   "title": "Casa Carbonell",
+   "short": "This is where our tour begins. A magnificent white palace from the 1920s on the seafront, at the start of the Explanada de España. Legend has it that it was built by a wealthy textile magnate who was refused a room at the neighbouring hotel because of his dirty clothes.",
+   "draft": true,
+   "from": {
+    "title": "62fcea8a",
+    "short": "c0d168ac"
+   }
+  },
+  "explanada": {
+   "title": "Explanada de España",
+   "short": "Alicante's main promenade: four rows of palm trees along the harbour and a wavy mosaic underfoot made of millions of marble tiles. It is the most recognisable view of the city.",
+   "draft": true,
+   "from": {
+    "title": "bdc8bf67",
+    "short": "033adaca"
+   }
+  },
+  "canalejas": {
+   "title": "Paseo / Monument to Canalejas",
+   "short": "A shady boulevard between the port and the centre, at the western end of the Explanada. Here stands the bronze monument to José Canalejas, Prime Minister of Spain, and overhead are the crowns of huge Australian fig trees.",
+   "draft": true,
+   "from": {
+    "title": "5e76be18",
+    "short": "9cb07859"
+   }
+  },
+  "ficus": {
+   "title": "Australian fig tree (Ficus macrophylla)",
+   "short": "These giants came from Australia. They are between 50 and over 100 years old, their crowns reach 30 metres across, and their roots above ground form real “benches”. The city has listed them in its catalogue of monumental trees.",
+   "draft": true,
+   "from": {
+    "title": "d108c9fa",
+    "short": "125ea8a1"
+   }
+  },
+  "brujas": {
+   "title": "Casa de las Brujas (House of the Witches)",
+   "short": "A neo-Gothic mansion from 1898 with a tower and the heads of lions and elephants on the facade. There were never any witches here: the locals simply nicknamed this “gloomy” house, so unlike its neighbours.",
+   "draft": true,
+   "from": {
+    "title": "34864804",
+    "short": "3d6829c8"
+   }
+  },
+  "university": {
+   "title": "University — Sede Universitaria, Calle San Fernando 40",
+   "short": "A former “temple of money” from 1923, the headquarters of the Alicante savings bank, rebuilt as the city-centre campus of the University of Alicante. Lectures, exhibitions and concerts take place here in the very heart of the city.",
+   "draft": true,
+   "from": {
+    "title": "9d07c3fa",
+    "short": "0e2ea680"
+   }
+  },
+  "rambla": {
+   "title": "Rambla de Méndez Núñez",
+   "short": "The main “axis” of the centre, separating the Old Town from the new one. A city wall once stood here, and behind it was a ravine into which rainwater poured after storms. Today it is a street of shops and festive processions.",
+   "draft": true,
+   "from": {
+    "title": "d2aa9c50",
+    "short": "3c72eae2"
+   }
+  },
+  "townHall": {
+   "title": "Ayuntamiento (Town Hall)",
+   "short": "A Baroque town hall of the 18th century with two towers. Inside, at the foot of the grand staircase, is the “zero mark”: the height above sea level for the whole of Spain was once measured from it.",
+   "draft": true,
+   "from": {
+    "title": "26d4e29d",
+    "short": "07e98f2b"
+   }
+  },
+  "santaMaria": {
+   "title": "Basílica de Santa María",
+   "short": "The oldest church in Alicante. It was built in the 14th century on the site of the main mosque of the Muslim town. Notice the two bell towers of different ages, roughly four hundred years apart.",
+   "draft": true,
+   "from": {
+    "title": "c17749ed",
+    "short": "e67365b4"
+   }
+  },
+  "postiguet": {
+   "title": "Playa del Postiguet",
+   "short": "The city beach right in the centre, under the mountain with Santa Bárbara Castle. From here you get the best view of the rock known as the “Moor's Face”.",
+   "draft": true,
+   "from": {
+    "title": "0066eb28",
+    "short": "2802d5ee"
+   }
+  },
+  "marq": {
+   "title": "MARQ — Archaeological Museum",
+   "short": "The archaeological museum of the province of Alicante, in a former hospital building. In 2004 it won the “European Museum of the Year” award, which in Spain only the best-known museums had received before it.",
+   "draft": true,
+   "from": {
+    "title": "2ab2a633",
+    "short": "122b18a2"
+   }
+  },
+  "castle": {
+   "title": "Castillo de Santa Bárbara",
+   "short": "A fortress on top of Mount Benacantil, 166 metres above the sea. It offers the best view of Alicante. The castle got its name from the day the Castilians took it: 4 December 1248, the feast of Saint Barbara.",
+   "draft": true,
+   "from": {
+    "title": "cf250398",
+    "short": "c8e9f8bc"
+   }
+  },
+  "plazaDeToros": {
+   "title": "Plaza de Toros (bullring)",
+   "short": "A bullfighting arena from the mid-19th century, built for over 15,000 spectators. When it was enlarged in 1888, it had almost as many seats as the whole city had inhabitants. Inside there is a bullfighting museum.",
+   "draft": true,
+   "from": {
+    "title": "43cdf2d3",
+    "short": "00b9a4b5"
+   }
+  },
+  "colegioSanAntonio": {
+   "title": "Colegio San Antonio de Padua (Franciscan school)",
+   "short": "A Catholic school of the Franciscan order, opened in 1926; in 2026 it turns 100. Next to it stands its “sister”, the parish church of Sant Antoni de Pàdua with its blue dome.",
+   "draft": true,
+   "from": {
+    "title": "cd065384",
+    "short": "70bdcfdf"
+   }
+  },
+  "sanFernando": {
+   "title": "Castillo de San Fernando",
+   "short": "“The castle that never fought.” It was built in 1809–1812 against Napoleon's army. The French never came to storm it, so the fortress never saw a battle. Today it is a park with a view over the city.",
+   "draft": true,
+   "from": {
+    "title": "1f60649d",
+    "short": "d029ffc7"
+   }
+  },
+  "ricoPerez": {
+   "title": "Football stadium — Estadio José Rico Pérez",
+   "short": "The home ground of Hércules CF since 1974. During the 1982 World Cup, Argentina with a young Maradona played here, and so did the third-place match: Poland v France.",
+   "draft": true,
+   "from": {
+    "title": "92e4b442",
+    "short": "fdec276e"
+   }
+  },
+  "adda": {
+   "title": "Auditorium — ADDA (Auditorio de la Diputación de Alicante)",
+   "short": "The modern concert hall of the province of Alicante, opened in 2011. A white building with clean, austere lines, nothing like the lavish old centre. The symphony orchestra plays here, along with big concerts.",
+   "draft": true,
+   "from": {
+    "title": "fd9e09d4",
+    "short": "535e19ff"
+   }
+  },
+  "mercado": {
+   "title": "Mercado Central",
+   "short": "Alicante's central market, opened in 1921 in the Art Nouveau style. Fresh fish, jamón, fruit and spices are sold here. By the entrance there is a memorial plaque to the victims of the 1938 bombing, one of the most terrible pages in the city's history.",
+   "draft": true,
+   "from": {
+    "title": "3fe0e63e",
+    "short": "ee08e092"
+   }
+  },
+  "luceros": {
+   "title": "Plaza de los Luceros",
+   "short": "A round square with a fountain from 1930 and four horsemen on horses. It is the heart of the Hogueras festival: in June, at two o'clock every afternoon, the mascletà thunders here, a deafening pyrotechnic “symphony”.",
+   "draft": true,
+   "from": {
+    "title": "eafdc32a",
+    "short": "dcb23f11"
+   }
+  },
+  "sanFrancisco": {
+   "title": "Calle San Francisco — the “mushroom street”",
+   "short": "A pedestrian street with giant mushrooms, hopscotch grids and little frogs painted on the paving. It used to be one of the most neglected corners of the centre, and now it is Alicante's favourite photo spot.",
+   "draft": true,
+   "from": {
+    "title": "db226859",
+    "short": "b1083988"
+   }
+  },
+  "melia": {
+   "title": "Hotel Meliá Alicante",
+   "short": "Meet at the main entrance of the hotel. Every tour starts from here.",
+   "draft": true,
+   "from": {
+    "title": "ee12292f",
+    "short": "f981e8a8"
+   }
+  },
+  "palmeral": {
+   "title": "El Palmeral Park",
+   "short": "A park with palm trees, waterfalls and a lake on the southern edge of the city. The tour ends here: there is space to walk around.",
+   "draft": true,
+   "from": {
+    "title": "beb59266",
+    "short": "0142090b"
+   }
+  },
+  "estacion": {
+   "title": "Railway station",
+   "draft": true,
+   "from": {
+    "title": "e794b9f4"
+   }
+  },
+  "diputacion": {
+   "title": "Palacio Provincial — Diputación",
+   "draft": true,
+   "from": {
+    "title": "1dfa0f1f"
+   }
+  },
+  "teatroPrincipal": {
+   "title": "Teatro Principal",
+   "draft": true,
+   "from": {
+    "title": "7df05e1a"
+   }
+  },
+  "teatroArniches": {
+   "title": "Teatro Arniches",
+   "draft": true,
+   "from": {
+    "title": "3a384693"
+   }
+  }
+ }
+}

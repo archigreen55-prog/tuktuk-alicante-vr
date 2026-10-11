@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Casa de las Brujas">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · неоготичний особняк з вежею і головою слона на розі -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="50" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- основний об'єм -->
+    <path d="M18 108 v-46 l20 -14 l20 14 v46 z" fill="#E3C79A"/>
+    <rect x="58" y="62" width="34" height="46" fill="#EFD9B4"/>
+    <!-- гостроверха вежа -->
+    <rect x="90" y="46" width="20" height="62" fill="#D9B98B"/>
+    <path d="M88 46 l12 -34 l12 34 z" fill="#5A6B8C"/>
+    <!-- стрілчасті вікна -->
+    <g fill="#2B2D42" stroke-width="2">
+      <path d="M31 88 v-12 l7 -8 l7 8 v12 z"/>
+      <path d="M68 90 v-12 l6 -7 l6 7 v12 z"/>
+      <path d="M96 76 v-10 l4 -5 l4 5 v10 z"/>
+    </g>
+    <!-- голова слона на розі -->
+    <circle cx="58" cy="60" r="7" fill="#A9B0BC"/>
+    <path d="M56 66 q-2 8 4 10" fill="none" stroke-width="3"/>
+  </g>
+</svg>

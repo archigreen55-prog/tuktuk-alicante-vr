@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Colegio San Antonio de Padua">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · церква з блакитним куполом і дзвіницею -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="54" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- школа праворуч -->
+    <rect x="72" y="66" width="46" height="42" fill="#FFF4E0"/>
+    <g fill="#F6C343" stroke-width="2.5"><rect x="80" y="74" width="8" height="10"/><rect x="96" y="74" width="8" height="10"/><rect x="80" y="90" width="8" height="10"/><rect x="96" y="90" width="8" height="10"/></g>
+    <!-- церква -->
+    <rect x="14" y="60" width="58" height="48" fill="#EFD9B4"/>
+    <rect x="30" y="46" width="26" height="14" fill="#EFD9B4"/>
+    <path d="M28 46 q15 -30 30 0 z" fill="#5FA8D3"/>
+    <line x1="43" y1="17" x2="43" y2="8"/><line x1="39" y1="12" x2="47" y2="12"/>
+    <!-- дзвіниця -->
+    <rect x="58" y="30" width="14" height="30" fill="#E3C79A"/>
+    <path d="M56 30 l9 -12 l9 12 z" fill="#D9734E"/>
+    <!-- вхід -->
+    <path d="M36 108 v-18 q7 -9 14 0 v18 z" fill="#8A5A3C"/>
+  </g>
+</svg>

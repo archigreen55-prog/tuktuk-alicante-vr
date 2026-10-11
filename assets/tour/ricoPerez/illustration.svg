@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Estadio José Rico Pérez">
+  <!-- TukTuk · власна ілюстрація (agent-svg) · чаша стадіону з прожекторами -->
+  <g stroke="#2B2D42" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="64" cy="118" rx="58" ry="6" fill="#2B2D42" fill-opacity=".16" stroke="none"/>
+    <!-- трибуни -->
+    <ellipse cx="64" cy="82" rx="56" ry="26" fill="#EFD9B4"/>
+    <ellipse cx="64" cy="84" rx="40" ry="16" fill="#6BAF62"/>
+    <!-- розмітка поля -->
+    <path d="M64 70 v28 M24 84 h80" fill="none" stroke="#FFFDF7" stroke-width="2"/>
+    <ellipse cx="64" cy="84" rx="8" ry="4" fill="none" stroke="#FFFDF7" stroke-width="2"/>
+    <!-- прожектори -->
+    <line x1="14" y1="74" x2="14" y2="36"/><line x1="114" y1="74" x2="114" y2="36"/>
+    <rect x="6" y="28" width="16" height="10" fill="#F6C343"/>
+    <rect x="106" y="28" width="16" height="10" fill="#F6C343"/>
+  </g>
+</svg>

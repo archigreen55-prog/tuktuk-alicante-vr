@@ -1,0 +1,46 @@
+# Фото й значки точок маршруту (з TukTuk OS)
+
+Згенеровано tools/sync-tuktuk-os.mjs. Усе зі статусом prototype — тимчасове. Фото з Wikimedia Commons: автор і ліцензія обов’язкові (CC BY / CC BY-SA).
+
+- Casa Carbonell: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Casa Carbonell: фото — Choinowski, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), https://commons.wikimedia.org/wiki/File:Casa_Carbonell_2017.jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Explanada de España: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Explanada de España: фото — kallerna, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), https://commons.wikimedia.org/wiki/File:Explanada_de_Espa%C3%B1a_Alicante_1.jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Paseo / Monumento de Canalejas: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Paseo / Monumento de Canalejas: фото — Varondán, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), https://commons.wikimedia.org/wiki/File:Casa_Alberola_y_monumento_a_Canalejas,_Alicante_02.jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Австралійський фікус (Ficus macrophylla): ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Австралійський фікус (Ficus macrophylla): фото — Kolforn, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0), https://commons.wikimedia.org/wiki/File:Giant_Ficus_tree,_Parque_de_Canalejas,_Alicante,_16_July_2016.JPG. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Casa de las Brujas (Будинок відьм): ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Casa de las Brujas (Будинок відьм): фото — Joanbanjo, CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), https://commons.wikimedia.org/wiki/File:Casa_de_les_Bruixes_d%27Alacant,_mirador.JPG. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Університет — Sede Universitaria, Calle San Fernando, 40: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Університет — Sede Universitaria, Calle San Fernando, 40: фото — Varondán, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), https://commons.wikimedia.org/wiki/File:Edificio_Caja_de_Ahorros_de_Alicante_-1.jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Rambla de Méndez Núñez: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Rambla de Méndez Núñez: фото — Zarateman, CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/), https://commons.wikimedia.org/wiki/File:Alicante_-_Rambla_de_M%C3%A9ndez_N%C3%BA%C3%B1ez_02.jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Ayuntamiento (Мерія): ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Ayuntamiento (Мерія): фото — Diego Delso, CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), https://commons.wikimedia.org/wiki/File:Ayuntamiento_de_Alicante,_Espa%C3%B1a,_2014-07-04,_DD_34.JPG. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Basílica de Santa María: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Basílica de Santa María: фото — Diego Delso, CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), https://commons.wikimedia.org/wiki/File:Bas%C3%ADlica_de_Santa_Mar%C3%ADa,_Alicante,_Espa%C3%B1a,_2014-07-04,_DD_41.JPG. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Playa del Postiguet: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Playa del Postiguet: фото — kallerna, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), https://commons.wikimedia.org/wiki/File:Playa_del_Postiguet_2.jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- MARQ — Археологічний музей: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- MARQ — Археологічний музей: фото — Concepcion AMAT ORTA, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0), https://commons.wikimedia.org/wiki/File:VIEW_,_%C2%AE%27s_-_DigiGraf_-_%C3%90_-_%E2%94%BC_,_ALICANTE_MARQ_(MUSEO_ARQUEOL%C3%93GICO_de_ALICANTE)_-_panoramio_(11).jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Castillo de Santa Bárbara: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Castillo de Santa Bárbara: фото — Michael Kranewitter, CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0), https://commons.wikimedia.org/wiki/File:Alicante_-_Castillo_de_Santa_B%C3%A1rbara_22.11.2010_16.JPG. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Plaza de Toros: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Colegio San Antonio de Padua (францисканська школа): ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Colegio San Antonio de Padua (францисканська школа): фото — Varondán, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), https://commons.wikimedia.org/wiki/File:Colegio_San_Antonio_de_Padua_-_Franciscanos,_Alicante.jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Castillo de San Fernando: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Castillo de San Fernando: фото — Varondán, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), https://commons.wikimedia.org/wiki/File:Castillo_de_San_Fernando,_Alicante_-2.jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Футбольний стадіон — Estadio José Rico Pérez: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Футбольний стадіон — Estadio José Rico Pérez: фото — Dilema, Public domain (https://creativecommons.org/publicdomain/mark/1.0/), https://commons.wikimedia.org/wiki/File:Estadio_Jos%C3%A9_Rico_P%C3%A9rez_en_obras.jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Аудиторіо — ADDA (Auditorio de la Diputación de Alicante): ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Аудиторіо — ADDA (Auditorio de la Diputación de Alicante): фото — Varondán, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), https://commons.wikimedia.org/wiki/File:Auditorio_de_la_Diputaci%C3%B3n_de_Alicante_03.jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Mercado Central: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Mercado Central: фото — Varondán, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), https://commons.wikimedia.org/wiki/File:Mercado_Central_de_Alicante_03.jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Plaza de los Luceros: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Calle San Francisco — «вулиця з грибами»: ілюстрація — TukTuk (власна ілюстрація), Власна (prototype)
+- Calle San Francisco — «вулиця з грибами»: фото — Emilio J. Rodríguez Posada, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), https://commons.wikimedia.org/wiki/File:Alicante_en_julio_de_2022_149.jpg. Зміни: обрізано до 4:3 і квадрата, зменшено, стиснено у WebP, метадані видалено [prototype]
+- Залізничний вокзал: ілюстрація — TukTuk (власна ілюстрація, заглушка до підтвердження точки), Власна (prototype)
+- Palacio Provincial — Diputación: ілюстрація — TukTuk (власна ілюстрація, заглушка до підтвердження точки), Власна (prototype)
+- Teatro Principal: ілюстрація — TukTuk (власна ілюстрація, заглушка до підтвердження точки), Власна (prototype)
+- Teatro Arniches: ілюстрація — TukTuk (власна ілюстрація, заглушка до підтвердження точки), Власна (prototype)
