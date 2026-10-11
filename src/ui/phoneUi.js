@@ -29,7 +29,8 @@ html.ui-phone #miniMap { left: max(10px, env(safe-area-inset-left)); top: 62px; 
 .ph-btn.danger.armed { background: #ff7a5c; border-color: #ff7a5c; color: #222; }
 .ph-menu { position: fixed; inset: 0; z-index: 90; display: none; align-items: flex-start; justify-content: center; overflow-y: auto; overscroll-behavior: contain; background: rgba(10, 14, 20, .82); color: #fff; font-family: system-ui, sans-serif; touch-action: pan-y; }
 .ph-menu .card { margin: 6px; width: min(96vw, 880px); max-height: none; overflow: visible; box-sizing: border-box; padding: 10px 16px 12px; border-radius: 14px; background: rgba(15, 30, 45, .96); display: grid; grid-template-columns: 1fr 1.1fr; gap: 8px 22px; touch-action: pan-y; }
-.ph-menu h2 { grid-column: 1 / -1; margin: 0; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
+.ph-menu h2 { grid-column: 1 / -1; font-size: 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 3; margin: -10px -16px 0; padding: 10px 16px; background: rgba(15, 30, 45, .99); border-radius: 14px 14px 0 0; }
+.ph-menu .ph-title { background: none; border: 0; color: #fff; font: 700 18px system-ui, sans-serif; padding: 8px 4px; min-height: 44px; text-align: left; touch-action: manipulation; }
 .ph-menu .col { display: flex; flex-direction: column; gap: 8px; }
 .ph-menu label { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 15px; min-height: 40px; }
 .ph-menu select { font-size: 15px; padding: 6px 4px; max-width: 56%; }
@@ -126,8 +127,10 @@ export function createPhoneUi({ touch: touchIn, api, pc = false }) {
   const activeDefs = defs.filter((d) => !(pc && PC_HIDDEN.has(d.label)));
   const menu = el('div', 'ph-menu', null, document.body);
   const mcard = el('div', 'card', null, menu);
-  const h2 = tx(el('h2', null, '', mcard), () => t('ph.pause'));
-  const close = tx(el('button', 'ph-btn main', '', h2), () => t('ph.resume'));
+  // the header stays on screen while the menu scrolls: "Resume" is always reachable; the title is a button too (where the ≡ of the game sits)
+  const h2 = el('h2', null, null, mcard);
+  const titleBtn = tx(el('button', 'ph-title', '', h2), () => '≡  ' + t('ph.pause')); titleBtn.id = 'menuTitle';
+  const close = tx(el('button', 'ph-btn main', '', h2), () => t('ph.resume')); close.id = 'resumeBtn';
   const left = el('div', 'col', null, mcard), right = el('div', 'col', null, mcard);
   const advBtn = el('button', 'ph-btn advbtn', '', mcard); advBtn.id = 'advBtn';
   const adv = el('div', 'adv', null, mcard), advL = el('div', 'col', null, adv), advR = el('div', 'col', null, adv);
@@ -161,6 +164,7 @@ export function createPhoneUi({ touch: touchIn, api, pc = false }) {
   onInstallChange((can) => { installBtn.style.display = can ? '' : 'none'; });
   const editorBtn = act('ph.editor', () => { closeMenu(); if (api.openEditor) api.openEditor(); }, advR); editorBtn.style.display = 'none';
   const soundBtn = act('ph.sounds', () => { if (api.openSoundLab) api.openSoundLab(); }, advL); soundBtn.style.display = 'none';   // the sound lab: the owner's device only (the menu stays open under it)
+  const close2 = tx(el('button', 'ph-btn main', '', adv), () => t('ph.resume')); close2.style.gridColumn = '1 / -1'; close2.id = 'resumeBtn2';   // the same, at the end of the long list
   const foot = el('div', 'foot', null, adv);   // the credits and the version live under Advanced (and on the title screen)
   const footHtml = () => `${api.credit || ''}<br>${t('ph.version', { v: api.version })}`;
   addEventListener('tuktuk-lang', () => { foot.innerHTML = footHtml(); });
@@ -179,7 +183,8 @@ export function createPhoneUi({ touch: touchIn, api, pc = false }) {
   }
   scrollHint(menu, () => ui.menuOpen);
   function closeMenu() { if (!ui.menuOpen) return; ui.menuOpen = false; menu.style.display = 'none'; api.setPaused(false); }
-  close.addEventListener('click', closeMenu);
+  close.addEventListener('click', closeMenu); close2.addEventListener('click', closeMenu); titleBtn.addEventListener('click', closeMenu);
+  menu.addEventListener('click', (e) => { if (e.target === menu) closeMenu(); });   // a tap on the dimmed outside
   touch.hooks.menu = () => (ui.menuOpen ? closeMenu() : openMenu());
   touch.hooks.camera = () => { api.toggleCamera(); flashToast(t(api.camIsCockpit && api.camIsCockpit() ? 'ph.camCockpit' : 'ph.camChase'), 1200); };
   touch.hooks.map = () => { api.openMap(); };   // the 🗺 button: the full-screen map (the minimap on / off is in the menu)

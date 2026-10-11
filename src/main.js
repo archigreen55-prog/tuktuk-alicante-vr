@@ -1215,7 +1215,7 @@ const reportCtx = {
       'побудова міста': JSON.stringify(cityStats).slice(0, 400),
       'позиція': `x ${phys.x.toFixed(0)}, z ${phys.z.toFixed(0)}, висота ${phys.y.toFixed(1)} м, швидкість ${(phys.forwardSpeed * 3.6).toFixed(0)} км/год`,
       'відсікання / туман': `${CULL_DIST} м / 300–1150 м`,
-      'звук': arcadeSound.report(),
+      'звук': arcadeSound.report() + ` · збережено: sound.on=${loadSetting('sound.on', 'типово')}, music.on=${loadSetting('music.on', 'типово')}`,
       'підігрів і маска': `warm-up ${warmMs.toFixed(0)} мс; маска слідів: ${cityStats.footMs != null ? cityStats.footMs + ' мс, ' + cityStats.footRoads + ' доріг' : 'вимкнена'}; 3D-панель кабіни: ${hudIn3D ? 'так' : 'ні (HTML-інтерфейс)'}`,
       ...screenReport(),
     },
