@@ -14,6 +14,9 @@ const CSS = /* css */ `
 .tc-btn, .tc-pedal { background: rgba(16, 22, 28, .5); border: 2px solid rgba(255, 255, 255, .5); border-radius: 16px; overflow: hidden; }
 .tc-btn.on, .tc-pedal.on { background: rgba(255, 209, 102, .5); border-color: #ffd166; }
 .tc-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(255, 209, 102, .55); pointer-events: none; }
+.tc-btn.hint { animation: tc-hint 0.9s ease-in-out infinite; }
+.tc-tip { position: fixed; transform: translateX(-50%); padding: 2px 8px; border-radius: 10px; background: #ffd166; color: #222; font: 800 12px system-ui, sans-serif; white-space: nowrap; pointer-events: none; z-index: 3; }
+@keyframes tc-hint { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 209, 102, .0); } 50% { box-shadow: 0 0 0 8px rgba(255, 209, 102, .55); } }
 .tc-lab { position: relative; font-size: clamp(10px, calc(var(--k) * 14px), 14px); letter-spacing: 0; text-shadow: 0 1px 2px #000; pointer-events: none; }
 .tc-gas { right: var(--edge); bottom: 18px; width: calc(var(--k) * 100px); height: calc(var(--k) * 150px); }
 .tc-brake { right: calc(var(--edge) + var(--k) * 114px); bottom: 18px; width: calc(var(--k) * 84px); height: calc(var(--k) * 120px); }
@@ -210,11 +213,23 @@ export class TouchControls {
     const br = brakeRamp(this.brakeT);
     out.brake = Math.max(out.brake, br);
     this.brakeFill.style.height = br ? `${Math.round(br * 100)}%` : '0';
-    if (this.hand) out.handbrake = true;
-    if (this.nitro) out.nitro = true;
+    if (this.hand) { out.handbrake = true; if (this.handEl._tip) this.clearHint(this.handEl); }
+    if (this.nitro) { out.nitro = true; if (this.nitroEl._tip) this.clearHint(this.nitroEl); }
     if (this.horn) out.horn = true;
     return out;
   }
+  // the first-run "tap" arrows over the nitro and handbrake buttons (0.19.2); each goes when its button is used
+  setTapHints(on) {
+    for (const b of [this.nitroEl, this.handEl]) {
+      if (!on) { this.clearHint(b); continue; }
+      // the tip is a sibling of the button (the button clips its children), placed above it
+      const r = b.getBoundingClientRect(); this.clearHint(b);
+      const tip = document.createElement('div'); tip.className = 'tc-tip'; tip.textContent = t('ph.tapHint') + ' ▼';
+      tip.style.left = `${Math.round(r.left + r.width / 2)}px`; tip.style.bottom = `${Math.round(innerHeight - r.top + 3)}px`;
+      this.root.appendChild(tip); b._tip = tip; b.classList.add('hint');
+    }
+  }
+  clearHint(b) { b.classList.remove('hint'); if (b._tip) { b._tip.remove(); b._tip = null; } }
   // the head: returns { yaw, pitch } for the cab camera
   update(dt) {
     if (!this.drag) this.idle += dt;

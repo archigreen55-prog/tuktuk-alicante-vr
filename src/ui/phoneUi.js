@@ -33,6 +33,10 @@ html.ui-phone #miniMap { left: max(10px, env(safe-area-inset-left)); top: 62px; 
 .ph-menu label { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 15px; min-height: 40px; }
 .ph-menu select { font-size: 15px; padding: 6px 4px; max-width: 56%; }
 .ph-menu input[type=checkbox] { width: 22px; height: 22px; }
+.ph-menu .left-col .ph-btn, .ph-menu > .card > .col .ph-btn { min-height: 44px; padding: 7px 14px; }
+.ph-menu .advbtn { grid-column: 1 / -1; min-height: 40px; padding: 6px 14px; font-size: 14px; }
+.ph-menu .adv { grid-column: 1 / -1; display: none; grid-template-columns: 1fr 1.1fr; gap: 8px 22px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, .12); }
+.ph-menu .adv.open { display: grid; }
 .ph-menu .foot { grid-column: 1 / -1; font-size: 11.5px; color: #8ea2b5; line-height: 1.4; }
 .ph-menu .foot a { color: #a9c6e2; }
 .tc-root.summary .tc-horn, .tc-root.summary .tc-back, .tc-root.summary .tc-speed { display: none; }
@@ -46,7 +50,9 @@ addEventListener('tuktuk-lang', () => { for (const [n, f] of LIVE) n.textContent
 
 // touch: TouchControls. api: { startGame(), setPaused(bool), resetToRoad(), recenter(), restartTour(), newTour(), freeRide(), hasTour(),
 //   startArcade(), isArcade(), cycleTilt(), tiltLabel(), toggleCamera(), camLabel(), toggleMap(), mapOn(), openMap(), openDiagnostics(), applyFov(), applyRes(), toggleStats?(), version, credit }
-export function createPhoneUi({ touch, api }) {
+// pc: the same menu on a PC (Esc): no touch controls, no phone-only rows, no toast and summary buttons (the desktop HUD has its own)
+export function createPhoneUi({ touch: touchIn, api, pc = false }) {
+  const touch = touchIn || { releaseAll() {}, resetLook() {}, setVisible() {}, setConfig() {}, hooks: {}, root: document.createElement('div') };
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   const settings = {
     get steer() { return loadSetting('phone.steer', 'buttons'); }, get gas() { return loadSetting('phone.gas', 'analog'); },
@@ -113,49 +119,58 @@ export function createPhoneUi({ touch, api }) {
   // the title screen (src/ui/titleScreen.js) shows these rows in its Settings drawer
   const settingsDefs = defs;
 
-  // ---------------------------------------------------------------- menu (pause)
+  // ---------------------------------------------------------------- menu (pause), 0.19.2: the game on top, the technical rows under "Advanced"
+  const PC_HIDDEN = new Set(['set.control', 'set.steer', 'set.gas', 'set.fov', 'set.res', 'set.vibration', 'set.lookReturn']);   // phone-only rows
+  const BASIC = new Set(['set.level', 'set.sound', 'set.music']);
+  const activeDefs = defs.filter((d) => !(pc && PC_HIDDEN.has(d.label)));
   const menu = el('div', 'ph-menu', null, document.body);
   const mcard = el('div', 'card', null, menu);
   const h2 = tx(el('h2', null, '', mcard), () => t('ph.pause'));
   const close = tx(el('button', 'ph-btn main', '', h2), () => t('ph.resume'));
   const left = el('div', 'col', null, mcard), right = el('div', 'col', null, mcard);
+  const advBtn = el('button', 'ph-btn advbtn', '', mcard); advBtn.id = 'advBtn';
+  const adv = el('div', 'adv', null, mcard), advL = el('div', 'col', null, adv), advR = el('div', 'col', null, adv);
+  const setAdv = (open) => { adv.classList.toggle('open', open); advBtn.textContent = t(open ? 'ph.advancedClose' : 'ph.advancedOpen'); };
+  advBtn.addEventListener('click', () => { setAdv(!adv.classList.contains('open')); if (adv.classList.contains('open')) setTimeout(() => adv.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 50); });
+  addEventListener('tuktuk-lang', () => setAdv(adv.classList.contains('open'))); setAdv(false);
   const act = (key, fn, parent = left, cls = 'ph-btn') => { const b = tx(el('button', cls, '', parent), () => t(key)); b.addEventListener('click', fn); return b; };
   let armed = 0;
+  // the game: restart, map, help, main menu, full screen (the level, sound, music and language rows are on the right)
+  const tourBtn = act('ph.restartTour', () => { api.restartTour(); closeMenu(); });
   act('ph.map', () => { closeMenu(); api.openMap(); });
+  act('ph.help', () => { if (api.openHelp) api.openHelp(); });
+  const homeBtn = act('ph.home', () => { closeMenu(); if (api.goHome) api.goHome(); });   // the title screen (0.19.0)
+  act('ph.fullscreen', async () => { const r = await toggleFullscreen(); closeMenu(); if (r && !r.ok) flashToast(hintFor(r), 7000); });
+  const rowOf = (parent, d) => addRow(parent, d);
+  const rowEls = activeDefs.map((d) => rowOf(BASIC.has(d.label) ? right : (activeDefs.indexOf(d) % 2 ? advR : advL), d));
+  { const label = el('label', null, null, right); tx(label.appendChild(document.createTextNode('')), () => t('set.language')); const b = tx(el('button', 'ph-btn', '', label), () => LANGS.find(([id]) => id === getLang())[1]); b.addEventListener('click', () => setLang(otherLang())); }
+  // Advanced: the camera, tilt and minimap, the auto-gas and phone settings (above), then the actions
+  const labelled = (parent, key, valueFn, onClick) => { const label = el('label', null, null, parent); tx(label.appendChild(document.createTextNode('')), () => t(key)); const b = tx(el('button', 'ph-btn', '', label), valueFn); b.addEventListener('click', () => { onClick(); b.textContent = valueFn(); }); return b; };
+  const camSel = labelled(advL, 'ph.camera', () => api.camLabel(), () => api.toggleCamera());
+  const tiltBtn = labelled(advR, 'ph.cabTilt', () => api.tiltLabel(), () => api.cycleTilt());
+  const mapBtn = labelled(advL, 'ph.minimap', () => t(api.mapOn() ? 'ph.yes' : 'ph.no'), () => api.toggleMap());
+  act('ph.recenter', () => { touch.resetLook(); closeMenu(); }, advR);
   const resetBtn = act('ph.resetRoad', () => {
     if (!armed) { armed = setTimeout(() => { armed = 0; resetBtn.classList.remove('armed'); resetBtn.textContent = t('ph.resetRoad'); }, 3000); resetBtn.classList.add('armed'); resetBtn.textContent = api.hasTour() ? t('ph.resetSureTour') : t('ph.resetSure'); return; }
     clearTimeout(armed); armed = 0; resetBtn.classList.remove('armed'); resetBtn.textContent = t('ph.resetRoad'); api.resetToRoad(); closeMenu();
-  }, left, 'ph-btn danger');
-  act('ph.recenter', () => { touch.resetLook(); closeMenu(); });
-  const tourBtn = act('ph.restartTour', () => { api.restartTour(); closeMenu(); });
-  const arcadeBtn = act('ph.crazy', () => { api.startArcade(); closeMenu(); });
-  act('ph.freeRide', () => { api.freeRide(); closeMenu(); });
-  const homeBtn = act('ph.home', () => { closeMenu(); if (api.goHome) api.goHome(); });   // the title screen (0.19.0)
-  act('ph.help', () => { if (api.openHelp) api.openHelp(); });
-  const editorBtn = act('ph.editor', () => { closeMenu(); if (api.openEditor) api.openEditor(); }); editorBtn.style.display = 'none';
-  const soundBtn = act('ph.sounds', () => { if (api.openSoundLab) api.openSoundLab(); }); soundBtn.style.display = 'none';   // the sound lab: the owner's device only (the menu stays open under it)
-  act('ph.diag', () => { closeMenu(); api.openDiagnostics(); });
-  act('ph.fullscreen', async () => { const r = await toggleFullscreen(); closeMenu(); if (r && !r.ok) flashToast(hintFor(r), 7000); });
-  const installBtn = act('ph.install', () => install(), left, 'ph-btn'); installBtn.style.display = 'none';
+  }, advL, 'ph-btn danger');
+  act('ph.diag', () => { closeMenu(); api.openDiagnostics(); }, advR);
+  const installBtn = act('ph.install', () => install(), advL, 'ph-btn'); installBtn.style.display = 'none';
   onInstallChange((can) => { installBtn.style.display = can ? '' : 'none'; });
-  const rowEls = defs.map((d) => addRow(right, d));
-  const camSel = (() => { const label = el('label', null, null, right); tx(label.appendChild(document.createTextNode('')), () => t('ph.camera')); const b = tx(el('button', 'ph-btn', '', label), () => api.camLabel()); b.addEventListener('click', () => { api.toggleCamera(); b.textContent = api.camLabel(); }); return b; })();
-  const tiltBtn = (() => { const label = el('label', null, null, right); tx(label.appendChild(document.createTextNode('')), () => t('ph.cabTilt')); const b = tx(el('button', 'ph-btn', '', label), () => api.tiltLabel()); b.addEventListener('click', () => { api.cycleTilt(); b.textContent = api.tiltLabel(); }); return b; })();
-  const mapBtn = (() => { const label = el('label', null, null, right); tx(label.appendChild(document.createTextNode('')), () => t('ph.minimap')); const b = tx(el('button', 'ph-btn', '', label), () => t(api.mapOn() ? 'ph.yes' : 'ph.no')); b.addEventListener('click', () => { api.toggleMap(); b.textContent = t(api.mapOn() ? 'ph.yes' : 'ph.no'); }); return b; })();
-  { const label = el('label', null, null, right); tx(label.appendChild(document.createTextNode('')), () => t('set.language')); const b = tx(el('button', 'ph-btn', '', label), () => LANGS.find(([id]) => id === getLang())[1]); b.addEventListener('click', () => setLang(otherLang())); }
-  const foot = el('div', 'foot', null, mcard);
+  const editorBtn = act('ph.editor', () => { closeMenu(); if (api.openEditor) api.openEditor(); }, advR); editorBtn.style.display = 'none';
+  const soundBtn = act('ph.sounds', () => { if (api.openSoundLab) api.openSoundLab(); }, advL); soundBtn.style.display = 'none';   // the sound lab: the owner's device only (the menu stays open under it)
+  const foot = el('div', 'foot', null, adv);   // the credits and the version live under Advanced (and on the title screen)
   const footHtml = () => `${api.credit || ''}<br>${t('ph.version', { v: api.version })}`;
   addEventListener('tuktuk-lang', () => { foot.innerHTML = footHtml(); });
   foot.innerHTML = footHtml();
 
   function openMenu() {
     if (!ui.started || ui.menuOpen) return;
-    ui.menuOpen = true; menu.style.display = 'flex'; touch.releaseAll(); api.setPaused(true);
+    ui.menuOpen = true; menu.style.display = 'flex'; touch.releaseAll(); api.setPaused(true); setAdv(false); menu.scrollTop = 0;
     camSel.textContent = api.camLabel(); tiltBtn.textContent = api.tiltLabel(); mapBtn.textContent = t(api.mapOn() ? 'ph.yes' : 'ph.no');
     tourBtn.style.display = api.hasTourSpec() ? '' : 'none'; tourBtn.textContent = t(api.isArcade && api.isArcade() ? 'ph.restartRun' : 'ph.restartTour');
     homeBtn.style.display = api.goHome ? '' : 'none';
-    arcadeBtn.style.display = api.hasTourSpec() && !(api.isArcade && api.isArcade()) ? '' : 'none';
-    defs.forEach((d, i) => { if (!d.check) { if (typeof d.options === 'function') fillOptions(rowEls[i], d); rowEls[i].value = String(d.get()); } else rowEls[i].checked = !!d.get(); });
+    activeDefs.forEach((d, i) => { if (!d.check) { if (typeof d.options === 'function') fillOptions(rowEls[i], d); rowEls[i].value = String(d.get()); } else rowEls[i].checked = !!d.get(); });
     foot.innerHTML = footHtml();   // the sound credits arrive after the manifest
     soundBtn.style.display = api.soundLabEnabled && api.soundLabEnabled() ? '' : 'none';
     editorBtn.style.display = api.editorEnabled && api.editorEnabled() ? '' : 'none';
@@ -176,6 +191,7 @@ export function createPhoneUi({ touch, api }) {
   // ---------------------------------------------------------------- start / pause plumbing
   // called from the click on "Грати": full screen and the lock must be requested right here, inside the tap
   function onStart({ gesture = true } = {}) {
+    if (pc) { ui.started = true; return; }   // a PC: no full screen request, no back-button trap
     const fs = gesture ? enterFullscreen() : null;   // issued synchronously, awaited below (not without a tap: autostart)
     if (gesture) keepAwake();
     ui.started = true;
@@ -187,7 +203,7 @@ export function createPhoneUi({ touch, api }) {
   }
   // back to the title screen: the controls go, the menu stays shut until the next play
   function onHome() { ui.started = false; closeMenu(); touch.setVisible(false); touch.releaseAll(); }
-  addEventListener('popstate', () => { if (!ui.started) return; history.pushState({ tuktuk: 1 }, ''); if (ui.menuOpen) closeMenu(); else openMenu(); });
+  addEventListener('popstate', () => { if (pc || !ui.started) return; history.pushState({ tuktuk: 1 }, ''); if (ui.menuOpen) closeMenu(); else openMenu(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') openMenu(); });
   // leaving full screen with the system gesture also pauses (and the screen is smaller then)
   document.addEventListener('fullscreenchange', () => { if (ui.started && !isFullscreen() && !ui.menuOpen) { api.applyFov(); } });
@@ -199,6 +215,7 @@ export function createPhoneUi({ touch, api }) {
     get started() { return ui.started; }, get menuOpen() { return ui.menuOpen; },
     // 5 Hz from main: message of the moment and the tour state
     update({ msg, msgColor, panel }) {
+      if (pc) return;
       if (msg) { toast.textContent = msg; toast.style.color = msgColor || '#ffd166'; toast.style.display = 'block'; holdUntil = 0; }
       else if (toast.style.display === 'block' && performance.now() >= holdUntil) toast.style.display = 'none';
       const summary = !!(panel && panel.mode === 'summary');

@@ -7,7 +7,7 @@
 // api: { play(mode, e), levels() -> [[id, name]], level(), setLevel(id), tours() -> [[id, name]], tour(), setTour(id), best() -> string,
 //        settingsDefs -> [{ label (key), options|check, get, set }], credit (html, the full credits), version, vrButton?, hasTour() }
 import { t, getLang, setLang, LANGS } from '../i18n.js';
-import { HELP } from './help.js';
+import { fillHelpTables } from './help.js';
 
 const CSS = /* css */ `
 #overlay.ts { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; background: #10161c; user-select: none; }
@@ -158,16 +158,7 @@ export function createTitleScreen({ root, api, isPhone }) {
       else { const input = el('select', null, null, label); fillOptions(input, d); input.value = String(d.get()); input.addEventListener('change', () => { d.set(isNaN(+input.value) ? input.value : +input.value); }); }
     }
   }
-  function fillHelp() {
-    helpBody.textContent = '';
-    const HL = HELP[getLang()] || HELP.en;
-    for (const k of isPhone ? ['phone', 'kb', 'quest'] : ['kb', 'quest', 'phone']) {
-      const [title, lines] = HL[k];
-      const box = el('div', null, null, helpBody); el('h3', null, title, box);
-      const table = el('table', null, null, box);
-      for (const [a, b] of lines) { const tr = el('tr', null, null, table); el('td', null, a, tr); el('td', null, b, tr); }
-    }
-  }
+  function fillHelp() { fillHelpTables(helpBody, isPhone); }
   function fillPickers() {
     if (api.vrButton && api.vrButton.parentNode !== small) small.prepend(api.vrButton);   // the three.js VR button (it exists after the renderer)
     const lv = api.levels(); levelSel.textContent = ''; for (const [id, nm] of lv) levelSel.add(new Option(nm, id)); levelSel.value = api.level() || '';

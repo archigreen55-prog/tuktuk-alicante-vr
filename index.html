@@ -6,6 +6,19 @@
 <meta name="theme-color" content="#10161c">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Crazy Tuk: Alicante</title>
+<meta name="description" content="Tuk-tuk racing through the real streets of Alicante. Drift, nitro, gates and tips. Plays in the browser, no install.">
+<!-- link previews (WhatsApp, Telegram): Open Graph; og:image / twitter:image are added once the owner approves the picture (docs/report-0192.md) -->
+<link rel="canonical" href="https://archigreen55-prog.github.io/tuktuk-alicante-vr/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Crazy Tuk: Alicante">
+<meta property="og:title" content="Crazy Tuk: Alicante">
+<meta property="og:description" content="Tuk-tuk racing through the real streets of Alicante. Drift, nitro, gates and tips. Plays in the browser, no install.">
+<meta property="og:url" content="https://archigreen55-prog.github.io/tuktuk-alicante-vr/">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="uk_UA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Crazy Tuk: Alicante">
+<meta name="twitter:description" content="Tuk-tuk racing through the real streets of Alicante. Drift, nitro, gates and tips. Plays in the browser, no install.">
 <link rel="icon" href="data:,">
 <script>
   // Early diagnostics (phone stage F0, docs/plan-phone.md): a classic script, so it also works when
@@ -82,73 +95,74 @@
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
-    "./src/audio/arcadeSound.js": "./src/audio/arcadeSound.js?v=0.19.1",
-    "./src/audio/music.js": "./src/audio/music.js?v=0.19.1",
-    "./src/audio/soundBank.js": "./src/audio/soundBank.js?v=0.19.1",
-    "./src/city/buildCity.js": "./src/city/buildCity.js?v=0.19.1",
-    "./src/city/facades.js": "./src/city/facades.js?v=0.19.1",
-    "./src/city/footprint.js": "./src/city/footprint.js?v=0.19.1",
-    "./src/city/geo.js": "./src/city/geo.js?v=0.19.1",
-    "./src/city/ground.js": "./src/city/ground.js?v=0.19.1",
-    "./src/city/landmarks.js": "./src/city/landmarks.js?v=0.19.1",
-    "./src/city/models.js": "./src/city/models.js?v=0.19.1",
-    "./src/city/photoFacades.js": "./src/city/photoFacades.js?v=0.19.1",
-    "./src/city/rtin.js": "./src/city/rtin.js?v=0.19.1",
-    "./src/city/terrain.js": "./src/city/terrain.js?v=0.19.1",
-    "./src/city/tiles.js": "./src/city/tiles.js?v=0.19.1",
-    "./src/comfort/vignette.js": "./src/comfort/vignette.js?v=0.19.1",
-    "./src/config.js": "./src/config.js?v=0.19.1",
-    "./src/diag/bench.js": "./src/diag/bench.js?v=0.19.1",
-    "./src/diag/device.js": "./src/diag/device.js?v=0.19.1",
-    "./src/diag/frameStats.js": "./src/diag/frameStats.js?v=0.19.1",
-    "./src/diag/report.js": "./src/diag/report.js?v=0.19.1",
-    "./src/diag/ui.js": "./src/diag/ui.js?v=0.19.1",
-    "./src/diag/wallsDebug.js": "./src/diag/wallsDebug.js?v=0.19.1",
-    "./src/game/arcade.js": "./src/game/arcade.js?v=0.19.1",
-    "./src/game/arcadeCam.js": "./src/game/arcadeCam.js?v=0.19.1",
-    "./src/game/arcadeFx.js": "./src/game/arcadeFx.js?v=0.19.1",
-    "./src/game/driver.js": "./src/game/driver.js?v=0.19.1",
-    "./src/game/editorAccess.js": "./src/game/editorAccess.js?v=0.19.1",
-    "./src/game/levelEdit.js": "./src/game/levelEdit.js?v=0.19.1",
-    "./src/game/levelShare.js": "./src/game/levelShare.js?v=0.19.1",
-    "./src/game/levelStore.js": "./src/game/levelStore.js?v=0.19.1",
-    "./src/game/levels.js": "./src/game/levels.js?v=0.19.1",
-    "./src/game/markers.js": "./src/game/markers.js?v=0.19.1",
-    "./src/game/pathfind.js": "./src/game/pathfind.js?v=0.19.1",
-    "./src/game/route.js": "./src/game/route.js?v=0.19.1",
-    "./src/game/scoring.js": "./src/game/scoring.js?v=0.19.1",
-    "./src/game/smashables.js": "./src/game/smashables.js?v=0.19.1",
-    "./src/game/tour.js": "./src/game/tour.js?v=0.19.1",
-    "./src/game/tourists.js": "./src/game/tourists.js?v=0.19.1",
-    "./src/i18n.js": "./src/i18n.js?v=0.19.1",
-    "./src/i18n/en.js": "./src/i18n/en.js?v=0.19.1",
-    "./src/i18n/uk.js": "./src/i18n/uk.js?v=0.19.1",
-    "./src/input/handlebarInput.js": "./src/input/handlebarInput.js?v=0.19.1",
-    "./src/input/keyboard.js": "./src/input/keyboard.js?v=0.19.1",
-    "./src/input/touchControls.js": "./src/input/touchControls.js?v=0.19.1",
-    "./src/input/touchMath.js": "./src/input/touchMath.js?v=0.19.1",
-    "./src/input/xrInput.js": "./src/input/xrInput.js?v=0.19.1",
-    "./src/main.js": "./src/main.js?v=0.19.1",
-    "./src/perf/frameCap.js": "./src/perf/frameCap.js?v=0.19.1",
-    "./src/perf/gpuTimer.js": "./src/perf/gpuTimer.js?v=0.19.1",
-    "./src/settings.js": "./src/settings.js?v=0.19.1",
-    "./src/ui/arcadeHud.js": "./src/ui/arcadeHud.js?v=0.19.1",
-    "./src/ui/dashboard.js": "./src/ui/dashboard.js?v=0.19.1",
-    "./src/ui/fullMap.js": "./src/ui/fullMap.js?v=0.19.1",
-    "./src/ui/help.js": "./src/ui/help.js?v=0.19.1",
-    "./src/ui/hud.js": "./src/ui/hud.js?v=0.19.1",
-    "./src/ui/levelEditor.js": "./src/ui/levelEditor.js?v=0.19.1",
-    "./src/ui/minimap.js": "./src/ui/minimap.js?v=0.19.1",
-    "./src/ui/phoneUi.js": "./src/ui/phoneUi.js?v=0.19.1",
-    "./src/ui/screenMode.js": "./src/ui/screenMode.js?v=0.19.1",
-    "./src/ui/soundLab.js": "./src/ui/soundLab.js?v=0.19.1",
-    "./src/ui/titleScreen.js": "./src/ui/titleScreen.js?v=0.19.1",
-    "./src/vehicle/collision.js": "./src/vehicle/collision.js?v=0.19.1",
-    "./src/vehicle/horn.js": "./src/vehicle/horn.js?v=0.19.1",
-    "./src/vehicle/physics.js": "./src/vehicle/physics.js?v=0.19.1",
-    "./src/vehicle/tuktuk.js": "./src/vehicle/tuktuk.js?v=0.19.1",
-    "./src/version.js": "./src/version.js?v=0.19.1",
-    "./src/xr/xrRig.js": "./src/xr/xrRig.js?v=0.19.1"
+    "./src/audio/arcadeSound.js": "./src/audio/arcadeSound.js?v=0.19.2",
+    "./src/audio/music.js": "./src/audio/music.js?v=0.19.2",
+    "./src/audio/soundBank.js": "./src/audio/soundBank.js?v=0.19.2",
+    "./src/city/buildCity.js": "./src/city/buildCity.js?v=0.19.2",
+    "./src/city/facades.js": "./src/city/facades.js?v=0.19.2",
+    "./src/city/footprint.js": "./src/city/footprint.js?v=0.19.2",
+    "./src/city/geo.js": "./src/city/geo.js?v=0.19.2",
+    "./src/city/ground.js": "./src/city/ground.js?v=0.19.2",
+    "./src/city/landmarks.js": "./src/city/landmarks.js?v=0.19.2",
+    "./src/city/models.js": "./src/city/models.js?v=0.19.2",
+    "./src/city/photoFacades.js": "./src/city/photoFacades.js?v=0.19.2",
+    "./src/city/rtin.js": "./src/city/rtin.js?v=0.19.2",
+    "./src/city/terrain.js": "./src/city/terrain.js?v=0.19.2",
+    "./src/city/tiles.js": "./src/city/tiles.js?v=0.19.2",
+    "./src/comfort/vignette.js": "./src/comfort/vignette.js?v=0.19.2",
+    "./src/config.js": "./src/config.js?v=0.19.2",
+    "./src/diag/bench.js": "./src/diag/bench.js?v=0.19.2",
+    "./src/diag/device.js": "./src/diag/device.js?v=0.19.2",
+    "./src/diag/frameStats.js": "./src/diag/frameStats.js?v=0.19.2",
+    "./src/diag/report.js": "./src/diag/report.js?v=0.19.2",
+    "./src/diag/ui.js": "./src/diag/ui.js?v=0.19.2",
+    "./src/diag/wallsDebug.js": "./src/diag/wallsDebug.js?v=0.19.2",
+    "./src/game/arcade.js": "./src/game/arcade.js?v=0.19.2",
+    "./src/game/arcadeCam.js": "./src/game/arcadeCam.js?v=0.19.2",
+    "./src/game/arcadeFx.js": "./src/game/arcadeFx.js?v=0.19.2",
+    "./src/game/driver.js": "./src/game/driver.js?v=0.19.2",
+    "./src/game/editorAccess.js": "./src/game/editorAccess.js?v=0.19.2",
+    "./src/game/levelEdit.js": "./src/game/levelEdit.js?v=0.19.2",
+    "./src/game/levelShare.js": "./src/game/levelShare.js?v=0.19.2",
+    "./src/game/levelStore.js": "./src/game/levelStore.js?v=0.19.2",
+    "./src/game/levels.js": "./src/game/levels.js?v=0.19.2",
+    "./src/game/markers.js": "./src/game/markers.js?v=0.19.2",
+    "./src/game/pathfind.js": "./src/game/pathfind.js?v=0.19.2",
+    "./src/game/route.js": "./src/game/route.js?v=0.19.2",
+    "./src/game/scoring.js": "./src/game/scoring.js?v=0.19.2",
+    "./src/game/smashables.js": "./src/game/smashables.js?v=0.19.2",
+    "./src/game/tour.js": "./src/game/tour.js?v=0.19.2",
+    "./src/game/tourists.js": "./src/game/tourists.js?v=0.19.2",
+    "./src/i18n.js": "./src/i18n.js?v=0.19.2",
+    "./src/i18n/en.js": "./src/i18n/en.js?v=0.19.2",
+    "./src/i18n/uk.js": "./src/i18n/uk.js?v=0.19.2",
+    "./src/input/handlebarInput.js": "./src/input/handlebarInput.js?v=0.19.2",
+    "./src/input/keyboard.js": "./src/input/keyboard.js?v=0.19.2",
+    "./src/input/touchControls.js": "./src/input/touchControls.js?v=0.19.2",
+    "./src/input/touchMath.js": "./src/input/touchMath.js?v=0.19.2",
+    "./src/input/xrInput.js": "./src/input/xrInput.js?v=0.19.2",
+    "./src/main.js": "./src/main.js?v=0.19.2",
+    "./src/perf/frameCap.js": "./src/perf/frameCap.js?v=0.19.2",
+    "./src/perf/gpuTimer.js": "./src/perf/gpuTimer.js?v=0.19.2",
+    "./src/settings.js": "./src/settings.js?v=0.19.2",
+    "./src/ui/arcadeHud.js": "./src/ui/arcadeHud.js?v=0.19.2",
+    "./src/ui/dashboard.js": "./src/ui/dashboard.js?v=0.19.2",
+    "./src/ui/firstRun.js": "./src/ui/firstRun.js?v=0.19.2",
+    "./src/ui/fullMap.js": "./src/ui/fullMap.js?v=0.19.2",
+    "./src/ui/help.js": "./src/ui/help.js?v=0.19.2",
+    "./src/ui/hud.js": "./src/ui/hud.js?v=0.19.2",
+    "./src/ui/levelEditor.js": "./src/ui/levelEditor.js?v=0.19.2",
+    "./src/ui/minimap.js": "./src/ui/minimap.js?v=0.19.2",
+    "./src/ui/phoneUi.js": "./src/ui/phoneUi.js?v=0.19.2",
+    "./src/ui/screenMode.js": "./src/ui/screenMode.js?v=0.19.2",
+    "./src/ui/soundLab.js": "./src/ui/soundLab.js?v=0.19.2",
+    "./src/ui/titleScreen.js": "./src/ui/titleScreen.js?v=0.19.2",
+    "./src/vehicle/collision.js": "./src/vehicle/collision.js?v=0.19.2",
+    "./src/vehicle/horn.js": "./src/vehicle/horn.js?v=0.19.2",
+    "./src/vehicle/physics.js": "./src/vehicle/physics.js?v=0.19.2",
+    "./src/vehicle/tuktuk.js": "./src/vehicle/tuktuk.js?v=0.19.2",
+    "./src/version.js": "./src/version.js?v=0.19.2",
+    "./src/xr/xrRig.js": "./src/xr/xrRig.js?v=0.19.2"
   }
 }
 </script>
@@ -157,7 +171,7 @@
   // cached) page, reload once with ?v=<new>, a URL no cache has seen. Every module and data URL
   // carries ?v=<version> too (import map above). Versions are set by tools/bump-version.mjs.
   {
-    const PAGE_VERSION = '0.19.1';
+    const PAGE_VERSION = '0.19.2';
     // installable app (manifest.webmanifest: full screen, landscape); the worker does nothing with the network (sw.js)
     if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then(({ version }) => {
@@ -165,6 +179,10 @@
       if (version && version !== PAGE_VERSION && url.searchParams.get('v') !== version) {
         url.searchParams.set('v', version);
         location.replace(url.href);
+      } else if (version === PAGE_VERSION && url.searchParams.has('v')) {
+        // the page is the current one: the cache is beaten, so the ?v= goes from the address bar (the link people copy and share stays clean)
+        url.searchParams.delete('v');
+        history.replaceState(history.state, '', url.pathname + (url.search || '') + url.hash);
       }
     }).catch(() => {});
   }
@@ -177,6 +195,6 @@
 <div id="tourCard"></div>
 <canvas id="miniMap" width="180" height="180"></canvas>
 <div id="attr"></div>
-<script type="module" src="src/main.js?v=0.19.1"></script>
+<script type="module" src="src/main.js?v=0.19.2"></script>
 </body>
 </html>

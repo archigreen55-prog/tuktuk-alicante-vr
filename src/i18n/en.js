@@ -62,6 +62,13 @@ export default {
   'set.vrSteer': 'VR steering', 'set.vrStick': 'stick', 'set.vrHands': 'hands on the bar', 'set.vrVignette': 'VR vignette (darker edges in turns and braking)', 'set.tilt': 'Cab tilt on slopes (K)', 'set.vrVibration': 'Engine vibration in the right grip (VR, hands on the bar)',
   'arc.start': 'Start', 'arc.gate': 'Gate {n}',
   'diag.title': 'Diagnostics', 'diag.bench': 'Measure', 'diag.copy': 'Copy the report', 'diag.refresh': 'Refresh', 'diag.again': 'Measure again', 'diag.close': 'Close', 'diag.start': 'Start measuring',
+  // ---- first-run hint (0.19.2) and the pause menu
+  'hint.title': 'How to drive', 'hint.dontShow': "don't show again", 'hint.ok': 'Got it ▶', 'hint.space': 'Space',
+  'hint.steerPhone': 'Steer: hold the left or right button', 'hint.steerKey': 'Steer: A D or the arrow keys',
+  'hint.gasPhone': 'Gas is automatic (≈ 70 km/h); the pedal only if you turn auto-gas off', 'hint.gasKey': 'Gas is automatic (≈ 70 km/h); W gives more gas',
+  'hint.brake': 'Brake; hold it at a standstill to reverse', 'hint.hand': 'Handbrake at speed = a drift. Long slides pay',
+  'hint.nitro': 'Hold: a burst up to 120 km/h. The ring shows the tank; exact gates refill it', 'hint.gate': 'Gates: drive through the beam of light. Dead centre = "Exact!"',
+  'ph.advancedOpen': 'Advanced ▾', 'ph.advancedClose': 'Advanced ▴', 'ph.basic': 'Game', 'ph.tapHint': 'tap',
   'vig.weak': 'weak', 'vig.standard': 'standard', 'vig.strong': 'strong',
   // ---- loading and the title screen
   'st.textures': 'Drawing textures…', 'st.city': 'Loading the city…', 'st.terrain': 'Terrain…', 'st.photos': 'Facade photos…', 'st.models': '3D landmarks…', 'st.build': 'Building {n} houses…', 'st.shaders': 'Compiling shaders…',

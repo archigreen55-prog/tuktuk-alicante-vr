@@ -94,3 +94,44 @@ export const HELP = {
     ]],
   },
 };
+
+// The tables as DOM (0.19.2): used by the title screen's Help drawer and by the in-game Help layer (pause menu), so Help never has to
+// reopen the title screen (and never moves the tuk-tuk).
+import { getLang } from '../i18n.js';
+export function fillHelpTables(body, isPhone) {
+  body.textContent = '';
+  const HL = HELP[getLang()] || HELP.en;
+  for (const k of isPhone ? ['phone', 'kb', 'quest'] : ['kb', 'quest', 'phone']) {
+    const [title, lines] = HL[k];
+    const box = document.createElement('div'); body.appendChild(box);
+    const h = document.createElement('h3'); h.textContent = title; box.appendChild(h);
+    const table = document.createElement('table'); box.appendChild(table);
+    for (const [a, b] of lines) { const tr = document.createElement('tr'); table.appendChild(tr); for (const x of [a, b]) { const td = document.createElement('td'); td.textContent = x; tr.appendChild(td); } }
+  }
+}
+const CSS = /* css */ `
+.hp-layer { position: fixed; inset: 0; z-index: 120; display: none; align-items: flex-start; justify-content: center; overflow-y: auto; overscroll-behavior: contain; background: rgba(10, 14, 20, .88); color: #fff; font-family: system-ui, sans-serif; touch-action: pan-y; }
+.hp-layer.open { display: flex; }
+.hp-layer .card { margin: 8px; width: min(96vw, 820px); box-sizing: border-box; padding: 10px 16px 14px; border-radius: 14px; background: rgba(15, 30, 45, .97); }
+.hp-layer h2 { margin: 0 0 8px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
+.hp-layer h2 button { font: 700 14px system-ui, sans-serif; min-height: 40px; padding: 6px 16px; border-radius: 10px; border: 0; background: #ffd166; color: #222; cursor: pointer; touch-action: manipulation; }
+.hp-layer .body { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+.hp-layer h3 { margin: 8px 0 2px; font-size: 15px; color: #cfe3f5; }
+.hp-layer table { border-collapse: collapse; font-size: 12.5px; width: 100%; }
+.hp-layer td { padding: 2px 8px 2px 0; vertical-align: top; } .hp-layer td:first-child { color: #ffd166; white-space: nowrap; font-weight: 600; }
+@media (max-height: 460px) and (orientation: landscape), (orientation: portrait) { .hp-layer .body { grid-template-columns: 1fr; } }
+`;
+export function createHelpLayer({ isPhone, title, onOpen, onClose }) {
+  const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+  const layer = document.createElement('div'); layer.className = 'hp-layer'; document.body.appendChild(layer);
+  const card = document.createElement('div'); card.className = 'card'; layer.appendChild(card);
+  const h = document.createElement('h2'); card.appendChild(h);
+  const ttl = document.createElement('span'); h.appendChild(ttl);
+  const x = document.createElement('button'); x.textContent = '✕'; h.appendChild(x);
+  const body = document.createElement('div'); body.className = 'body'; card.appendChild(body);
+  const close = () => { if (!layer.classList.contains('open')) return; layer.classList.remove('open'); if (onClose) onClose(); };
+  x.addEventListener('click', close); layer.addEventListener('click', (e) => { if (e.target === layer) close(); });
+  const fill = () => { ttl.textContent = title(); fillHelpTables(body, isPhone); };
+  addEventListener('tuktuk-lang', fill);
+  return { open() { fill(); layer.classList.add('open'); if (onOpen) onOpen(); }, close, get isOpen() { return layer.classList.contains('open'); } };
+}

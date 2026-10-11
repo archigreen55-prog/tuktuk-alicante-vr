@@ -43,6 +43,8 @@ import { clock as fmtClock, euro, euroWhole } from './ui/dashboard.js';
 import { IS_PHONE, UI, installRotateGuard } from './diag/device.js';
 import { t, pick, getLang } from './i18n.js';
 import { createTitleScreen } from './ui/titleScreen.js';
+import { createFirstRun } from './ui/firstRun.js';
+import { createHelpLayer } from './ui/help.js';
 import { FrameCap } from './perf/frameCap.js';
 import { FrameStats } from './diag/frameStats.js';
 import { Bench, buildStations } from './diag/bench.js';
@@ -311,6 +313,10 @@ let levelId = params.get('level') || params.get('tour') || loadSetting('arcade.l
 if (!levels.some((l) => l.id === levelId)) levelId = levels[0] ? levels[0].id : null;
 const levelById = (id) => levels.find((l) => l.id === id) || null;
 let tour = null, freeConfirm = -1e9;
+// the first-run hint (src/ui/firstRun.js): the countdown waits for "Got it"; then, on a phone, "tap" arrows on the nitro and handbrake buttons for 20 s
+let hintHold = false, tapHintsUntil = 0;
+const firstRun = createFirstRun({ isPhone: IS_PHONE, onDone: () => { hintHold = false; if (run) { runCountdown = 3.2; arcadeHud.setCountdown(3); } if (touch) { touch.setTapHints(true); tapHintsUntil = clock.t + 23.2; } } });
+const helpLayer = createHelpLayer({ isPhone: IS_PHONE, title: () => t('ph.help') });
 // Crazy Tuk (docs/plan-arcade.md): the run, its countdown before the start, the sounds and the HTML interface
 let run = null, runCountdown = 0, runRestartAt = -1e9;
 let hornHeld = false, hornSynth = false;
@@ -479,6 +485,8 @@ function startArcade() {
   lookYaw = 0; lookPitch = 0; if (touch) { touch.resetLook(); touch.setArcade(true); touch.setAutoGas(!manualGas()); }
   runCountdown = 3.2;
   arcadeHud.hideSummary(); arcadeHud.show(true); arcadeHud.setCountdown(3);
+  firstRun.hide(); hintHold = false;
+  if (!inVR && !title.isOpen && !trialLevel && firstRun.due(params)) { hintHold = true; arcadeHud.setCountdown(null); if (touch) touch.releaseAll(); firstRun.show(); }   // once per device, before the countdown
   arcadeSound.setOn(true); arcadeSound.setSection('menu');
   { const fx = -Math.sin(phys.heading), fz = -Math.cos(phys.heading); tourists.setup(2, [phys.x, phys.z], [fx, fz], 2); tourists.live = true; driver.setLook('racer'); tourists.seatAll(); tourists.visible = true; }   // two passengers on the back seat who feel the ride
   if (params.get('smash') !== '0') {
@@ -492,7 +500,7 @@ function startArcade() {
   return true;
 }
 function leaveArcade() {
-  trialLevel = null;
+  trialLevel = null; firstRun.hide(); hintHold = false; if (touch) touch.setTapHints(false);
   if (!run && phys.T === TUNING) return;
   run = null; phys.T = TUNING; phys.hit = null; phys.nitro.charge = 1; phys.nitro.active = false;
   arcadeHud.show(false); arcadeSound.setOn(false);
@@ -836,7 +844,7 @@ function frame(now, xrFrame) {
   if (run) {
     // Crazy Tuk: the throttle is automatic (the tuk-tuk keeps 60+ km/h unless braking), the countdown holds it still,
     // after the finish it rolls out on the brake
-    if (runCountdown > 0) { runCountdown -= frameDt; arcadeHud.setCountdown(Math.ceil(runCountdown - 0.2)); if (runCountdown <= 0) { arcadeHud.setCountdown(null); run.begin(phys.x, phys.z); } }
+    if (runCountdown > 0 && !hintHold) { runCountdown -= frameDt; arcadeHud.setCountdown(Math.ceil(runCountdown - 0.2)); if (runCountdown <= 0) { arcadeHud.setCountdown(null); run.begin(phys.x, phys.z); } }
     if (run.state === 'ready') { input.throttle = 0; input.brake = 1; input.nitro = false; input.reverseDelay = Infinity; }
     else if (run.done) { input.throttle = 0; input.brake = 0.6; input.nitro = false; input.reverseDelay = Infinity; }
     else if (!manualGas()) { input.throttle = input.brake > 0 ? 0 : 1; input.cruiseKmh = ARCADE.autoGasKmh; }   // the auto-gas holds ARCADE.autoGasKmh; the nitro goes past it
@@ -1072,6 +1080,7 @@ function frame(now, xrFrame) {
     });
     hud.update(!inVR && !title.isOpen, panel);
     if (phone) phone.update({ msg, msgColor, panel });
+    if (touch && tapHintsUntil && clock.t > tapHintsUntil) { tapHintsUntil = 0; touch.setTapHints(false); }
     if (touch && run) touch.setNitro({ state: phys.nitro.active ? 'active' : phys.nitro.charge > 0.05 ? 'ready' : 'charge', level: phys.nitro.charge, left: Math.round(phys.nitro.charge * 100) });
     else if (touch) touch.setNitro({ state: phys.nitro.active ? 'active' : phys.nitro.charge < 1 ? 'charge' : 'ready', level: phys.nitro.active ? 1 - phys.nitro.t / TUNING.nitroTime : phys.nitro.charge, left: Math.ceil((1 - phys.nitro.charge) * TUNING.nitroRecharge) });
     if (run) {
@@ -1161,7 +1170,7 @@ function goHome() {
 Object.assign(G, {
   play, levels: () => levels.map((l) => [l.id, levelName(l)]), level: () => levelId, setLevel,
   tours: () => (tourSpec ? tourSpec.tours.map((tr) => [tr.id, pick(tourTitleOf(tr))]) : []), tour: () => tourId, setTour,
-  best: titleBest, hasTour: () => !!(tourSpec && graph), settingsDefs: () => (phone ? phone.settingsDefs : pcDefs),
+  best: titleBest, hasTour: () => !!(tourSpec && graph), settingsDefs: () => (touch ? phone.settingsDefs : pcDefs),
   credit: () => t('credit.base') + (soundAttribution() ? '<br>' + soundAttribution() : ''),
 });
 // on open: the menu track (Crazy Tuk keeps it on its countdown and summary)
@@ -1176,7 +1185,11 @@ const musicNudge = () => { if (title.isOpen && !arcadeSound.musicPlayer.cur) { a
 addEventListener('pointerdown', musicNudge, { capture: true }); addEventListener('keydown', musicNudge, { capture: true });
 title.onLang = () => { placeCredits(); if (tour && gameMode === 'tour' && tour.state === 'waiting') { startTour(); if (title.isOpen) titleSpot(); } $('attr').innerHTML = t('credit.base') + (soundAttribution() ? '<br>' + soundAttribution() : ''); };
 $('attr').innerHTML = t('credit.base');
-addEventListener('keydown', (e) => { if (e.code === 'Escape' && !title.isOpen && !inVR && !fullMap.isOpen && !(phone && phone.menuOpen) && !(levelEditor && levelEditor.isOpen) && !(soundLab && soundLab.isOpen)) goHome(); });
+// Esc on a PC: the pause menu (a second Esc closes it, Help closes first); the title is reached through "Main menu"
+addEventListener('keydown', (e) => {
+  if (e.code !== 'Escape' || e.repeat || title.isOpen || inVR || fullMap.isOpen || firstRun.isOpen || (levelEditor && levelEditor.isOpen) || (soundLab && soundLab.isOpen)) return;
+  if (helpLayer.isOpen) helpLayer.close(); else if (phone.menuOpen) phone.closeMenu(); else phone.openMenu();
+});
 updateBestLabel();
 
 // ---------- diagnostics UI and ?bench (phone stage F0, docs/plan-phone.md) ----------
@@ -1236,9 +1249,9 @@ if (IS_PHONE || benchOn || params.has('diag')) {
 }
 
 // ---------- phone interface (docs/plan-phone.md, stage F1) ----------
-if (touch) {
+{   // the pause menu: the phone's, and on a PC (Esc) the same one without the phone-only rows
   phone = createPhoneUi({
-    touch,
+    touch, pc: !touch,
     api: {
       setPaused: (p) => { paused = p; if (!p) last = performance.now(); },
       resetToRoad: () => { resetToRoad(); flash(t('msg.backOnRoad'), 2); },
@@ -1257,7 +1270,7 @@ if (touch) {
       applyFov, applyRes, version: VERSION, onStarted: () => { if (diagUI) diagUI.setVisible(true); },
       get credit() { return this.creditBase + (soundAttribution() ? '<br>' + soundAttribution() : ''); },
       get creditBase() { return t('credit.base'); },
-      goHome, openHelp: () => title.openHelp(),
+      goHome, openHelp: () => helpLayer.open(),
     },
   });
 }
