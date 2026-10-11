@@ -19,6 +19,8 @@ const CSS = /* css */ `
 .fr-cell { display: flex; align-items: center; gap: 12px; font: 600 14px/1.25 system-ui, sans-serif; }
 .fr-ico { flex: none; min-width: 64px; height: 52px; padding: 0 6px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 3px solid #6fe06f; border-radius: 12px; background: rgba(16, 24, 34, .9); color: #ffd166; font: 800 13px system-ui, sans-serif; text-align: center; white-space: nowrap; }
 .fr-ico.round { width: 56px; height: 56px; min-width: 56px; border-radius: 50%; border-color: #ff9f43; }
+.fr-beam { display: block; position: relative; width: 16px; height: 38px; border-radius: 8px 8px 3px 3px; background: linear-gradient(to top, #ffd166, rgba(255, 209, 102, .15)); box-shadow: 0 0 10px rgba(255, 209, 102, .7); }
+.fr-beam::after { content: ''; position: absolute; left: -7px; right: -7px; bottom: -3px; height: 8px; border-radius: 50%; border: 2px solid #ffd166; box-sizing: border-box; }
 .fr-bottom { display: flex; justify-content: flex-end; align-items: center; gap: 18px; margin-top: 12px; }
 .fr-bottom label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #cfd8e2; }
 .fr-bottom input { width: 20px; height: 20px; }
@@ -48,9 +50,9 @@ export function createFirstRun({ isPhone, onDone }) {
       [P ? t('tc.brake') : 'S', 'hint.brake', false],
       [P ? t('tc.hand') : t('hint.space'), 'hint.hand', false],
       [P ? t('tc.nitro') : 'Shift', 'hint.nitro', true],
-      ['⛩', 'hint.gate', false],
+      ['beam', 'hint.gate', false],
     ];
-    for (const [ico, key, round] of cells) { const c = el('div', 'fr-cell', null, grid); el('div', 'fr-ico' + (round ? ' round' : ''), ico, c); el('div', null, t(key), c); }
+    for (const [ico, key, round] of cells) { const c = el('div', 'fr-cell', null, grid); const ic = el('div', 'fr-ico' + (round ? ' round' : ''), ico === 'beam' ? '' : ico, c); if (ico === 'beam') el('span', 'fr-beam', '', ic); el('div', null, t(key), c); }
   }
   addEventListener('tuktuk-lang', fill); fill();
   ok.addEventListener('click', () => { if (box.checked) saveSetting(SEEN, true); hide(); if (onDone) onDone(); });

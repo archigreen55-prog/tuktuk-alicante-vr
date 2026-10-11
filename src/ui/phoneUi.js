@@ -23,7 +23,8 @@ html.ui-phone #miniMap { left: max(10px, env(safe-area-inset-left)); top: 62px; 
 .ph-toast { position: fixed; left: 50%; top: 31%; transform: translateX(-50%); z-index: 45; max-width: 60vw; padding: 8px 16px; border-radius: 12px; background: rgba(10, 14, 20, .78); color: #ffd166; font: 700 20px/1.25 system-ui, sans-serif; text-align: center; pointer-events: none; display: none; }
 .ph-sum { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 45; display: none; gap: 14px; }
 .ph-btn { font: 700 16px system-ui, sans-serif; min-height: 48px; padding: 10px 20px; border-radius: 12px; border: 2px solid #ffd166; background: rgba(16, 22, 28, .9); color: #ffd166; touch-action: manipulation; }
-.ph-more { position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 95; display: none; padding: 8px 18px; border-radius: 20px; border: 2px solid #ffd166; background: rgba(16, 22, 28, .92); color: #ffd166; font: 700 15px system-ui, sans-serif; box-shadow: 0 2px 10px rgba(0, 0, 0, .5); }
+.ph-more { position: fixed; right: 12px; bottom: 10px; z-index: 95; display: none; width: 42px; height: 42px; padding: 0; border-radius: 50%; border: 2px solid #ffd166; background: rgba(16, 22, 28, .92); color: #ffd166; font: 700 20px system-ui, sans-serif; box-shadow: 0 2px 10px rgba(0, 0, 0, .5); }
+.ph-menu .card { padding-bottom: 60px; }
 .ph-btn.main { background: #ffd166; color: #222; }
 .ph-btn.danger.armed { background: #ff7a5c; border-color: #ff7a5c; color: #222; }
 .ph-menu { position: fixed; inset: 0; z-index: 90; display: none; align-items: flex-start; justify-content: center; overflow-y: auto; overscroll-behavior: contain; background: rgba(10, 14, 20, .82); color: #fff; font-family: system-ui, sans-serif; touch-action: pan-y; }
@@ -106,7 +107,7 @@ export function createPhoneUi({ touch: touchIn, api, pc = false }) {
 
   // "more below" button for a scrolling full-screen layer: shown while there is content below, a tap scrolls on
   function scrollHint(layer, visibleWhen) {
-    const b = tx(el('button', 'ph-more', '', document.body), () => t('ph.more'));
+    const b = el('button', 'ph-more', '↓', document.body); b.setAttribute('aria-label', t('ph.more'));
     const update = () => { const more = visibleWhen() && layer.scrollTop + layer.clientHeight < layer.scrollHeight - 10; b.style.display = more ? 'block' : 'none'; };
     layer.addEventListener('scroll', update, { passive: true });
     addEventListener('resize', update);
@@ -137,23 +138,24 @@ export function createPhoneUi({ touch: touchIn, api, pc = false }) {
   let armed = 0;
   // the game: restart, map, help, main menu, full screen (the level, sound, music and language rows are on the right)
   const tourBtn = act('ph.restartTour', () => { api.restartTour(); closeMenu(); });
+  // stuck? the way back onto the road is here, not under Advanced
+  const resetBtn = act('ph.resetRoad', () => {
+    if (!armed) { armed = setTimeout(() => { armed = 0; resetBtn.classList.remove('armed'); resetBtn.textContent = t('ph.resetRoad'); }, 3000); resetBtn.classList.add('armed'); resetBtn.textContent = api.hasTour() ? t('ph.resetSureTour') : t('ph.resetSure'); return; }
+    clearTimeout(armed); armed = 0; resetBtn.classList.remove('armed'); resetBtn.textContent = t('ph.resetRoad'); api.resetToRoad(); closeMenu();
+  }, left, 'ph-btn danger');
   act('ph.map', () => { closeMenu(); api.openMap(); });
   act('ph.help', () => { if (api.openHelp) api.openHelp(); });
   const homeBtn = act('ph.home', () => { closeMenu(); if (api.goHome) api.goHome(); });   // the title screen (0.19.0)
-  act('ph.fullscreen', async () => { const r = await toggleFullscreen(); closeMenu(); if (r && !r.ok) flashToast(hintFor(r), 7000); });
   const rowOf = (parent, d) => addRow(parent, d);
   const rowEls = activeDefs.map((d) => rowOf(BASIC.has(d.label) ? right : (activeDefs.indexOf(d) % 2 ? advR : advL), d));
   { const label = el('label', null, null, right); tx(label.appendChild(document.createTextNode('')), () => t('set.language')); const b = tx(el('button', 'ph-btn', '', label), () => LANGS.find(([id]) => id === getLang())[1]); b.addEventListener('click', () => setLang(otherLang())); }
+  act('ph.fullscreen', async () => { const r = await toggleFullscreen(); closeMenu(); if (r && !r.ok) flashToast(hintFor(r), 7000); }, right);
   // Advanced: the camera, tilt and minimap, the auto-gas and phone settings (above), then the actions
   const labelled = (parent, key, valueFn, onClick) => { const label = el('label', null, null, parent); tx(label.appendChild(document.createTextNode('')), () => t(key)); const b = tx(el('button', 'ph-btn', '', label), valueFn); b.addEventListener('click', () => { onClick(); b.textContent = valueFn(); }); return b; };
   const camSel = labelled(advL, 'ph.camera', () => api.camLabel(), () => api.toggleCamera());
   const tiltBtn = labelled(advR, 'ph.cabTilt', () => api.tiltLabel(), () => api.cycleTilt());
   const mapBtn = labelled(advL, 'ph.minimap', () => t(api.mapOn() ? 'ph.yes' : 'ph.no'), () => api.toggleMap());
   act('ph.recenter', () => { touch.resetLook(); closeMenu(); }, advR);
-  const resetBtn = act('ph.resetRoad', () => {
-    if (!armed) { armed = setTimeout(() => { armed = 0; resetBtn.classList.remove('armed'); resetBtn.textContent = t('ph.resetRoad'); }, 3000); resetBtn.classList.add('armed'); resetBtn.textContent = api.hasTour() ? t('ph.resetSureTour') : t('ph.resetSure'); return; }
-    clearTimeout(armed); armed = 0; resetBtn.classList.remove('armed'); resetBtn.textContent = t('ph.resetRoad'); api.resetToRoad(); closeMenu();
-  }, advL, 'ph-btn danger');
   act('ph.diag', () => { closeMenu(); api.openDiagnostics(); }, advR);
   const installBtn = act('ph.install', () => install(), advL, 'ph-btn'); installBtn.style.display = 'none';
   onInstallChange((can) => { installBtn.style.display = can ? '' : 'none'; });
