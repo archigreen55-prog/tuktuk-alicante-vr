@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crazy Tuk: Alicante — tuk-tuk racing in your browser</title>
+<meta name="description" content="Race a tourist tuk-tuk through the real streets of Alicante. Gates, drift, nitro and tips. Plays in the browser, no install.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Crazy Tuk: Alicante">
+<meta property="og:title" content="Crazy Tuk: Alicante">
+<meta property="og:description" content="Race a tourist tuk-tuk through the real streets of Alicante. Gates, drift, nitro and tips. Plays in the browser, no install.">
+<meta property="og:url" content="https://archigreen55-prog.github.io/tuktuk-alicante-vr/landing/">
+<meta property="og:image" content="https://archigreen55-prog.github.io/tuktuk-alicante-vr/assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://archigreen55-prog.github.io/tuktuk-alicante-vr/assets/og-image.jpg">
+<meta name="theme-color" content="#0B2540">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Onest:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{--navy:#0B2540;--deep:#081B30;--card:#0F2C4C;--line:#234769;--line2:#3A5A80;--paper:#F5EFE4;--muted:#C9D4E3;--dim:#9FB0C6;--yellow:#FFC531;--teal:#6FD3C0;--green:#1E8A5A;--red:#C8423B;--sand:#F4EBDD}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--navy);color:var(--paper);font:17px/1.55 Onest,system-ui,sans-serif}
+h1,h2,h3,p{margin:0}
+a{color:var(--yellow)}
+img{max-width:100%}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+.sec{padding:76px 0}.deep{background:var(--deep)}
+.stack{display:flex;flex-direction:column;gap:24px}
+.eyebrow{font:600 13px/1.4 "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.h2{font:400 clamp(32px,5vw,56px)/1.05 "Russo One",sans-serif}
+.muted{color:var(--muted)}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;display:flex;flex-direction:column;gap:10px}
+header{position:sticky;top:0;z-index:5;background:rgba(8,27,48,.94);border-bottom:1px solid #1D3B5E}
+nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 24px;padding:12px 20px;max-width:1180px;margin:0 auto}
+.logo{font:400 22px "Russo One",sans-serif;color:var(--paper);text-decoration:none}.logo span{color:var(--yellow)}
+.links{display:flex;flex-wrap:wrap;align-items:center;gap:6px 20px}
+.links a{color:#D6DEEA;text-decoration:none;font-weight:500;font-size:15px}.links a:hover{color:var(--yellow)}
+.lang{display:flex;border:1px solid var(--line2);border-radius:999px;overflow:hidden}
+.lang button{min-width:52px;min-height:40px;border:0;background:transparent;color:#D6DEEA;font:600 14px Onest,sans-serif;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--yellow);color:var(--navy);font-weight:700}
+.hero{display:flex;flex-wrap:wrap;align-items:center;gap:44px;padding:64px 20px 64px}
+.hero .txt{flex:1 1 400px;min-width:0;display:flex;flex-direction:column;gap:20px}
+.hero h1{font:400 clamp(64px,11vw,132px)/.9 "Russo One",sans-serif}.hero h1 span{color:var(--yellow)}
+.city{font:400 20px "Russo One",sans-serif;letter-spacing:.42em;color:#D6DEEA}
+.tagline{font:400 clamp(24px,3vw,32px)/1.2 "Russo One",sans-serif}
+.btns{display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 24px;border-radius:14px;font-weight:700;font-size:18px;text-decoration:none}
+.btn.main{background:var(--yellow);color:var(--navy)}.btn.ghost{border:2px solid var(--paper);color:var(--paper);font-weight:600}
+.hero figure{flex:1 1 440px;min-width:0;margin:0;position:relative}
+.hero figure img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:22px;border:3px solid var(--yellow)}
+.badge{position:absolute;left:18px;bottom:-18px;display:flex;align-items:baseline;gap:8px;padding:10px 16px;border-radius:12px;background:var(--green);font-family:"Russo One",sans-serif}.badge b{font-size:30px;font-weight:400}
+.wave{display:block;width:100%;height:48px;background:var(--sand)}
+.num{font:400 44px/1 "Russo One",sans-serif;color:var(--yellow)}
+.board{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center;border:1px dashed var(--line2);border-radius:16px;padding:20px 24px;background:var(--navy)}
+.board .lbl{font:600 12px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--yellow)}
+.board .lines{display:flex;flex-direction:column;gap:6px;font:500 15px "IBM Plex Mono",monospace}
+.two{display:flex;flex-wrap:wrap;gap:40px 56px;align-items:flex-start}.two>*{flex:1 1 400px;min-width:0}
+.bar{display:flex;height:14px;border-radius:999px;overflow:hidden}
+.tier .n{font:400 22px "Russo One",sans-serif}.tier .d{font:500 13px "IBM Plex Mono",monospace;color:var(--dim)}
+.note{display:flex;gap:14px;background:var(--card);border-radius:14px;padding:18px 20px;font-size:15px;color:#D6DEEA}
+.crew{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.crew img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+.crew .b{padding:20px 22px 24px;display:flex;flex-direction:column;gap:8px}
+.mode{font:600 12px "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--yellow)}
+.quote{font:400 17px "Russo One",sans-serif}
+.smash{display:flex;justify-content:space-between;align-items:baseline;border-top:3px solid var(--red);padding-top:12px;font-weight:600}.smash b{font:400 22px "Russo One",sans-serif;color:var(--yellow)}
+.sand{background:var(--sand);color:var(--navy)}.sand .eyebrow{color:#A1322C}.sand .muted{color:#33445A}
+.mark{background:#fff;border:1px solid #E2D4BD;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:6px}
+.mark .t{display:flex;align-items:center;gap:10px}.mark .t span{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--yellow);font:400 14px "Russo One",sans-serif}
+.mark h3{font-size:17px}.mark p{font-size:15px;color:#33445A}
+.tag{flex:none;font:600 11px "IBM Plex Mono",monospace;letter-spacing:.08em;padding:3px 9px;border-radius:999px;border:1px solid;margin-top:3px}
+.tag.live{border-color:#2FBF71;color:#5ED897}.tag.test{border-color:var(--yellow);color:var(--yellow)}.tag.soon{border-color:#6C819C;color:#A9B8CC}
+.modes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}.modes li{display:flex;gap:14px;align-items:flex-start}
+.lvl .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.dev ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px;color:#D6DEEA}
+.plat{border-top:1px solid var(--line2);padding-top:16px;display:flex;flex-direction:column;gap:6px}
+.final{background:var(--yellow);color:var(--navy);padding:72px 0;text-align:center}
+.final h2{font:400 clamp(38px,6vw,68px)/1.02 "Russo One",sans-serif}
+.final .btn{background:var(--navy);color:var(--yellow)}
+footer{padding:28px 0 36px;font-size:13px;color:var(--dim)}footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+</style>
+</head>
+<body>
+<header><nav aria-label="Main">
+  <a class="logo" href="#top">CRAZY <span>TUK</span></a>
+  <div class="links">
+    <a href="#how" data-k="navHow"></a><a href="#tips" data-k="navTips"></a><a href="#crew" data-k="navCrew"></a><a href="#levels" data-k="navLevels"></a><a href="#dev" data-k="navDev"></a>
+    <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="en">EN</button><button type="button" data-lang="uk">UA</button></div>
+  </div>
+</nav></header>
+
+<main>
+<section id="top" class="hero wrap">
+  <div class="txt">
+    <div class="eyebrow" data-k="heroEyebrow"></div>
+    <h1>CRAZY<br><span>TUK</span></h1>
+    <div class="city" data-k="city"></div>
+    <p class="tagline" data-k="tagline"></p>
+    <p class="muted" style="max-width:52ch" data-k="pitch"></p>
+    <div class="btns">
+      <a class="btn main" href="../" data-k="ctaPlay"></a>
+      <a class="btn ghost" href="#how" data-k="ctaHow"></a>
+    </div>
+    <p style="font-size:14px;color:var(--dim)" data-k="platformsLine"></p>
+  </div>
+  <figure><img src="img/hero.jpg" data-alt="heroAlt" alt=""><div class="badge"><b>120</b><span data-k="kmhNitro"></span></div></figure>
+</section>
+
+<svg class="wave" viewBox="0 0 1200 48" preserveAspectRatio="none" aria-hidden="true">
+  <path d="M0 10 C 100 -2, 200 22, 300 10 S 500 -2, 600 10 S 800 22, 900 10 S 1100 -2, 1200 10" fill="none" stroke="#C8423B" stroke-width="7"/>
+  <path d="M0 24 C 100 12, 200 36, 300 24 S 500 12, 600 24 S 800 36, 900 24 S 1100 12, 1200 24" fill="none" stroke="#1B1B1B" stroke-width="7"/>
+  <path d="M0 38 C 100 26, 200 50, 300 38 S 500 26, 600 38 S 800 50, 900 38 S 1100 26, 1200 38" fill="none" stroke="#C8423B" stroke-width="7"/>
+</svg>
+
+<section id="how" class="sec deep"><div class="wrap stack">
+  <div class="eyebrow" data-k="howEyebrow"></div>
+  <h2 class="h2" style="max-width:18ch" data-k="howTitle"></h2>
+  <div class="grid" id="steps"></div>
+  <div class="board"><div class="lbl" data-k="boardLabel"></div><div class="lines" id="board"></div></div>
+</div></section>
+
+<section id="tips" class="sec"><div class="wrap two">
+  <div class="stack" style="gap:18px">
+    <div class="eyebrow" data-k="tipsEyebrow"></div>
+    <h2 class="h2" data-k="tipsTitle"></h2>
+    <p class="muted" data-k="tipsP1"></p>
+    <p class="muted" data-k="tipsP2"></p>
+  </div>
+  <div class="stack" style="gap:18px">
+    <div class="bar" aria-hidden="true"><div style="flex:12;background:#3A5A80"></div><div style="flex:5;background:#6FD3C0"></div><div style="flex:3;background:#FFC531"></div></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))" id="tiers"></div>
+    <div class="note"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFC531" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg><p data-k="nitroNote"></p></div>
+  </div>
+</div></section>
+
+<section id="crew" class="sec deep"><div class="wrap stack">
+  <div class="eyebrow" data-k="crewEyebrow"></div>
+  <h2 class="h2" data-k="crewTitle"></h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))" id="crewList"></div>
+</div></section>
+
+<section class="sec"><div class="wrap stack">
+  <div class="eyebrow" data-k="smashEyebrow"></div>
+  <h2 class="h2" style="max-width:20ch" data-k="smashTitle"></h2>
+  <p class="muted" style="max-width:64ch" data-k="smashP"></p>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))" id="smash"></div>
+</div></section>
+
+<section class="sec sand"><div class="wrap stack">
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 24px">
+    <div class="stack" style="gap:14px"><div class="eyebrow" data-k="marksEyebrow"></div><h2 class="h2" style="max-width:18ch" data-k="marksTitle"></h2></div>
+    <div style="font:500 14px 'IBM Plex Mono',monospace;color:#4A5C72" data-k="marksCount"></div>
+  </div>
+  <p class="muted" style="max-width:64ch" data-k="marksP"></p>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px" id="marks"></div>
+</div></section>
+
+<section class="sec"><div class="wrap two">
+  <div class="stack" style="gap:18px">
+    <div class="eyebrow" data-k="modesEyebrow"></div>
+    <h2 class="h2" data-k="modesTitle"></h2>
+    <p class="muted" data-k="modesP"></p>
+    <ul class="modes" id="modes"></ul>
+  </div>
+  <figure style="margin:0;display:flex;flex-direction:column;gap:10px"><img src="img/title-phone.jpg" data-alt="titleAlt" alt="" style="border-radius:18px;border:1px solid var(--line)"><figcaption style="font-size:13px;color:var(--dim)" data-k="titleCaption"></figcaption></figure>
+</div></section>
+
+<section id="levels" class="sec deep"><div class="wrap stack">
+  <div class="eyebrow" data-k="levelsEyebrow"></div>
+  <h2 class="h2" data-k="levelsTitle"></h2>
+  <p class="muted" style="max-width:64ch" data-k="levelsP"></p>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))" id="levelsList"></div>
+</div></section>
+
+<section id="dev" class="sec dev"><div class="wrap stack">
+  <div class="eyebrow" data-k="devEyebrow"></div>
+  <h2 class="h2" data-k="devTitle"></h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px">
+    <div class="stack" style="gap:12px"><h3 style="font-size:20px;color:var(--teal)" data-k="doneTitle"></h3><ul id="done"></ul></div>
+    <div class="stack" style="gap:12px"><h3 style="font-size:20px;color:var(--yellow)" data-k="nextTitle"></h3><ul id="next"></ul></div>
+  </div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
+    <div class="plat"><h3 style="font-size:18px" data-k="phoneName"></h3><p class="muted" style="font-size:15px" data-k="phoneP"></p></div>
+    <div class="plat"><h3 style="font-size:18px" data-k="pcName"></h3><p class="muted" style="font-size:15px" data-k="pcP"></p></div>
+    <div class="plat"><h3 style="font-size:18px">Meta Quest</h3><p class="muted" style="font-size:15px" data-k="vrP"></p></div>
+  </div>
+</div></section>
+
+<section class="final"><div class="wrap stack" style="align-items:center;gap:22px">
+  <h2 data-k="finalTitle"></h2>
+  <a class="btn" href="../" data-k="ctaPlay"></a>
+  <p style="max-width:60ch;color:#2B3B50" data-k="finalNote"></p>
+</div></section>
+</main>
+
+<footer><div class="wrap"><span data-k="footerLeft"></span><span>© OpenStreetMap contributors · © IGN (CNIG)</span></div></footer>
+
+<script>
+var tag = { live: 'live', test: 'test', soon: 'soon' };
+var tierName = function (color) { return color; };
+var T = {
+      en: {
+        navHow: 'How to play', navTips: 'Tips', navCrew: 'On board', navLevels: 'Levels', navDev: 'Development',
+        heroEyebrow: 'Arcade racing · real streets · in your browser',
+        city: 'ALICANTE',
+        tagline: 'The tuk-tuk that never brakes.',
+        pitch: 'Race a tourist tuk-tuk through the real streets of Alicante. Fly through the pillars of light, drift the old-town corners, smash the terrace chairs and keep your tips.',
+        ctaPlay: 'Play in browser', ctaHow: 'How it works',
+        platformsLine: 'Phone · computer · Meta Quest. Nothing to install.',
+        heroAlt: 'A yellow tuk-tuk with a green roof racing along the palm-lined seafront of Alicante',
+        kmh: 'km/h',
+        howEyebrow: 'One run, six gates',
+        howTitle: 'Floor it. Hit the light. Beat the clock.',
+        steps: [
+          { n: '1', h: 'Floor it', p: 'The auto-gas holds 70 km/h. Nitro throws you to 120. The tank refills on its own and faster at every gate.' },
+          { n: '2', h: 'Hit the light', p: 'Orange pillars of light mark the landmarks. Dead centre is Exact!: bonus tips and extra seconds on the clock.' },
+          { n: '3', h: 'Beat the clock', p: 'Reach the finish before the timer runs out. Your tips turn into stars and a personal record.' }
+        ],
+        boardLabel: 'On screen',
+        board: [{ line: 'Exact! +25 €' }, { line: 'Smashed ×4! +5 € · ×2' }, { line: 'Near miss!' }, { line: 'Crash! −30% of the tips on the line' }],
+        tipsEyebrow: 'Tips',
+        tipsTitle: 'On the line, or in your pocket.',
+        tipsP1: 'Speed and style earn tips, but they ride "on the line" until the next gate. Make it through and they are yours. Hit a wall and 30% burns.',
+        tipsP2: 'Exact gates, long drifts and near misses build a combo up to ×5. One crash and it drops back to ×1.',
+        tiers: [
+          { name: 'OK', dist: 'within 20 m', p: 'The gate counts.', nameStyle: tierName('#A9B8CC') },
+          { name: 'Good', dist: 'within 8 m', p: 'A little bonus.', nameStyle: tierName('#6FD3C0') },
+          { name: 'Exact!', dist: 'within 3 m', p: '+25 €, extra time, combo up.', nameStyle: tierName('#FFC531') }
+        ],
+        nitroNote: 'Nitro: a full tank burns for 5 seconds and refills in about 20. Gates top it up, an exact gate the most.',
+        crewEyebrow: 'On board',
+        crewTitle: 'One driver, two tourists, zero brakes.',
+        smashEyebrow: 'The city',
+        smashTitle: 'Walls stay put. Everything else is tips.',
+        smashP: 'Old-town lanes are barely wider than the tuk-tuk and the castle hill is steep. But the cones, bins, terrace tables and beach umbrellas along the route fly apart, and every one pays.',
+        smash: [{ name: 'Traffic cone', eur: '1 €' }, { name: 'Litter bin', eur: '2 €' }, { name: 'Beach umbrella', eur: '2 €' }, { name: 'Terrace table', eur: '3 €' }],
+        marksEyebrow: 'The real route',
+        marksTitle: 'A tour guide built the track.',
+        marksCount: '14 landmarks',
+        marksP: 'The gates stand where a real Alicante tuk-tuk tour stops. Hit one and a one-line fact flashes on screen.',
+        marks: [
+          { n: '1', name: 'Explanada', fact: 'Millions of marble tiles laid in red waves, 1950s.' },
+          { n: '2', name: 'Canalejas park', fact: 'Giant ficus trees planted in 1886.' },
+          { n: '3', name: 'Casa de las Brujas', fact: '1910 Art Nouveau with "witches" on the roof.' },
+          { n: '4', name: 'Town Hall', fact: 'Spain measures sea level from its step.' },
+          { n: '5', name: 'Basílica de Santa María', fact: 'The oldest church in town, built over a mosque.' },
+          { n: '6', name: 'Postiguet beach', fact: 'Right under Santa Bárbara castle, 166 m up.' },
+          { n: '7', name: 'MARQ', fact: 'Archaeological museum, European Museum of the Year 2004.' },
+          { n: '8', name: 'Mercado Central', fact: 'A two-storey Art Nouveau market, 1921.' },
+          { n: '9', name: 'Plaza de los Luceros', fact: 'A fountain with four horses, 1930.' },
+          { n: '10', name: 'Calle San Francisco', fact: 'The street of giant mushrooms.' }
+        ],
+        modesEyebrow: 'Ways to play',
+        modesTitle: 'Race it, ride it, roam it.',
+        modesP: 'Start on the title screen and pick how you want to see Alicante.',
+        modes: [
+          { tag: 'LIVE', tagStyle: tag.live, name: 'Crazy Tuk.', p: 'Gates, tips, drift and nitro against the clock.' },
+          { tag: 'LIVE', tagStyle: tag.live, name: 'Real tour.', p: 'A calm ride with tourists: stops, facts, the driver points at every landmark.' },
+          { tag: 'LIVE', tagStyle: tag.live, name: 'Free ride.', p: 'No timer, just the city.' },
+          { tag: 'TEST', tagStyle: tag.test, name: 'Stay on the road.', p: 'Narrow-lane levels where leaving the street burns your tips.' },
+          { tag: 'SOON', tagStyle: tag.soon, name: 'Jumps.', p: 'Stunt levels down the old-town hills.' },
+          { tag: 'SOON', tagStyle: tag.soon, name: 'Leaderboard.', p: 'Beat your friends’ records.' }
+        ],
+        titleAlt: 'The Crazy Tuk title screen on a phone: big yellow play button, real tour and free ride',
+        titleCaption: 'The title screen on a phone, in English and Ukrainian.',
+        levelsEyebrow: 'Levels',
+        levelsTitle: 'Short sprint or the full tour.',
+        levelsP: 'Each level follows a real tour route. The timer is set by test drives, so a clean run always makes it.',
+        levels: [
+          { tag: 'LIVE', tagStyle: tag.live, name: 'Short tour', p: 'Six gates along the seafront and the old town. Par 5:06.' },
+          { tag: 'LIVE', tagStyle: tag.live, name: 'To the castle', p: 'Climb to the gate of Santa Bárbara castle. Par 9:55.' },
+          { tag: 'LIVE', tagStyle: tag.live, name: 'Full tour', p: 'Twelve gates, the whole route. Par 7:23.' },
+          { tag: 'TEST', tagStyle: tag.test, name: 'Narrow lanes', p: 'Stay on the road through the old town.' },
+          { tag: 'SOON', tagStyle: tag.soon, name: 'Castle hill stunts', p: 'Crests, ramps and landings that never flip you.' },
+          { tag: 'SOON', tagStyle: tag.soon, name: 'New routes', p: 'More levels drawn by the guide himself.' }
+        ],
+        devEyebrow: 'Development',
+        devTitle: 'Made in Alicante, one version a day.',
+        doneTitle: 'Already in the game',
+        done: [
+          { t: 'Real Alicante streets and hills, built from open map and terrain data' },
+          { t: 'Crazy Tuk: gates, tips, combo, drift and a nitro tank' },
+          { t: 'Cones, bins, tables and umbrellas to smash' },
+          { t: 'A driver and two tourists who react to how you drive' },
+          { t: 'Real tour and free ride modes' },
+          { t: 'English and Ukrainian' },
+          { t: 'VR on Meta Quest' }
+        ],
+        nextTitle: 'Coming next',
+        next: [
+          { t: 'A short how-to-play card on the first run' },
+          { t: 'A simpler pause menu for guests' },
+          { t: 'Its own sounds and music' },
+          { t: 'Jumps and stunt levels' },
+          { t: 'Testing on iPhone' },
+          { t: 'More levels' }
+        ],
+        phoneName: 'Phone',
+        phoneP: 'Plays in the browser. Tested on Android in Chrome; iPhone is not tested yet. Turn the phone sideways.',
+        pcName: 'Computer',
+        pcP: 'Keyboard in any modern browser. W A S D, Space for the handbrake, Shift for nitro.',
+        vrP: 'In VR you sit in the driver’s seat and hold the handlebar yourself.',
+        finalTitle: 'Hold on to your hat.',
+        finalNote: 'It’s a game. On a real tour we don’t smash the terraces, but the thrill is the same.',
+        footerLeft: 'Crazy Tuk: Alicante · game in development'
+      },
+      uk: {
+        navHow: 'Як грати', navTips: 'Чайові', navCrew: 'Хто в тук-туку', navLevels: 'Рівні', navDev: 'Розробка',
+        heroEyebrow: 'Аркадні гонки · справжні вулиці · у браузері',
+        city: 'АЛІКАНТЕ',
+        tagline: 'Тук-тук, який не гальмує.',
+        pitch: 'Ганяй туристичним тук-туком справжніми вулицями Аліканте. Пролітай крізь стовпи світла, дрифтуй на поворотах старого міста, розноси столики терас і не розгуби чайові.',
+        ctaPlay: 'Грати в браузері', ctaHow: 'Як це працює',
+        platformsLine: 'Телефон · комп’ютер · Meta Quest. Нічого не треба встановлювати.',
+        heroAlt: 'Жовтий тук-тук із зеленим дахом мчить пальмовою набережною Аліканте',
+        kmh: 'км/год',
+        howEyebrow: 'Один заїзд, шість воріт',
+        howTitle: 'Газ у підлогу. Влуч у світло. Встигни.',
+        steps: [
+          { n: '1', h: 'Газ у підлогу', p: 'Автогаз тримає 70 км/год. Нітро кидає до 120. Бак сам поповнюється, а на кожних воротах швидше.' },
+          { n: '2', h: 'Влуч у світло', p: 'Помаранчеві стовпи світла стоять біля пам’яток. Точно в центр: «Точно!», бонусні чайові й додаткові секунди.' },
+          { n: '3', h: 'Встигни до фінішу', p: 'Доїдь, поки не скінчився час. Чайові стають зірками й особистим рекордом.' }
+        ],
+        boardLabel: 'На екрані',
+        board: [{ line: 'Точно! +25 €' }, { line: 'Розбито ×4! +5 € · ×2' }, { line: 'Майже зачепив!' }, { line: 'Удар! −30% чайових на кону' }],
+        tipsEyebrow: 'Чайові',
+        tipsTitle: 'На кону або в кишені.',
+        tipsP1: 'Швидкість і стиль приносять чайові, але до наступних воріт вони «на кону». Доїхав — твої. Врізався в стіну — 30% згоряє.',
+        tipsP2: 'Точні ворота, довгі заноси й «майже зачепив» збирають комбо до ×5. Один удар — і знову ×1.',
+        tiers: [
+          { name: 'Є', dist: 'до 20 м', p: 'Ворота зараховано.', nameStyle: tierName('#A9B8CC') },
+          { name: 'Добре', dist: 'до 8 м', p: 'Невеликий бонус.', nameStyle: tierName('#6FD3C0') },
+          { name: 'Точно!', dist: 'до 3 м', p: '+25 €, додатковий час, комбо вгору.', nameStyle: tierName('#FFC531') }
+        ],
+        nitroNote: 'Нітро: повний бак горить 5 секунд і заповнюється приблизно за 20. Ворота його доливають, точні — найбільше.',
+        crewEyebrow: 'Хто в тук-туку',
+        crewTitle: 'Один водій, двоє туристів, нуль гальм.',
+        smashEyebrow: 'Місто',
+        smashTitle: 'Стіни стоять. Усе інше — чайові.',
+        smashP: 'Провулки старого міста трохи ширші за тук-тук, а замкова гора крута. Зате конуси, смітники, столики терас і пляжні парасолі вздовж маршруту розлітаються, і кожен платить.',
+        smash: [{ name: 'Конус', eur: '1 €' }, { name: 'Смітник', eur: '2 €' }, { name: 'Пляжна парасоля', eur: '2 €' }, { name: 'Столик тераси', eur: '3 €' }],
+        marksEyebrow: 'Справжній маршрут',
+        marksTitle: 'Трасу будував гід.',
+        marksCount: '14 пам’яток',
+        marksP: 'Ворота стоять там, де зупиняється справжній тук-тук-тур Аліканте. Проїхав — і на екрані спалахує факт в один рядок.',
+        marks: [
+          { n: '1', name: 'Explanada', fact: 'Мільйони мармурових плиток червоними хвилями, 1950-ті.' },
+          { n: '2', name: 'Парк Canalejas', fact: 'Фікуси-велетні, посаджені в 1886 році.' },
+          { n: '3', name: 'Casa de las Brujas', fact: 'Модерн 1910 року «з відьмами» на даху.' },
+          { n: '4', name: 'Ратуша', fact: 'Від її сходинки Іспанія міряє висоту над морем.' },
+          { n: '5', name: 'Базиліка Санта-Марія', fact: 'Найстаріша церква міста, на місці мечеті.' },
+          { n: '6', name: 'Пляж Postiguet', fact: 'Просто під замком Санта-Барбара, 166 м над морем.' },
+          { n: '7', name: 'MARQ', fact: 'Археологічний музей, Європейський музей року 2004.' },
+          { n: '8', name: 'Mercado Central', fact: 'Двоповерховий ринок у стилі модерн, 1921.' },
+          { n: '9', name: 'Plaza de los Luceros', fact: 'Фонтан із чотирма кіньми, 1930.' },
+          { n: '10', name: 'Calle San Francisco', fact: 'Вулиця велетенських грибів.' }
+        ],
+        modesEyebrow: 'Як грати',
+        modesTitle: 'Ганяй, катай, гуляй.',
+        modesP: 'Починаєш на заставці й обираєш, яким побачити Аліканте.',
+        modes: [
+          { tag: 'Є', tagStyle: tag.live, name: 'Crazy Tuk.', p: 'Ворота, чайові, дрифт і нітро на час.' },
+          { tag: 'Є', tagStyle: tag.live, name: 'Справжній тур.', p: 'Спокійна поїздка з туристами: зупинки, факти, водій показує рукою на кожну пам’ятку.' },
+          { tag: 'Є', tagStyle: tag.live, name: 'Вільна їзда.', p: 'Без таймера, просто місто.' },
+          { tag: 'ТЕСТ', tagStyle: tag.test, name: 'Не з’їжджай з дороги.', p: 'Рівні у вузьких провулках: з’їхав з вулиці — чайові горять.' },
+          { tag: 'СКОРО', tagStyle: tag.soon, name: 'Стрибки.', p: 'Каскадерські рівні з пагорбів старого міста.' },
+          { tag: 'СКОРО', tagStyle: tag.soon, name: 'Таблиця рекордів.', p: 'Поб’єш рекорди друзів.' }
+        ],
+        titleAlt: 'Заставка Crazy Tuk на телефоні: велика жовта кнопка, справжній тур і вільна їзда',
+        titleCaption: 'Заставка на телефоні, англійською та українською.',
+        levelsEyebrow: 'Рівні',
+        levelsTitle: 'Короткий спринт або весь тур.',
+        levelsP: 'Кожен рівень іде справжнім маршрутом туру. Час виставлено тестовими заїздами, тож чистий заїзд завжди встигає.',
+        levels: [
+          { tag: 'Є', tagStyle: tag.live, name: 'Короткий тур', p: 'Шість воріт набережною й старим містом. Норматив 5:06.' },
+          { tag: 'Є', tagStyle: tag.live, name: 'До замку', p: 'Підйом до воріт замку Санта-Барбара. Норматив 9:55.' },
+          { tag: 'Є', tagStyle: tag.live, name: 'Повний тур', p: 'Дванадцять воріт, увесь маршрут. Норматив 7:23.' },
+          { tag: 'ТЕСТ', tagStyle: tag.test, name: 'Вузькі провулки', p: 'Тримайся дороги в старому місті.' },
+          { tag: 'СКОРО', tagStyle: tag.soon, name: 'Трюки на замковій горі', p: 'Гребені, трампліни й приземлення, що ніколи не перевертають.' },
+          { tag: 'СКОРО', tagStyle: tag.soon, name: 'Нові маршрути', p: 'Ще рівні, які малює сам гід.' }
+        ],
+        devEyebrow: 'Розробка',
+        devTitle: 'Зроблено в Аліканте, версія за версією.',
+        doneTitle: 'Уже в грі',
+        done: [
+          { t: 'Справжні вулиці й пагорби Аліканте з відкритих даних карти й рельєфу' },
+          { t: 'Crazy Tuk: ворота, чайові, комбо, дрифт і бак нітро' },
+          { t: 'Конуси, смітники, столики й парасолі, які можна розносити' },
+          { t: 'Водій і двоє туристів, які реагують на твою їзду' },
+          { t: 'Справжній тур і вільна їзда' },
+          { t: 'Англійська та українська' },
+          { t: 'VR на Meta Quest' }
+        ],
+        nextTitle: 'Далі',
+        next: [
+          { t: 'Коротка підказка «як грати» при першому запуску' },
+          { t: 'Простіше меню паузи для гостей' },
+          { t: 'Власні звуки й музика' },
+          { t: 'Стрибки й каскадерські рівні' },
+          { t: 'Перевірка на iPhone' },
+          { t: 'Більше рівнів' }
+        ],
+        phoneName: 'Телефон',
+        phoneP: 'Грається в браузері. Перевірено на Android у Chrome; на iPhone ще не тестували. Поверни телефон боком.',
+        pcName: 'Комп’ютер',
+        pcP: 'Клавіатура в будь-якому сучасному браузері. W A S D, пробіл — ручник, Shift — нітро.',
+        vrP: 'У VR ти сидиш на місці водія й сам тримаєш кермо.',
+        finalTitle: 'Тримай капелюх.',
+        finalNote: 'Це гра. На справжньому турі ми не ламаємо терас, але драйв той самий.',
+        footerLeft: 'Crazy Tuk: Alicante · гра в розробці'
+      }
+    };
+    var crewData = {
+      en: [
+        { img: 'img/racer.jpg', alt: 'The racer driver in a white helmet and green jacket at the handlebar', mode: 'Crazy Tuk', role: 'The racer', p: 'Helmet on, jacket in tuk-tuk colours. Leans into corners, looks into the drift, punches the air on every exact gate.', quote: '“Brakes are a suggestion.”' },
+        { img: 'img/taxi.jpg', alt: 'The taxi driver in a blue cap and white shirt at the handlebar', mode: 'Real tour', role: 'The guide', p: 'Cap, white shirt, moustache. Drives calmly and points at every landmark at the stops.', quote: '“On your left, the oldest church in town.”' },
+        { img: 'img/drift.jpg', alt: 'Two tourists on the back bench of the tuk-tuk', mode: 'Back bench', role: 'The tourists', p: 'Two passengers who lean with every turn, flinch at every crash and throw their hands up on a perfect gate.', quote: '“Again! Again!”' }
+      ],
+      uk: [
+        { img: 'img/racer.jpg', alt: 'Водій-гонщик у білому шоломі й зеленій куртці за кермом', mode: 'Crazy Tuk', role: 'Гонщик', p: 'Шолом, куртка в кольорах тук-тука. Нахиляється в поворотах, дивиться в занос і б’є кулаком у повітря на кожних точних воротах.', quote: '«Гальма — це порада.»' },
+        { img: 'img/taxi.jpg', alt: 'Водій-таксист у синьому кашкеті й білій сорочці за кермом', mode: 'Справжній тур', role: 'Гід', p: 'Кашкет, біла сорочка, вуса. Їде спокійно й на зупинках показує рукою на кожну пам’ятку.', quote: '«Ліворуч — найстаріша церква міста.»' },
+        { img: 'img/drift.jpg', alt: 'Двоє туристів на задньому сидінні тук-тука', mode: 'Задня лавка', role: 'Туристи', p: 'Двоє пасажирів, які хиляться в кожному повороті, здригаються від ударів і піднімають руки на ідеальних воротах.', quote: '«Ще! Ще!»' }
+      ]
+    };
+    
+var esc = function (s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+function render(lang) {
+  var c = T[lang], crew = crewData[lang];
+  document.documentElement.lang = lang === 'uk' ? 'uk' : 'en';
+  c.kmhNitro = c.kmh + ' · NITRO';
+  document.querySelectorAll('[data-k]').forEach(function (el) { var v = c[el.dataset.k]; if (v != null) el.textContent = v; });
+  document.querySelectorAll('[data-alt]').forEach(function (el) { el.alt = c[el.dataset.alt] || ''; });
+  document.querySelectorAll('.lang button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
+  document.getElementById('steps').innerHTML = c.steps.map(function (s) { return '<div class="card"><div class="num">' + esc(s.n) + '</div><h3 style="font-size:21px">' + esc(s.h) + '</h3><p class="muted" style="font-size:16px">' + esc(s.p) + '</p></div>'; }).join('');
+  document.getElementById('board').innerHTML = c.board.map(function (b) { return '<div>' + esc(b.line) + '</div>'; }).join('');
+  document.getElementById('tiers').innerHTML = c.tiers.map(function (t) { return '<div class="tier"><div class="n" style="color:' + t.nameStyle + '">' + esc(t.name) + '</div><div class="d">' + esc(t.dist) + '</div><p class="muted" style="font-size:15px">' + esc(t.p) + '</p></div>'; }).join('');
+  document.getElementById('crewList').innerHTML = crew.map(function (m) { return '<article class="crew"><img src="' + m.img + '" alt="' + esc(m.alt) + '" loading="lazy"><div class="b"><div class="mode">' + esc(m.mode) + '</div><h3 style="font-size:21px">' + esc(m.role) + '</h3><p class="muted" style="font-size:15px">' + esc(m.p) + '</p><p class="quote">' + esc(m.quote) + '</p></div></article>'; }).join('');
+  document.getElementById('smash').innerHTML = c.smash.map(function (x) { return '<div class="smash"><span>' + esc(x.name) + '</span><b>' + esc(x.eur) + '</b></div>'; }).join('');
+  document.getElementById('marks').innerHTML = c.marks.map(function (k) { return '<div class="mark"><div class="t"><span>' + esc(k.n) + '</span><h3>' + esc(k.name) + '</h3></div><p>' + esc(k.fact) + '</p></div>'; }).join('');
+  document.getElementById('modes').innerHTML = c.modes.map(function (d) { return '<li><span class="tag ' + d.tagStyle + '">' + esc(d.tag) + '</span><span><strong>' + esc(d.name) + '</strong> <span class="muted">' + esc(d.p) + '</span></span></li>'; }).join('');
+  document.getElementById('levelsList').innerHTML = c.levels.map(function (l) { return '<div class="card lvl"><div class="top"><h3 style="font-size:19px">' + esc(l.name) + '</h3><span class="tag ' + l.tagStyle + '">' + esc(l.tag) + '</span></div><p class="muted" style="font-size:15px">' + esc(l.p) + '</p></div>'; }).join('');
+  document.getElementById('done').innerHTML = c.done.map(function (i) { return '<li>' + esc(i.t) + '</li>'; }).join('');
+  document.getElementById('next').innerHTML = c.next.map(function (i) { return '<li>' + esc(i.t) + '</li>'; }).join('');
+  try { localStorage.setItem('crazytuk.landing.lang', lang); } catch (e) {}
+}
+var q = new URLSearchParams(location.search).get('lang'), saved = null;
+try { saved = localStorage.getItem('crazytuk.landing.lang'); } catch (e) {}
+var start = q === 'uk' || q === 'en' ? q : saved || ((navigator.languages || [navigator.language || '']).some(function (l) { return /^uk/i.test(l); }) ? 'uk' : 'en');
+document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { render(b.dataset.lang); }); });
+render(start);
+</script>
+</body>
+</html>
