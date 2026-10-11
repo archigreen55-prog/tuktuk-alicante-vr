@@ -6,6 +6,7 @@
 // width, the two others side by side, a dashed card asking to turn the phone (the game itself needs landscape: phone.onStart asks for it).
 // api: { play(mode, e), levels() -> [[id, name]], level(), setLevel(id), tours() -> [[id, name]], tour(), setTour(id), best() -> string,
 //        settingsDefs -> [{ label (key), options|check, get, set }], credit (html, the full credits), version, vrButton?, hasTour() }
+import { levelOptions, unfoldIfHardRow } from './levelList.js';
 import { t, getLang, setLang, LANGS } from '../i18n.js';
 import { fillHelpTables } from './help.js';
 
@@ -125,7 +126,7 @@ export function createTitleScreen({ root, api, isPhone }) {
   // the level line under the big button: the text shows the level, an invisible select over it opens the list on a tap
   const level = el('label', 'ts-level', null, main); const levelTxt = el('span', null, '', level); el('span', null, '▾', level);
   const levelSel = el('select', null, null, level); levelSel.id = 'levelSel';
-  levelSel.addEventListener('change', () => { api.setLevel(levelSel.value); fillPickers(); refreshBest(); });
+  levelSel.addEventListener('change', () => { if (unfoldIfHardRow(levelSel.value)) { fillPickers(); if (levelSel.showPicker) { try { levelSel.showPicker(); } catch (e) { /* no gesture */ } } return; } api.setLevel(levelSel.value); fillPickers(); refreshBest(); });
   const side = el('div', 'ts-side', null, row);
   const tourBtn = el('button', 'ts-mid-btn', null, side); tourBtn.id = 'tourBtn'; const tourTxt = el('span', null, '', tourBtn); const tourSub = el('small', null, '', tourBtn);
   tourBtn.addEventListener('click', (e) => api.play('tour', e));
@@ -155,13 +156,13 @@ export function createTitleScreen({ root, api, isPhone }) {
     for (const d of defs) {
       const label = el('label', null, null, rows); label.append(t(d.label));
       if (d.check) { const input = el('input', null, null, label); input.type = 'checkbox'; input.checked = !!d.get(); input.addEventListener('change', () => d.set(input.checked)); }
-      else { const input = el('select', null, null, label); fillOptions(input, d); input.value = String(d.get()); input.addEventListener('change', () => { d.set(isNaN(+input.value) ? input.value : +input.value); }); }
+      else { const input = el('select', null, null, label); fillOptions(input, d); input.value = String(d.get()); input.addEventListener('change', () => { if (d.set(isNaN(+input.value) ? input.value : +input.value) === 'refill') { fillOptions(input, d); input.value = String(d.get()); } }); }
     }
   }
   function fillHelp() { fillHelpTables(helpBody, isPhone); }
   function fillPickers() {
     if (api.vrButton && api.vrButton.parentNode !== small) small.prepend(api.vrButton);   // the three.js VR button (it exists after the renderer)
-    const lv = api.levels(); levelSel.textContent = ''; for (const [id, nm] of lv) levelSel.add(new Option(nm, id)); levelSel.value = api.level() || '';
+    const lv = api.levels(); levelSel.textContent = ''; for (const [id, nm, dis] of levelOptions(lv, api.level())) { const o = new Option(nm, id); o.disabled = !!dis; levelSel.add(o); } levelSel.value = api.level() || '';
     levelTxt.textContent = (lv.find(([id]) => id === levelSel.value) || [, ''])[1];
     const has = api.hasTour ? api.hasTour() : true; tourBtn.disabled = !has; big.disabled = !has; level.style.display = has ? '' : 'none';
   }

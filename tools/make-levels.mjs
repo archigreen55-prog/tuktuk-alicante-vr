@@ -14,7 +14,11 @@ await mkdir('data/levels', { recursive: true });
 
 let index = { schema: 1, levels: [] };
 try { index = JSON.parse(await readFile('data/levels/index.json', 'utf8')); } catch { /* first run */ }
-const own = index.levels.filter((l) => !l.builtin);   // levels added by hand stay in the list
+const tourIds = new Set(spec.tours.map((t) => t.id));
+const own = index.levels.filter((l) => !tourIds.has(l.id));   // levels added by hand and the centre levels (tools/make-centre-levels.mjs) stay in the list
+const prevOf = (id) => index.levels.find((l) => l.id === id) || {};
+// "hard" levels (a climb, hairpins) sit in the folded group "Складні" of the level list (0.20.1); the owner can move a level by editing "group" in the index
+const GROUP = { castle: 'hard', full: 'hard' };
 
 // one item per line: the file is read and corrected by people
 const text = (lv) => {
@@ -29,8 +33,9 @@ for (const t of spec.tours) {
   const er = validateLevel(lv, { places: city.tour.places });
   if (er.length) throw new Error(`${t.id}: ${er.join('; ')}`);
   await writeFile(`data/levels/${t.id}.json`, text(lv));
-  built.push({ id: lv.id, file: `${lv.id}.json`, builtin: true, type: lv.type, gates: lv.items.filter((i) => i.k === 'gate').length, title: lv.title });
+  built.push({ id: lv.id, file: `${lv.id}.json`, builtin: true, type: lv.type, gates: lv.items.filter((i) => i.k === 'gate').length, ...((prevOf(lv.id).group || GROUP[lv.id]) ? { group: prevOf(lv.id).group || GROUP[lv.id] } : {}), title: lv.title });
   console.log(`${lv.id}: ${levelTitle(lv)} | ${lv.title.en} | ${lv.title.es} · ворота ${built[built.length - 1].gates}, через ${lv.items.filter((i) => i.k === 'via').length}, par ${lv.time.par}`);
 }
-await writeFile('data/levels/index.json', JSON.stringify({ schema: 1, levels: [...built, ...own] }, null, 2) + '\n');
+const first = own.filter((l) => l.builtin), rest = own.filter((l) => !l.builtin);
+await writeFile('data/levels/index.json', JSON.stringify({ schema: 1, levels: [...first, ...built, ...rest] }, null, 2) + '\n');
 console.log('data/levels/index.json:', built.length + own.length, 'рівнів');

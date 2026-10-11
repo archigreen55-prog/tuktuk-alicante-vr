@@ -82,7 +82,7 @@ export class ArcadeSound {
   // a smashed thing: its own sound (smash.c / .b / .t / .u), else the common one
   smash(type, opts = {}, cooldown = 0) { return this.play(this.has('smash.' + type) ? 'smash.' + type : 'smash', opts, cooldown); }
   hit(into) { return this.play(into < 5 && this.has('hit.light') ? 'hit.light' : into < 10 && this.has('hit.medium') ? 'hit.medium' : this.has('hit.heavy') ? 'hit.heavy' : 'hit', { gain: Math.min(1, 0.5 + into / 14) }); }
-  gate(kind) { if (kind !== 'missed') this.play(this.has('gate.' + kind) ? 'gate.' + kind : 'gate'); }
+  gate(kind) { if (kind !== 'missed' && kind !== 'skipped') this.play(this.has('gate.' + kind) ? 'gate.' + kind : 'gate'); }
 
   setOn(on) { this.on = on; if (!on) { this.silence(); this.musicPlayer.set(null); } }
   setSound(on) { this.sound = !!on; this.bank.setMuted(!this.sound); }

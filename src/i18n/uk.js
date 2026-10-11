@@ -1,10 +1,10 @@
 // Українські рядки інтерфейсу (src/i18n.js). {name} підставляє t(). Ключі спільні з en.js.
 export default {
-  'kind.exact': 'Точно!', 'kind.good': 'Добре', 'kind.ok': 'Є', 'kind.missed': 'Пропущено',
+  'kind.exact': 'Точно!', 'kind.good': 'Добре', 'kind.ok': 'Є', 'kind.missed': 'Пропущено', 'kind.skipped': 'Не брав (бонус)',
   'hud.kmh': 'км/год', 'hud.m': 'м', 'hud.km': 'км', 'hud.s': 'с', 'hud.go': 'ЇДЬ!',
-  'hud.offRoad': 'З ДОРОГИ! Повертайся на вулицю', 'hud.atStake': ' +{v} на кону', 'hud.finish': 'ФІНІШ!', 'hud.gateMissed': 'ворота пропущено', 'hud.finishGate': 'Фініш: {v}',
+  'hud.offRoad': 'З ДОРОГИ! Повертайся на вулицю', 'hud.atStake': ' +{v} на кону', 'hud.finish': 'ФІНІШ!', 'hud.gateMissed': 'ворота пропущено', 'hud.bonusGate': '★ Бонус: {v}', 'hud.bonusTaken': 'БОНУС!', 'hud.bonusSkipped': 'бонус пропущено', 'hud.finishGate': 'Фініш: {v}',
   'sum.timeout': 'Час вийшов', 'sum.finish': 'Фініш!', 'sum.record': '🏆 Новий рекорд!', 'sum.yourBest': 'Твій рекорд: {v} · {stars}',
-  'sum.time': 'Час', 'sum.timeLeft': ' · лишилось {s} с → +{v}', 'sum.gates': 'Ворота', 'sum.gatesLine': 'точно {e} · добре {g} · є {o} · пропущено {m} з {n}',
+  'sum.time': 'Час', 'sum.timeLeft': ' · лишилось {s} с → +{v}', 'lv.hard': 'Складні', 'sum.gates': 'Ворота', 'sum.bonus': 'Бонус-ворота', 'sum.bonusLine': '{n} з {m}', 'sum.gatesLine': 'точно {e} · добре {g} · є {o} · пропущено {m} з {n}',
   'sum.max': 'Максимум', 'sum.hits': 'Удари', 'sum.offRoad': 'З дороги', 'sum.offRoadLine': '{n} разів · {s} с · згоріло {v}',
   'sum.skill': 'Майстерність', 'sum.skillLine': 'розбито {sm} · майже зачепив {nm} · дрифт {d} с → {v}', 'sum.dist': 'Шлях', 'sum.notReached': 'не дістались',
   'sum.again': 'Ще раз', 'sum.tour': 'Справжній тур', 'sum.book': 'Забронювати справжній тур', 'sum.trial': 'Пробний заїзд · ',

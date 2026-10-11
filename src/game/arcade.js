@@ -18,6 +18,7 @@ export const RUSH = {
   gateCentre: 1.5,
   gateTips: { exact: 25, good: 10, ok: 0 },          // € (× combo)
   gateTime: { exact: 1.3, good: 1.0, ok: 0.6 },      // × the gate's share of the time
+  bonusMul: 2,                        // a bonus gate (an optional detour, `bonus: true` in the level) pays and gives this many times more tips and time; skipping it costs nothing
   gateNitro: { exact: 0.35, good: 0.2, ok: 0.1 },    // tank refill (0.19.0: the nitro is the only way above 70 km/h, so the gates feed it more)
   parPerMetre: 0.06,                  // s of par per metre of the way, when a tour has no measured par (the short tour: 250 s / 4.4 km)
   startShare: 0.35,                   // the clock starts with this share of par; the rest is spread over the gates
@@ -58,12 +59,15 @@ export class Arcade {
     level.items.forEach((it) => {
       if (it.k === 'via') { vias.push({ p: [it.p[0], it.p[1]], r: it.r || RUSH.viaReach }); return; }
       if (it.k !== 'gate') return;
-      const finish = it.finish === true, g = it.place
-        ? gateOf({ ...place(it.place), ...(it.fact ? { short: it.fact } : {}) }, finish)
+      // a place gate may stand elsewhere than the place's road point (`p`: the Meliá finish of the centre levels is on the carriageway you arrive by)
+      const finish = it.finish === true, pl = it.place ? place(it.place) : null, g = pl
+        ? gateOf(it.p ? freeGate({ ...it, id: pl.id, title: pl.title, fact: it.fact || pl.short }, this.gates.length, this.graph, facts) : { ...pl, ...(it.fact ? { short: it.fact } : {}) }, finish)
         : gateOf(freeGate(it, this.gates.length, this.graph, facts), finish);
+      g.bonus = it.bonus === true && !finish;
       g.vias = vias; vias = []; this.gates.push(g);
     });
     if (!this.gates.length) throw new Error('у рівні немає воріт');
+    this.regular = this.gates.filter((g) => !g.bonus).length;   // the gates that count (a bonus gate is an optional detour)
     this.par = par || (level.time && level.time.par) || null;
     // "stay on the road": leaving the street's corridor costs time and stake (world.drive: the graph without undrivable edges, else the full one)
     this.stay = level.type === 'stay-on-road' ? stayRules(level) : null; this.drive = world.drive || world.graph;
@@ -75,7 +79,7 @@ export class Arcade {
     this.t = 0; this.clock = 0;    // run time
     this.next = 0;                 // index of the active gate
     this.viaI = 0;                 // index of the active via point of that gate
-    this.results = this.gates.map(() => null);   // 'exact' | 'good' | 'ok' | 'missed'
+    this.results = this.gates.map(() => null);   // 'exact' | 'good' | 'ok' | 'missed' | 'skipped' (a bonus gate not taken)
     this.pocket = 0; this.stake = 0;
     this.combo = 1; this.comboT = 0;
     this.timeLeft = this.par ? this.par * RUSH.startShare : Infinity;
@@ -108,7 +112,7 @@ export class Arcade {
   }
   get target() { const g = this.gate; return g ? { x: g.p[0], z: g.p[1], title: g.title, kind: g.finish ? 'finish' : 'gate' } : null; }
   get done() { return this.state === 'finished' || this.state === 'timeout'; }
-  get timeShare() { return this.par ? this.par * (1 - RUSH.startShare) / this.gates.length : 0; }
+  get timeShare() { return this.par ? this.par * (1 - RUSH.startShare) / this.regular : 0; }
 
   // the way from the tuk-tuk through the remaining gates (for the minimap and the sim's autopilot)
   newRoute(x, z) {
@@ -213,7 +217,7 @@ export class Arcade {
       const leave = this.near <= RUSH.gateExact ? RUSH.gateLeave[0] : RUSH.gateLeave[1];
       if (this.near <= RUSH.gateMiss && (dist > this.near + leave || dist < RUSH.gateCentre)) this.cross(this.near <= RUSH.gateExact ? 'exact' : this.near <= RUSH.gateGood ? 'good' : 'ok', ctx);
       // missed: came near the gate and drove off again, or reached the next gate
-      else if ((this.near < RUSH.gateNear && dist > Math.max(RUSH.gateFar, this.near + 30)) || (n && Math.hypot(ctx.x - n.p[0], ctx.z - n.p[1]) < RUSH.nextGateSkip)) this.cross('missed', ctx);
+      else if ((this.near < RUSH.gateNear && dist > Math.max(RUSH.gateFar, this.near + 30)) || (n && Math.hypot(ctx.x - n.p[0], ctx.z - n.p[1]) < RUSH.nextGateSkip)) this.cross(g.bonus ? 'skipped' : 'missed', ctx);
     }
     if (this.card && this.card.until < this.t) this.card = null;
     // off the planned route: recompute (no message, the line just changes)
@@ -229,17 +233,19 @@ export class Arcade {
     const i = this.next, g = this.gates[i];
     this.results[i] = kind;
     let tips = 0, time = 0;
-    if (kind !== 'missed') {
-      tips = RUSH.gateTips[kind] * this.combo;
-      time = this.timeShare * RUSH.gateTime[kind];
+    const gone = kind === 'missed' || kind === 'skipped';
+    if (!gone) {
+      const mul = g.bonus ? RUSH.bonusMul : 1;
+      tips = RUSH.gateTips[kind] * this.combo * mul;
+      time = this.timeShare * RUSH.gateTime[kind] * mul;
       this.nitroBonus += RUSH.gateNitro[kind];
       if (kind === 'exact') this.bump('exact');
     }
-    // the stake is banked here, whatever the precision
-    this.pocket += this.stake + tips; this.stake = 0;
+    // the stake is banked here, whatever the precision (a bonus gate that is skipped banks nothing: it was never on the way)
+    if (kind !== 'skipped') { this.pocket += this.stake + tips; this.stake = 0; }
     if (this.par) this.timeLeft += time;
-    if (kind !== 'missed' && !g.finish) this.card = { id: g.id, title: g.title, text: g.short, until: this.t + RUSH.cardTime };   // the card of the place just passed
-    this.events.push({ type: 'gate', index: i, kind, tips, time, title: g.title, finish: !!g.finish });
+    if (!gone && !g.finish) this.card = { id: g.id, title: g.title, text: g.short, until: this.t + RUSH.cardTime };   // the card of the place just passed
+    this.events.push({ type: 'gate', index: i, kind, tips, time, title: g.title, finish: !!g.finish, bonus: !!g.bonus });
     this.next++; this.viaI = 0;
     this.near = Infinity;
     if (this.next >= this.gates.length) this.finish('finished');
@@ -265,9 +271,10 @@ export class Arcade {
     const tips = Math.round(this.pocket);
     let stars = 1; const scale = this.par ? this.par / RUSH.starsPar : 1;
     for (let k = 1; k < RUSH.stars.length; k++) if (tips >= RUSH.stars[k] * scale) stars = k + 1;
-    const count = (kind) => this.results.filter((r) => r === kind).length;
+    const count = (kind) => this.results.filter((r, k) => r === kind && !this.gates[k].bonus).length;
+    const bonusGates = this.gates.filter((g) => g.bonus).length, bonusTaken = this.results.filter((r, k) => this.gates[k].bonus && r && r !== 'skipped' && r !== 'missed').length;
     this.result = { state, tips, bonus: Math.round(bonus), offRoad: this.off.count, offRoadSecs: Math.round(this.off.secs * 10) / 10, offRoadBurnt: Math.round(this.off.burnt), nearMisses: this.nearMisses, smashed: this.smashCount, smashTips: Math.round(this.smashTips), driftSecs: Math.round(this.driftSecs * 10) / 10, skillTips: Math.round(this.skillTips), timeLeft: left, time: this.clock, maxKmh: Math.round(this.maxSpeed * 3.6), hits: this.hits,
-      exact: count('exact'), good: count('good'), ok: count('ok'), missed: count('missed'), gates: this.gates.length, dist: this.dist, stars };
+      exact: count('exact'), good: count('good'), ok: count('ok'), missed: count('missed'), gates: this.regular, bonusGates, bonusTaken, dist: this.dist, stars };
     this.card = null;
     this.events.push({ type: 'finish', result: this.result });
   }

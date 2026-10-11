@@ -47,7 +47,7 @@ const CSS = `
 .ah-sum table { border-collapse: collapse; font-size: 14px; margin: 6px 0; } .ah-sum td { padding: 2px 14px 2px 0; } .ah-sum td:first-child { color: #9fb3c8; }
 .ah-sum .gates { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 14px; margin: 8px 0; }
 .ah-sum .g { padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, .06); font-size: 13px; } .ah-sum .g b { display: block; font-size: 14px; color: #ffd166; } .ah-sum .g i { color: #9fb3c8; font-style: normal; }
-.ah-sum .g.exact { border-left: 4px solid #6fe06f; } .ah-sum .g.good { border-left: 4px solid #ffd166; } .ah-sum .g.ok { border-left: 4px solid #9fb3c8; } .ah-sum .g.missed { border-left: 4px solid #ff7a5c; opacity: .75; }
+.ah-sum .g.exact { border-left: 4px solid #6fe06f; } .ah-sum .g.good { border-left: 4px solid #ffd166; } .ah-sum .g.ok { border-left: 4px solid #9fb3c8; } .ah-sum .g.skipped { border-left: 4px solid #6c7a89; opacity: .75; } .ah-sum .g.missed { border-left: 4px solid #ff7a5c; opacity: .75; }
 .ah-sum .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .ah-sum button, .ah-sum a.b { font: 700 16px system-ui, sans-serif; min-height: 48px; padding: 10px 20px; border-radius: 12px; border: 2px solid #ffd166; background: rgba(16, 22, 28, .9); color: #ffd166; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; touch-action: manipulation; }
 .ah-sum button.main { background: #ffd166; color: #222; }
@@ -106,8 +106,9 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
     flashGate(ev) {
       const k = ev.kind;
       flash.innerHTML = '';
-      el('div', null, ev.finish ? t('hud.finish') : KIND(k), flash).style.color = k === 'exact' ? '#6fe06f' : k === 'good' ? '#ffd166' : k === 'ok' ? '#cfe3f5' : '#ff7a5c';
-      if (k !== 'missed') el('small', null, `+${euro(ev.tips)}${ev.time ? ` · +${Math.round(ev.time)} ${t('hud.s')}` : ''}`, flash);
+      el('div', null, ev.finish ? t('hud.finish') : ev.bonus && k !== 'skipped' ? t('hud.bonusTaken') : KIND(k), flash).style.color = k === 'exact' ? '#6fe06f' : k === 'good' ? '#ffd166' : k === 'ok' ? '#cfe3f5' : k === 'skipped' ? '#9fb3c8' : '#ff7a5c';
+      if (k === 'skipped') el('small', null, t('hud.bonusSkipped'), flash);
+      else if (k !== 'missed') el('small', null, `+${euro(ev.tips)}${ev.time ? ` · +${Math.round(ev.time)} ${t('hud.s')}` : ''}`, flash);
       else el('small', null, t('hud.gateMissed'), flash);
       flash.classList.add('show'); clearTimeout(flashTimer); flashTimer = setTimeout(() => flash.classList.remove('show'), 1300);
     },
@@ -125,6 +126,7 @@ export function createArcadeHud({ onAgain, onTour, bookLink, showSpeed, onBookMi
       const row = (k, v) => { const tr = el('tr', null, null, tbl); el('td', null, k, tr); el('td', null, v, tr); };
       row(t('sum.time'), fmtClock(r.time) + (r.state === 'finished' ? t('sum.timeLeft', { s: Math.round(r.timeLeft), v: euro(r.bonus) }) : ''));
       row(t('sum.gates'), t('sum.gatesLine', { e: r.exact, g: r.good, o: r.ok, m: r.missed, n: r.gates }));
+      if (r.bonusGates) row(t('sum.bonus'), t('sum.bonusLine', { n: r.bonusTaken, m: r.bonusGates }));
       row(t('sum.max'), `${r.maxKmh} ${t('hud.kmh')}`); row(t('sum.hits'), String(r.hits));
       if (r.offRoad) row(t('sum.offRoad'), t('sum.offRoadLine', { n: r.offRoad, s: r.offRoadSecs, v: euro(r.offRoadBurnt) }));
       if (r.nearMisses || r.driftSecs || r.smashed) row(t('sum.skill'), t('sum.skillLine', { sm: r.smashed || 0, nm: r.nearMisses, d: r.driftSecs, v: euro(r.skillTips) })); row('Шлях', `${(r.dist / 1000).toFixed(1)} км`);

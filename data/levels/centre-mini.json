@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "centre-mini",
+  "title": {"uk":"Центр-міні","en":"Centre mini","es":"Centro mini"},
+  "type": "standard",
+  "start": {"place":"melia"},
+  "time": {"mode":"auto","par":236},
+  "items": [
+    {"k":"via","p":[580,110]},
+    {"k":"via","p":[457,49]},
+    {"k":"gate","place":"townHall"},
+    {"k":"via","p":[248,172]},
+    {"k":"via","p":[98,-270]},
+    {"k":"gate","place":"mercado"},
+    {"k":"via","p":[-370,-54]},
+    {"k":"gate","place":"luceros"},
+    {"k":"via","p":[-442,-9]},
+    {"k":"via","p":[-241,291]},
+    {"k":"gate","place":"sanFrancisco","bonus":true},
+    {"k":"via","p":[-55,180]},
+    {"k":"via","p":[-37,261]},
+    {"k":"via","p":[13,338]},
+    {"k":"gate","place":"university"},
+    {"k":"gate","place":"rambla"},
+    {"k":"via","p":[472,117]},
+    {"k":"via","p":[548,186]},
+    {"k":"gate","place":"melia","finish":true,"p":[603,347]}
+  ],
+  "rules": {},
+  "extras": {}
+}

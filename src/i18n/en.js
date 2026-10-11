@@ -1,11 +1,11 @@
 // English strings of the interface (src/i18n.js). {name} is a placeholder filled by t(). Keys are shared with uk.js.
 export default {
   // ---- Crazy Tuk HUD and the summary
-  'kind.exact': 'Exact!', 'kind.good': 'Good', 'kind.ok': 'Hit', 'kind.missed': 'Missed',
+  'kind.exact': 'Exact!', 'kind.good': 'Good', 'kind.ok': 'Hit', 'kind.missed': 'Missed', 'kind.skipped': 'Skipped (bonus)',
   'hud.kmh': 'km/h', 'hud.m': 'm', 'hud.km': 'km', 'hud.s': 's', 'hud.go': 'GO!',
-  'hud.offRoad': 'OFF THE ROAD! Back to the street', 'hud.atStake': ' +{v} at stake', 'hud.finish': 'FINISH!', 'hud.gateMissed': 'gate missed', 'hud.finishGate': 'Finish: {v}',
+  'hud.offRoad': 'OFF THE ROAD! Back to the street', 'hud.atStake': ' +{v} at stake', 'hud.finish': 'FINISH!', 'hud.gateMissed': 'gate missed', 'hud.finishGate': 'Finish: {v}', 'hud.bonusGate': '★ Bonus: {v}', 'hud.bonusTaken': 'BONUS!', 'hud.bonusSkipped': 'bonus skipped',
   'sum.timeout': "Time's up", 'sum.finish': 'Finish!', 'sum.record': '🏆 New record!', 'sum.yourBest': 'Your best: {v} · {stars}',
-  'sum.time': 'Time', 'sum.timeLeft': ' · {s} s left → +{v}', 'sum.gates': 'Gates', 'sum.gatesLine': 'exact {e} · good {g} · hit {o} · missed {m} of {n}',
+  'sum.time': 'Time', 'sum.timeLeft': ' · {s} s left → +{v}', 'lv.hard': 'Hard', 'sum.gates': 'Gates', 'sum.bonus': 'Bonus gates', 'sum.bonusLine': '{n} of {m}', 'sum.gatesLine': 'exact {e} · good {g} · hit {o} · missed {m} of {n}',
   'sum.max': 'Top speed', 'sum.hits': 'Hits', 'sum.offRoad': 'Off the road', 'sum.offRoadLine': '{n} times · {s} s · {v} burnt',
   'sum.skill': 'Skill', 'sum.skillLine': 'smashed {sm} · near misses {nm} · drift {d} s → {v}', 'sum.dist': 'Distance', 'sum.notReached': 'not reached',
   'sum.again': 'Again', 'sum.tour': 'Real tour', 'sum.book': 'Book the real tour', 'sum.trial': 'Test drive · ',

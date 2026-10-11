@@ -2,6 +2,30 @@
   "schema": 1,
   "levels": [
     {
+      "id": "centre",
+      "file": "centre.json",
+      "builtin": true,
+      "type": "standard",
+      "gates": 10,
+      "title": {
+        "uk": "Центр",
+        "en": "City centre",
+        "es": "Centro"
+      }
+    },
+    {
+      "id": "centre-mini",
+      "file": "centre-mini.json",
+      "builtin": true,
+      "type": "standard",
+      "gates": 7,
+      "title": {
+        "uk": "Центр-міні",
+        "en": "Centre mini",
+        "es": "Centro mini"
+      }
+    },
+    {
       "id": "short",
       "file": "short.json",
       "builtin": true,
@@ -19,6 +43,7 @@
       "builtin": true,
       "type": "standard",
       "gates": 6,
+      "group": "hard",
       "title": {
         "uk": "30 хв: до замку",
         "en": "30 min: to the castle",
@@ -31,6 +56,7 @@
       "builtin": true,
       "type": "standard",
       "gates": 12,
+      "group": "hard",
       "title": {
         "uk": "Повний тур",
         "en": "Full tour",

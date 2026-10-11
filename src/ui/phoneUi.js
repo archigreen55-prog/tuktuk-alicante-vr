@@ -3,6 +3,7 @@
 // buttons, the message toast, full screen / landscape / wake lock, the Android "back" button as pause.
 // Controls themselves are in input/touchControls.js. This module never touches physics: it talks to main.js
 // through `api`.
+import { levelOptions, unfoldIfHardRow } from './levelList.js';
 import { loadSetting, saveSetting } from '../settings.js';
 import { enterFullscreen, lockLandscape, keepAwake, fullscreenBlocker, hintFor, isFullscreen, canInstall, install, onInstallChange, screenReport } from './screenMode.js';
 import { t, setLang, getLang, otherLang, LANGS } from '../i18n.js';
@@ -81,7 +82,7 @@ export function createPhoneUi({ touch: touchIn, api, pc = false }) {
     { label: 'set.control', options: () => [['table', t('set.table')], ['vr', t('set.vrNext'), true], ['tilt', t('set.tiltNext'), true]], get: () => 'table', set: () => {} },
     { label: 'set.steer', options: () => [['buttons', t('set.steerButtons')], ['slider', t('set.steerSlider')]], get: () => settings.steer, set: (v) => { saveSetting('phone.steer', v); touch.setConfig({ steer: v }); } },
     { label: 'set.gas', options: () => [['analog', t('set.gasAnalog')], ['full', t('set.gasFull')]], get: () => settings.gas, set: (v) => { saveSetting('phone.gas', v); touch.setConfig({ gas: v }); } },
-    { label: 'set.level', options: () => (api.levels ? api.levels() : []), get: () => (api.level ? api.level() : ''), set: (v) => { if (api.setLevel) api.setLevel(v); } },
+    { label: 'set.level', options: () => levelOptions(api.levels ? api.levels() : [], api.level ? api.level() : ''), get: () => (api.level ? api.level() : ''), set: (v) => { if (unfoldIfHardRow(v)) return 'refill'; if (api.setLevel) api.setLevel(v); } },
     { label: 'set.autoGas', check: true, get: () => loadSetting('arcade.manualGas', false) !== true, set: (v) => { saveSetting('arcade.manualGas', !v); api.applyAutoGas(); } },
     { label: 'set.sound', check: true, get: () => loadSetting('sound.on', true) !== false, set: (v) => { saveSetting('sound.on', v); api.applySound(); } },
     { label: 'set.music', check: true, get: () => loadSetting('music.on', true) !== false, set: (v) => { saveSetting('music.on', v); api.applySound(); } },
@@ -100,7 +101,7 @@ export function createPhoneUi({ touch: touchIn, api, pc = false }) {
       input = el('select', null, null, label);
       fillOptions(input, d);
       input.value = String(d.get());
-      input.addEventListener('change', () => d.set(isNaN(+input.value) ? input.value : +input.value));
+      input.addEventListener('change', () => { if (d.set(isNaN(+input.value) ? input.value : +input.value) === 'refill') { fillOptions(input, d); input.value = String(d.get()); if (input.showPicker) { try { input.showPicker(); } catch (e) { /* needs a user gesture: the change event is one, but not everywhere */ } } } });
       if (typeof d.options === 'function') addEventListener('tuktuk-lang', () => { const v = input.value; fillOptions(input, d); input.value = v; });
     }
     return input;

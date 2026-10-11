@@ -68,7 +68,7 @@ export class GateBeacon {
   }
   // a flash where a gate was passed (kind: exact | good | ok)
   flash(gate, kind, y) {
-    if (!gate || kind === 'missed') return;
+    if (!gate || kind === 'missed' || kind === 'skipped') return;
     this.burstAt = { x: gate.p[0], y: y + 0.3, z: gate.p[1] }; this.burstT = 0; this.uBurst.uColor.value.setHex(KIND[kind] || 0xffffff);
     this.burst.position.set(this.burstAt.x, this.burstAt.y, this.burstAt.z); this.burst.visible = true;
   }

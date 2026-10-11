@@ -9,8 +9,31 @@
    "draft": true,
    "from": {
     "title": "62fcea8a",
-    "short": "c0d168ac"
-   }
+    "short": "c0d168ac",
+    "long": "97faee94",
+    "questions": "071ec1b8"
+   },
+   "long": [
+    "The house was commissioned by Enrique Carbonell, a textile industrialist from Alcoy who grew rich supplying goods during the First World War. The project was designed by the Alicante architect Juan Vidal Ramos. Remember that name: later we will see his savings-bank building on San Fernando (point 6), and he also completed the Central Market (point 18). Work began in the mid-1920s.",
+    "The style is Art Nouveau with a “French” accent: marble, sandstone, wrought iron, glass and a dome on the roof. The house takes up a whole block and from the sea it looks like a real palace.",
+    "And now the legend. Carbonell supposedly came to Alicante for his health after a long journey, dusty and tired. In a luxurious hotel nearby he was refused a room because of his untidy appearance. The offended millionaire decided to build a house next door, bigger and grander than that hotel. A nice story, but there is no documentary proof for it. Present it as a legend.",
+    "Two more facts. Carbonell himself never lived in the palace: he died in 1924, before the building was finished. And soon after the opening, a seaplane flying in from Algiers crashed into one of the masts on the roof. Two people on board were killed.",
+    "From the tuk-tuk you see the sea-side facade best. From here we head to the Explanada, the next point."
+   ],
+   "questions": [
+    {
+     "q": "Is it true that it was built to spite the hotel?",
+     "a": "That is a city legend; there are no documents about it."
+    },
+    {
+     "q": "Who lives here?",
+     "a": "It is a residential building with apartments and offices. Tourists are not allowed inside."
+    },
+    {
+     "q": "Who was the architect?",
+     "a": "Juan Vidal Ramos, one of the main Alicante architects of the 1920s."
+    }
+   ]
   },
   "explanada": {
    "title": "Explanada de España",
@@ -18,8 +41,30 @@
    "draft": true,
    "from": {
     "title": "bdc8bf67",
-    "short": "033adaca"
-   }
+    "short": "033adaca",
+    "long": "da6f80b8",
+    "questions": "fbdb85ee"
+   },
+   "long": [
+    "This used to be just the shore by the city walls. From the 19th century a promenade gradually appeared here, and it got its present look in 1959. That is when it was named the Explanada de España. The project was backed by Mayor Agatángelo Soler Llorca, and the architects are said to be Miguel López and Alfonso Fajardo.",
+    "The main marvel is underfoot. The paving is made of tiny marble tiles in three colours: red “Alicante” marble, cream marfil and black Marquina. Together they draw waves that “run” along the sea. How many tiles there are, 6.5 million or 7.5 million, depends on the source. The pattern was inspired by the paving of Rossio Square in Lisbon.",
+    "The promenade is about half a kilometre long with four rows of palm trees. By day it is full of cafés with terraces and souvenir stalls. In the evening the locals stroll as in the old-fashioned “paseo”. In summer there are concerts in the rotunda.",
+    "From the tuk-tuk, look at the waves of the paving (best seen when you drive along them), the palms, and the yachts in the harbour on your right. For a photo it is good to stop by the rotunda. At the western end of the promenade stands the monument to Canalejas, the next point."
+   ],
+   "questions": [
+    {
+     "q": "How many tiles are there?",
+     "a": "Millions: sources say between 6.5 and 7.5 million."
+    },
+    {
+     "q": "Why is the pattern wavy?",
+     "a": "To remind you of the sea next to it. The inspiration was the paving of Rossio Square in Lisbon."
+    },
+    {
+     "q": "When is it best to walk here?",
+     "a": "In the evening, when the heat fades: the locals come out for the paseo and the terraces are open."
+    }
+   ]
   },
   "canalejas": {
    "title": "Paseo / Monument to Canalejas",
@@ -27,8 +72,29 @@
    "draft": true,
    "from": {
     "title": "5e76be18",
-    "short": "9cb07859"
-   }
+    "short": "9cb07859",
+    "long": "637068df",
+    "questions": "120a2fd5"
+   },
+   "long": [
+    "As late as the 1880s the sea shore was here. During the works in the port the land was “filled in”, and on the new ground a boulevard appeared, named after José Canalejas. Canalejas was one of the most powerful politicians in Spain at the start of the 20th century. He was shot by an anarchist in 1912 in the very centre of Madrid, at the Puerta del Sol, as he stopped at a bookshop window. His link with Alicante was political: he stood for parliament for the province.",
+    "The monument was made by the local sculptor Vicente Bañuls. The statue was installed in 1914, and the whole composition was ready by 1916. Look at the lion lying at the feet of Canalejas on a shield with coats of arms. He seems to be guarding the politician still.",
+    "From the tuk-tuk there are three things to look at. The first is the monument itself at the fork where the boulevard leads out to the Explanada de España. The second is the fig trees with aerial roots hanging from their branches (the next point is about them). The third is the yachts in the port behind the trees: that is exactly where the sea once splashed."
+   ],
+   "questions": [
+    {
+     "q": "Who was Canalejas?",
+     "a": "Prime Minister of Spain from 1910 to 1912, a reformer. He was murdered in Madrid, and many cities named streets and squares after him."
+    },
+    {
+     "q": "Has this boulevard always been here?",
+     "a": "No. At the end of the 19th century this was the sea shore; the land was reclaimed when the port was extended."
+    },
+    {
+     "q": "Who made the monument?",
+     "a": "Vicente Bañuls Aracil, a sculptor from Alicante. The statue has stood here since 1914."
+    }
+   ]
   },
   "ficus": {
    "title": "Australian fig tree (Ficus macrophylla)",
@@ -36,8 +102,30 @@
    "draft": true,
    "from": {
     "title": "d108c9fa",
-    "short": "125ea8a1"
-   }
+    "short": "125ea8a1",
+    "long": "21f592ed",
+    "questions": "b5ac0130"
+   },
+   "long": [
+    "Ficus macrophylla, or the “Moreton Bay fig”, comes from the east coast of Australia. In Alicante it began to be planted at the start of the 20th century, when the Canalejas boulevard appeared. The climate here is almost like at home: warm, sunny, no frost. The trees took so well that they became a symbol of the city.",
+    "In Canalejas Park there are more of them than anywhere in the city: several trees between 50 and 100 years old. A height of 13–20 metres is “only” a five-storey building. But the crown spreads up to 30 metres, and in the heat it is a few degrees cooler underneath. The trunk of the oldest tree, nearer the port, is more than eight metres around. It takes five adults to hug it.",
+    "Look at two things. The first is the aerial roots: thin “ropes” hang from the branches, touch the ground and in time become new trunks. The second is the buttress roots at the base, which spread over the ground like walls. Children sit on them as on a bench. The city has put up information boards by the trees.",
+    "A request to the passengers: do not climb the trees or pull off the roots. They are protected."
+   ],
+   "questions": [
+    {
+     "q": "How old are these trees?",
+     "a": "From 50 to over 100 years. The first ones were planted at the start of the 20th century."
+    },
+    {
+     "q": "Do they bear fruit?",
+     "a": "Yes, tiny “figs”, but nobody eats them. They taste bad to people."
+    },
+    {
+     "q": "What are the “ropes” hanging from the branches?",
+     "a": "Aerial roots. When they reach the ground they harden and support the crown like columns."
+    }
+   ]
   },
   "brujas": {
    "title": "Casa de las Brujas (House of the Witches)",
@@ -45,8 +133,31 @@
    "draft": true,
    "from": {
     "title": "34864804",
-    "short": "3d6829c8"
-   }
+    "short": "3d6829c8",
+    "long": "085d1338",
+    "questions": "12f8c02e"
+   },
+   "long": [
+    "The mansion stands on the corner of Avenida Doctor Gadea and Calle San Fernando, 60. It was designed by the architect Enrique Sánchez Sedeño in 1898. Remember that name: we will meet it again at the Central Market (point 18).",
+    "Alicante is a Mediterranean city: light facades, classical proportions, lots of sun. And suddenly in the middle of it all there is a pointed neo-Gothic tower, dark details and fanciful decoration. The locals found no better explanation than “witches live here”. The name stuck and everybody still says it today. The official name is Casa Martínez.",
+    "The style is closer to Valencian Art Nouveau than to the local tradition. Look at the decoration: plant ornaments, lions' heads on the side facades and elephants' heads on the corners of the building. Elephants in Alicante! Where the architect got the idea is not known for certain.",
+    "Today it is home not to witches but to the government: the building is the office of the President of the Generalitat Valenciana in Alicante. There is an office, a library and a reception hall. So tourists are not allowed inside; we look from the street.",
+    "From the tuk-tuk you see the tower and the elephant heads on the corner best: slow down at the corner."
+   ],
+   "questions": [
+    {
+     "q": "Why the “House of the Witches”?",
+     "a": "Because of its neo-Gothic, “gloomy” look, very unusual for Alicante. There are no real legends about witches."
+    },
+    {
+     "q": "Can you go inside?",
+     "a": "Usually not, it is an official office of the Generalitat. Sometimes there are open-door days."
+    },
+    {
+     "q": "What animals are those on the facade?",
+     "a": "Lions' heads on the sides and elephants' heads on the corners."
+    }
+   ]
   },
   "university": {
    "title": "University — Sede Universitaria, Calle San Fernando 40",
@@ -54,8 +165,30 @@
    "draft": true,
    "from": {
     "title": "9d07c3fa",
-    "short": "0e2ea680"
-   }
+    "short": "0e2ea680",
+    "long": "0d743bb9",
+    "questions": "503e5b86"
+   },
+   "long": [
+    "A hundred years ago this building was a symbol of prosperity. It housed the Caja de Ahorros, the savings bank where people of Alicante kept their savings. It later became one of the largest regional savings banks in Spain, CAM (Caja de Ahorros del Mediterráneo). The project was designed by Juan Vidal, the author of Casa Carbonell, where our tour began. Later he also completed the Central Market (point 18). The building opened in 1923 and at once became one of the most noticeable on Calle San Fernando.",
+    "After the financial crisis of 2008–2012 CAM disappeared. The historic building passed to the University of Alicante, which opened its city “stage” here: Sede Universitaria Ciudad de Alicante. The building has about 6,000 m², halls for conferences, exhibitions and concerts, and a study area.",
+    "The main campus of the university is not here but in San Vicente del Raspeig, a few kilometres from the centre. It is one of the largest campuses in Spain, with gardens and modern architecture. The city premises exist so that the university is closer to people.",
+    "From the tuk-tuk, look at the grand facade of the 1920s: that is how banks were built then, so that the client saw solidity and trusted them."
+   ],
+   "questions": [
+    {
+     "q": "Is this the university?",
+     "a": "It is its city branch. The main campus is in San Vicente del Raspeig."
+    },
+    {
+     "q": "What was here before?",
+     "a": "The headquarters of the Alicante savings bank (later CAM), from 1923."
+    },
+    {
+     "q": "Can you go in?",
+     "a": "During open events, yes: exhibitions, lectures, concerts. The schedule is on the Sede Universitaria website."
+    }
+   ]
   },
   "rambla": {
    "title": "Rambla de Méndez Núñez",
@@ -63,8 +196,31 @@
    "draft": true,
    "from": {
     "title": "d2aa9c50",
-    "short": "3c72eae2"
-   }
+    "short": "3c72eae2",
+    "long": "88807e25",
+    "questions": "1a3acf1f"
+   },
+   "long": [
+    "Imagine the 18th century. Alicante is surrounded by walls, and along the line of today's Rambla runs a 16th-century wall. Inside is a street that was simply called calle del Muro, “Wall Street”. Outside is the Barranco de Canicia, a ravine into which water from the hills poured during the rare but fierce Mediterranean downpours.",
+    "At the start of the 19th century the walls were pulled down and the rubble filled the ravine. That is how the wide street appeared: a rambla. In Catalonia and Valencia that is what boulevards laid out along dried-up watercourses are called.",
+    "The street was named after Casto Méndez Núñez (1824–1869), an admiral from Vigo, a hero of the Pacific campaign of the 1860s. He is credited with the saying “Better honour without ships than ships without honour”.",
+    "To the left of the Rambla (driving towards the sea) is the Old Town: narrow streets, churches, facades with balconies. To the right is the “new” centre of the 19th and 20th centuries. In June the processions of the Hogueras de San Juan festival pass along the Rambla, and the Holy Week processions in spring.",
+    "From the tuk-tuk, look down the street: at the end of the Rambla you can see the sea and the palms of the Explanada, where we started."
+   ],
+   "questions": [
+    {
+     "q": "Why “Rambla”?",
+     "a": "That is what this region calls a street along the bed of a dried-up stream. Here it was the Canicia ravine."
+    },
+    {
+     "q": "Who was Méndez Núñez?",
+     "a": "A Spanish admiral of the 19th century, a national naval hero."
+    },
+    {
+     "q": "Where is the Old Town?",
+     "a": "On the left as you face the sea: the Santa Cruz and El Barrio quarters."
+    }
+   ]
   },
   "townHall": {
    "title": "Ayuntamiento (Town Hall)",
@@ -72,8 +228,30 @@
    "draft": true,
    "from": {
     "title": "26d4e29d",
-    "short": "07e98f2b"
-   }
+    "short": "07e98f2b",
+    "long": "06f3a9af",
+    "questions": "c8b0a0d3"
+   },
+   "long": [
+    "The town hall took almost 80 years to build, from 1701 to 1780. The first architect was Mingot, and after his death the work was finished by Lorenzo Chápuli. The facade is symmetrical: three storeys in the centre and two tall towers at the sides. Passages under the building lead from Plaza del Ayuntamiento to Plaza de la Santísima Faz on the other side.",
+    "The main curiosity is the cota cero, the “zero mark”. On the base of the grand staircase inside there is a mark from which the height above sea level was measured for every point in Spain. Why Alicante? The Mediterranean here is calm, almost without tides, so sea level can be measured exactly. When a tourist on a mountain near Madrid sees a sign saying “667 m above sea level”, it literally means “667 m above the Alicante staircase”.",
+    "Above the roof balustrade you can see the dome over the staircase hall. They say that inside there are rooms with a painting collection, including a work by Dalí. During the Hogueras, the city's main bonfire is set up in the square in front of the town hall.",
+    "From the tuk-tuk you can see both towers and the balustrade with the dome well. It makes a nice shot if you slow down in the square."
+   ],
+   "questions": [
+    {
+     "q": "What is the “zero mark”?",
+     "a": "The reference point for height above sea level for the whole of Spain. It is on the staircase inside the town hall."
+    },
+    {
+     "q": "Can you see the mark?",
+     "a": "The town hall lets visitors in during certain hours."
+    },
+    {
+     "q": "How old is the building?",
+     "a": "It was built from 1701 to 1780, so it is almost 250 years old."
+    }
+   ]
   },
   "santaMaria": {
    "title": "Basílica de Santa María",
@@ -81,8 +259,30 @@
    "draft": true,
    "from": {
     "title": "c17749ed",
-    "short": "e67365b4"
-   }
+    "short": "e67365b4",
+    "long": "c651be91",
+    "questions": "69e5ed35"
+   },
+   "long": [
+    "When Alicante passed to the Christians in the 13th century, a church began to be built on the site of the main mosque. That was done in many Spanish cities: a new temple on an old sacred place. The Gothic building went up in the 14th century. In the 15th century it suffered from a fire, so it was rebuilt, and the facade was given a Baroque design.",
+    "Look at the towers: they are not the same. One is from the 14th century, the other from the 18th. This “asymmetric” silhouette is the main mark of the basilica. The portal is an example of local Baroque: the sculptures were made by Juan Bautista Borja. In the centre of the portal is the Virgin.",
+    "Inside there is one wide nave, side chapels between the buttresses and a rich gilded altarpiece in the Rococo style. The square in front of the basilica is one of the coziest in the Old Town. To the left, in the house next door, is the museum of contemporary art, MACA.",
+    "From the tuk-tuk you see the facade and both towers best from the square: it is worth slowing down so that the passengers can compare the bell towers."
+   ],
+   "questions": [
+    {
+     "q": "Why are the towers different?",
+     "a": "They were built roughly four centuries apart: the 14th and the 18th."
+    },
+    {
+     "q": "Was there really a mosque here?",
+     "a": "Yes, the basilica was built on the site of the main mosque of Muslim Alicante."
+    },
+    {
+     "q": "Can you go in?",
+     "a": "Yes, it is a working church. Please be quiet during a service."
+    }
+   ]
   },
   "postiguet": {
    "title": "Playa del Postiguet",
@@ -90,8 +290,30 @@
    "draft": true,
    "from": {
     "title": "0066eb28",
-    "short": "2802d5ee"
-   }
+    "short": "2802d5ee",
+    "long": "4d2031fe",
+    "questions": "81dcce24"
+   },
+   "long": [
+    "The name comes from “postigo”, a small gate in the old city wall through which people went out to the sea. When the walls were gone, a promenade was laid along the shore. Its first part was called Paseo de Gómiz, after Mayor Manuel Gómiz, who ran the city in 1890–1893.",
+    "The beach is about 667 metres long and up to 40 metres wide, with light, fine sand. For several seasons in a row Postiguet has been awarded the “Blue Flag” for clean water. In summer it is full of people, because you can walk to the sea from any part of the centre.",
+    "The main thing to show is Mount Benacantil above the beach. If you look closely at the rock, you can see the profile of a man with a nose and a chin. This is the Cara del Moro, the “Moor's Face”. By the beach is the entrance to the lift that goes up through a tunnel inside the mountain to the castle.",
+    "From the tuk-tuk, show the passengers the “face” on the rock and the castle above. It is a good moment to tell them where you are going next: past MARQ (the next point) and up to the castle."
+   ],
+   "questions": [
+    {
+     "q": "Can you swim here?",
+     "a": "Yes, it is the official city beach, with lifeguards in the season."
+    },
+    {
+     "q": "Where is the “Moor's Face”?",
+     "a": "On the rock of the mountain above the beach. It is best seen from the middle of the beach."
+    },
+    {
+     "q": "Where does the lift to the castle start?",
+     "a": "The entrance is opposite the beach, on the Avenida de Jovellanos side."
+    }
+   ]
   },
   "marq": {
    "title": "MARQ — Archaeological Museum",
@@ -99,8 +321,31 @@
    "draft": true,
    "from": {
     "title": "2ab2a633",
-    "short": "122b18a2"
-   }
+    "short": "122b18a2",
+    "long": "50d75d1d",
+    "questions": "288bebde"
+   },
+   "long": [
+    "MARQ occupies the rebuilt wing of the old San Juan de Dios hospital at the foot of Mount Benacantil. In 2000 the museum moved here and rethought how to show archaeology. Instead of endless display cases there is light, sound, video and immersion. You can “walk” through an excavation, a medieval city, underwater archaeology.",
+    "In 2004 the European Museum Forum named MARQ European Museum of the Year. Among the Spanish winners are the Guggenheim Museum in Bilbao and CosmoCaixa in Barcelona. For a provincial museum that is very high company.",
+    "What is inside: Iberian pottery, Roman finds from ancient Lucentum (the Roman town on the outskirts of Alicante), Muslim and medieval halls. Large temporary exhibitions are often held: Egypt, Pompeii, treasures of other museums of the world.",
+    "A tip for the tourist: if it is hot or cloudy, MARQ is a perfect plan for 2–3 hours after the tour. From the museum, the approach road to Santa Bárbara Castle, the next point of the tour, is almost next door.",
+    "From the tuk-tuk you can see the modern entrance and the old walls of the hospital: a combination of historic and new architecture."
+   ],
+   "questions": [
+    {
+     "q": "What is the most interesting thing there?",
+     "a": "The halls with Iberian and Roman archaeology and world-class temporary exhibitions."
+    },
+    {
+     "q": "How much time do you need?",
+     "a": "The permanent exhibition takes 1.5–2 hours, with a temporary exhibition 3 hours."
+    },
+    {
+     "q": "What does “European Museum of the Year” mean?",
+     "a": "It is an award of the European Museum Forum for innovative work by a museum. MARQ received it in 2004."
+    }
+   ]
   },
   "castle": {
    "title": "Castillo de Santa Bárbara",
@@ -108,8 +353,31 @@
    "draft": true,
    "from": {
     "title": "cf250398",
-    "short": "c8e9f8bc"
-   }
+    "short": "c8e9f8bc",
+    "long": "5091495a",
+    "questions": "a25d81fc"
+   },
+   "long": [
+    "People lived on Mount Benacantil even before the Romans, but the fortress we see was begun by the Muslims (9th century). On 4 December 1248, the feast of Saint Barbara, the fortress was taken by Infante Alfonso of Castile, the future King Alfonso X the Wise. That is why the castle bears the saint's name.",
+    "Over the centuries the castle was rebuilt, strengthened and besieged. Today it has several levels: the upper one with the oldest parts, the middle and the lower ones with bastions of the 16th–18th centuries. At the top there are viewing terraces from which you can see everything: the port, the Explanada, Postiguet beach, and Tabarca in clear weather.",
+    "Remember the rock above Postiguet beach (point 10)? If you look at the mountain from the beach, it looks like a man's profile. The people of Alicante call it the Cara del Moro, the “Moor's Face”. It is one of the symbols of the city. There is a legend about a Moorish princess and her beloved.",
+    "How to get up: the tuk-tuk drives up the road to the entrance gate of the castle and turns round there. Other ways are on foot or by the lift that runs through a tunnel inside the mountain from the Postiguet beach side.",
+    "A tip. Want a closer look at the castle? The guide can drop you at the gate and come back for you in 10–15 minutes. That is enough to go through the gate, take a photo from the viewing terrace and look at the city from above. Agree the exact time and meeting place with the driver."
+   ],
+   "questions": [
+    {
+     "q": "Why “Santa Bárbara”?",
+     "a": "The Castilians took the castle on 4 December 1248, the feast of Saint Barbara."
+    },
+    {
+     "q": "Where is the “Moor's Face”?",
+     "a": "On the rock of the mountain, as seen from Postiguet beach. It looks like a man's profile."
+    },
+    {
+     "q": "Can you get out and walk around?",
+     "a": "Yes. The tuk-tuk drops you at the gate and returns in 10–15 minutes. Entry to the castle is free, only the lift is paid."
+    }
+   ]
   },
   "plazaDeToros": {
    "title": "Plaza de Toros (bullring)",
@@ -117,8 +385,31 @@
    "draft": true,
    "from": {
     "title": "43cdf2d3",
-    "short": "00b9a4b5"
-   }
+    "short": "00b9a4b5",
+    "long": "dbcc44be",
+    "questions": "1ff58018"
+   },
+   "long": [
+    "The first arena on this site was built in 1848 to a design by the architect Emilio Jover. In 1888 it was rebuilt by José Guardiola Picó, and it came out with almost 16,000 seats. And in Alicante itself at that time lived about 19,000 people! The opening of the new arena was celebrated for three days in June 1888. The stars of the time performed: “Lagartijo”, “Guerrita” and “Lagartija”.",
+    "Today the arena holds 15,235 spectators. It has three tiers: tendidos below, gradas in the middle, boxes at the top. Bullfights are held here mostly in June, during the Hogueras festival. But the arena also hosts concerts and even tennis matches.",
+    "The arena has the Museo Taurino: matador costumes, posters, a library of about 700 volumes. For a tourist who wants to understand why bullfighting matters to Spain but does not want to watch a bullfight, it is a good compromise.",
+    "The topic of bullfighting is controversial. The guide can say so openly: in Spain there are supporters and a growing number of opponents.",
+    "From the tuk-tuk you can see the round brick body of the arena with its arched windows."
+   ],
+   "questions": [
+    {
+     "q": "Are there still bullfights here?",
+     "a": "Yes, mostly in the Hogueras season in June."
+    },
+    {
+     "q": "How many spectators does it hold?",
+     "a": "15,235."
+    },
+    {
+     "q": "Can you see inside?",
+     "a": "Through the Museo Taurino. Opening hours are on its website."
+    }
+   ]
   },
   "colegioSanAntonio": {
    "title": "Colegio San Antonio de Padua (Franciscan school)",
@@ -126,8 +417,32 @@
    "draft": true,
    "from": {
     "title": "cd065384",
-    "short": "70bdcfdf"
-   }
+    "short": "70bdcfdf",
+    "long": "0c89366f",
+    "questions": "1c71e9a0"
+   },
+   "long": [
+    "The school stands at Plaza de San Antonio, 1. Its history begins in 1919, when the Franciscans returned to Alicante from the province of Cartagena. At first they lived in the Las Carolinas district: they preached, cared for the sick and taught. On 4 July 1926 the friars opened a new monastery in the district then called Les Oliveretes (“the little olive groves”) and dedicated it to Saint Anthony of Padua.",
+    "The monastery's main task was the school. It was meant to give children a Christian education as an alternative to the secular “Escuelas Modelo”, the city's model schools, where religion was not taught.",
+    "Then came hard years. In 1931 and 1936 the Franciscans' buildings burned down during anticlerical riots. After the Civil War the friars returned. Next to the school, in 1941–1949, they built the church of San Antonio de Padua, which became a parish in 1969. During Holy Week the processions of the Ecce Homo brotherhood set out from it.",
+    "Today it is a “concertada”, a private school with state funding, from nursery to secondary school. It belongs to a network of 15 schools of the Franciscan province of the Immaculate Conception. In 2026 the school celebrates 100 years.",
+    "An interesting fact is a play on words. Saint Francis of Assisi was christened Giovanni. “Francesco”, that is “the Frenchman”, was a nickname given to him by his merchant father, who was in love with France. So the “Franciscans” sound a little “French”, although the order is Italian and this school is Spanish.",
+    "From the tuk-tuk you can see the school building and, next to it, the blue tiled dome of the church. If you drive by when lessons end, slow down: there are many children around."
+   ],
+   "questions": [
+    {
+     "q": "Who founded the school?",
+     "a": "The Franciscans of the province of Cartagena. The monastery and the school opened in 1926."
+    },
+    {
+     "q": "How old is the school?",
+     "a": "It opened in 1926, so in 2026 it is 100 years old."
+    },
+    {
+     "q": "And what is the church next door?",
+     "a": "The parish of Sant Antoni de Pàdua, run by the same Franciscans, built in 1941–1949. You can recognise it by its blue dome."
+    }
+   ]
   },
   "sanFernando": {
    "title": "Castillo de San Fernando",
@@ -135,8 +450,30 @@
    "draft": true,
    "from": {
     "title": "1f60649d",
-    "short": "d029ffc7"
-   }
+    "short": "d029ffc7",
+    "long": "adf70ea9",
+    "questions": "24e32ad5"
+   },
+   "long": [
+    "The year is 1808. Napoleon seizes Spain and the War of Independence begins. Alicante fears a French landing from the sea or an attack from the San Blas district. On the Tossal hill they decide to build a new fortress to cover the city from the west. The project was ready in 1809 and construction was finished in 1812. It was led by the engineer Pablo Ordovás y Sastre, and, it is said, nearly all the inhabitants of the city worked on it.",
+    "And here is the ending: the French never took Alicante. In January 1812 General Montbrun shelled the city from the Altozano hill but did not storm it. San Fernando Castle never fired a single shot in battle. It was also meant to serve as a prison for French prisoners of war.",
+    "The fortress was named in honour of King Ferdinand VII. Today the Tossal is a park with the fortress walls and viewing terraces. From here you can see Santa Bárbara Castle opposite, where we have already been. Two castles look at each other across the whole city.",
+    "From the tuk-tuk you can see the walls on top of the hill. If the route goes higher, show the passengers the panorama: Santa Bárbara, the port and the sea."
+   ],
+   "questions": [
+    {
+     "q": "Why “never fought”?",
+     "a": "The French never came to storm Alicante, so the fortress took no part in a battle."
+    },
+    {
+     "q": "Why does the city have two castles?",
+     "a": "Santa Bárbara is medieval, above the sea. San Fernando was built in 1809–1812 to cover the city from the west."
+    },
+    {
+     "q": "Can you go up?",
+     "a": "Yes, the Tossal is a park with viewing terraces."
+    }
+   ]
   },
   "ricoPerez": {
    "title": "Football stadium — Estadio José Rico Pérez",
@@ -153,8 +490,30 @@
    "draft": true,
    "from": {
     "title": "fd9e09d4",
-    "short": "535e19ff"
-   }
+    "short": "535e19ff",
+    "long": "212dff29",
+    "questions": "666cdad3"
+   },
+   "long": [
+    "ADDA is the “Auditorio de la Diputación de Alicante”, the concert hall of the provincial council. It was designed by the Alicante architect Juan Antonio García Solera. The hall opened in 2011. It is a large building: about 28,000 m² of floor area and 29 metres high.",
+    "Unlike the old centre with its Baroque and Art Nouveau, ADDA is pure modern architecture: simple volumes, white light, glass. Inside there is a large symphony hall, a chamber hall and rehearsal rooms. The ADDA Simfònica orchestra is based here, and the programme includes classical music, jazz, flamenco and children's concerts.",
+    "It is interesting how the city is “moving” west: modern cultural and sports spaces are appearing nearby. If you are interested in a completely different Alicante, not the tourist one but the one where the locals live, an evening at ADDA gives you exactly that.",
+    "From the tuk-tuk you can see the white facade and the square in front of the entrance. It looks most beautiful in the evening, lit up."
+   ],
+   "questions": [
+    {
+     "q": "What happens here?",
+     "a": "Classical music concerts, jazz, flamenco, big touring shows."
+    },
+    {
+     "q": "When was the building built?",
+     "a": "It opened in 2011."
+    },
+    {
+     "q": "How do you buy tickets?",
+     "a": "On the ADDA website or at the box office."
+    }
+   ]
   },
   "mercado": {
    "title": "Mercado Central",
@@ -162,8 +521,30 @@
    "draft": true,
    "from": {
     "title": "3fe0e63e",
-    "short": "ee08e092"
-   }
+    "short": "ee08e092",
+    "long": "746375bb",
+    "questions": "7624e5db"
+   },
+   "long": [
+    "Remember the architect of the House of the Witches, Enrique Sánchez Sedeño? He designed this market too. Construction lasted from 1911 to 1921, and the work was completed by Juan Vidal Ramos. The same Vidal who built Casa Carbonell (point 1) and the savings-bank building on San Fernando (point 6). The market stands where the city walls once ran. Look at the dome, the stained glass and the decoration of the facade: this is what Art Nouveau looked like in the 1920s.",
+    "On the morning of 25 May 1938, during the Civil War, Italian Savoia-Marchetti SM.79 bombers appeared over Alicante. They fought on the side of Franco's forces. They dropped about 90 bombs; some hit the market, which was full of people. Hundreds of residents were killed. The market was restored, keeping most of its decoration. In the square nearby there is a memorial to the victims.",
+    "Today the market is a favourite place of the locals and a paradise for foodies. The ground floor is fish and seafood, the upper floor meat, jamón, cheese and fruit. A tip for tourists: come before lunch, after 14:00 many stalls close.",
+    "From the tuk-tuk it is worth showing the facade and the clock above the entrance."
+   ],
+   "questions": [
+    {
+     "q": "When is the market open?",
+     "a": "Usually from morning to lunchtime, closed on Sundays."
+    },
+    {
+     "q": "What must you try?",
+     "a": "Jamón, local olives, fresh fish, turrón (nougat from Jijona)."
+    },
+    {
+     "q": "What happened in 1938?",
+     "a": "Italian aircraft, Franco's ally, bombed the market in the morning when it was full of people. Hundreds were killed."
+    }
+   ]
   },
   "luceros": {
    "title": "Plaza de los Luceros",
@@ -171,8 +552,30 @@
    "draft": true,
    "from": {
     "title": "eafdc32a",
-    "short": "dcb23f11"
-   }
+    "short": "dcb23f11",
+    "long": "accc1ec5",
+    "questions": "0c4a942e"
+   },
+   "long": [
+    "The fountain was created by the sculptor Daniel Bañuls Martínez. In 1930 he won a competition with a project called “Levante” (“the East”). The central column has bas-reliefs in an “eastern” style and female figures. Around it are four identical sculptures of horses with riders. They say “luceros” are the four wandering stars of the night sky that inspired the author. Because of the horses, the square was for a while even called the “square of the horses”.",
+    "The main event is the Hogueras de San Juan, 20–24 June. Every day at 14:00 the mascletà takes place on Luceros. It is not fireworks in the sky but a rhythmic series of explosions that make the ground shake and ring in your chest. The sound is so powerful that since 2014 the fountain's sculptures are covered with soundproof boxes for the festival.",
+    "Under the square is the Luceros tram-metro station. From it the city centre spreads in all directions, and Avenida Alfonso el Sabio leads to the Rambla and the Old Town.",
+    "From the tuk-tuk you can see the fountain from all sides: you can drive a loop around the square so that the passengers can look at all four horsemen."
+   ],
+   "questions": [
+    {
+     "q": "What is a mascletà?",
+     "a": "A daytime pyrotechnic show: a series of loud explosions in rhythm that you feel with your body. It takes place every day during the Hogueras at 14:00."
+    },
+    {
+     "q": "When is the Hogueras festival?",
+     "a": "In June, in the days around the feast of Saint John (20–24 June)."
+    },
+    {
+     "q": "Who made the fountain?",
+     "a": "Daniel Bañuls, 1930."
+    }
+   ]
   },
   "sanFrancisco": {
    "title": "Calle San Francisco — the “mushroom street”",
@@ -180,8 +583,31 @@
    "draft": true,
    "from": {
     "title": "db226859",
-    "short": "b1083988"
-   }
+    "short": "b1083988",
+    "long": "970ae3ac",
+    "questions": "bda6b378"
+   },
+   "long": [
+    "As late as the end of the 20th and the start of the 21st century, the locals avoided San Francisco Street: poor lighting, peeling facades, street prostitution, dubious bars. The city thought for a long time about what to do with it.",
+    "At the end of 2013 the then mayor Sonia Castedo decided to turn the street into a fairy tale. Giant mushrooms were put here, which you can stand under like an umbrella. The paving was painted green and yellow, and hopscotch grids were drawn for children. The figures were made by the artist José María Escrivá, who works for the Hogueras festival. The project cost about 60,000 euros, and at first many people criticised the spending.",
+    "And then something happened that few had counted on: the street came alive. Tourists came, and cafés and bars opened after them. Today it is one of the most photographed streets in the city. Some tourists specifically look for “Calle de las Setas” on the map.",
+    "Mushrooms in Alicante are not about the forest. They are about how a strange, funny idea can save a neighbourhood.",
+    "Here our tour ends. From the tuk-tuk you can see the street from the crossroads. It is pedestrian, so it is better to suggest that the tourists get out, walk and take a photo as a keepsake."
+   ],
+   "questions": [
+    {
+     "q": "Why are there mushrooms here?",
+     "a": "In 2013 the city decided to “relaunch” a neglected street through bright design. It worked."
+    },
+    {
+     "q": "Can you eat here?",
+     "a": "Yes, the street has many cafés and bars with terraces."
+    },
+    {
+     "q": "How many mushrooms are there?",
+     "a": "Several large figures along the street."
+    }
+   ]
   },
   "melia": {
    "title": "Hotel Meliá Alicante",

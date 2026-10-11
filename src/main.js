@@ -202,6 +202,7 @@ async function loadLevels() {
         const lv = await (await fetch(`data/levels/${row.file || row.id + '.json'}?v=${VERSION}`)).json();
         const er = validateLevel(lv, { places: city.tour && city.tour.places });
         if (er.length) { console.warn(`рівень ${row.id}: ${er.join('; ')}`); continue; }
+        if (row.group) lv.group = row.group;
         builtinLevels.push(lv);
       } catch (e) { console.warn(`рівень ${row.id}: ${e.message}`); }
     }
@@ -315,7 +316,7 @@ let mapOn = loadSetting('minimap', true) !== false;
 let gameMode = benchOn ? 'free' : ['free', 'tour', 'arcade'].includes(params.get('mode')) ? params.get('mode') : loadSetting('mode', 'tour');
 let tourId = params.get('tour') || loadSetting('tourId', 'short');
 if (tourSpec && !tourSpec.tours.some((x) => x.id === tourId)) tourId = tourSpec.tours[0]?.id;
-let levelId = params.get('level') || params.get('tour') || loadSetting('arcade.level', 'short');   // the Crazy Tuk level (?tour= still works: the three tours are levels with the same ids)
+let levelId = params.get('level') || params.get('tour') || loadSetting('arcade.level', 'centre');   // the Crazy Tuk level (?tour= still works: the three tours are levels with the same ids)
 if (!levels.some((l) => l.id === levelId)) levelId = levels[0] ? levels[0].id : null;
 const levelById = (id) => levels.find((l) => l.id === id) || null;
 let tour = null, freeConfirm = -1e9;
@@ -528,7 +529,7 @@ const manualGas = () => loadSetting('arcade.manualGas', false) === true;
 function arcadeAsTour() {
   if (!run) return null;
   return { items: run.gates.map((g) => ({ kind: g.finish ? 'finish' : 'stop', place: { id: g.id, p: g.p, title: g.title } })),
-    done: run.results.map((r) => (r === 'missed' ? 'missed' : r ? 'done' : null)), state: run.done ? 'summary' : 'driving',
+    done: run.results.map((r) => (r === 'missed' || r === 'skipped' ? 'missed' : r ? 'done' : null)), state: run.done ? 'summary' : 'driving',
     start: run.start, target: run.target, route: null, routeVersion: 0, next: run.next, spec: localizedSpec() };
 }
 // the passengers: a body reaction + a voice from the sound bank (one voice per ~1.5 s, `gap` s for the rare ones)
@@ -543,7 +544,7 @@ function handleRunEvents() {
   for (const ev of run.events) {
     frameTag += `${ev.type}${ev.kind ? ':' + ev.kind : ''} `;
     // an exact gate: the body cheer (a voice only once there is a cheer file; the scream is gone for good, 0.19.1)
-    if (ev.type === 'gate') { if (arcadeFx) { arcadeFx.beacon.flash(run.gates[ev.index], ev.kind, groundY(run.gates[ev.index].p[0], run.gates[ev.index].p[1])); arcadeHud.flashScreen(); } arcadeHud.flashGate(ev); arcadeHud.bonusTime(ev.time); arcadeSound.gate(ev.kind); if (ev.kind === 'exact') driver.cheer(); else if (ev.kind === 'missed') driver.shake(); else driver.nod(); if (ev.kind !== 'missed') buzz(40); if (ev.kind === 'exact') passengers('cheer', 1.5, arcadeSound.has('tourist.cheer') ? 'cheer' : null); else if (ev.kind === 'good') passengers('laugh'); }
+    if (ev.type === 'gate') { if (arcadeFx) { arcadeFx.beacon.flash(run.gates[ev.index], ev.kind, groundY(run.gates[ev.index].p[0], run.gates[ev.index].p[1])); arcadeHud.flashScreen(); } arcadeHud.flashGate(ev); arcadeHud.bonusTime(ev.time); arcadeSound.gate(ev.kind); if (ev.kind === 'exact') driver.cheer(); else if (ev.kind === 'missed') driver.shake(); else if (ev.kind !== 'skipped') driver.nod(); if (ev.kind !== 'missed' && ev.kind !== 'skipped') buzz(40); if (ev.kind === 'exact') passengers('cheer', 1.5, arcadeSound.has('tourist.cheer') ? 'cheer' : null); else if (ev.kind === 'good') passengers('laugh'); }
     else if (ev.type === 'hit') { arcadeHud.flashText(ev.burnt > 0.5 ? t('ev.hitBurn', { v: euroWhole(ev.burnt) }) : t('ev.hit')); passengers('gasp'); driver.hit(ev.impact / 8); }
     else if (ev.type === 'offRoad') { arcadeHud.flashText(t(ev.on ? 'ev.offRoadOn' : 'ev.offRoadOff'), ev.on ? '#ff5a3c' : '#9be08a'); if (ev.on) { buzz(60); arcadeSound.play('hit.light', {}, 0.3); passengers('gasp', 2.5); driver.shake(); } }
     else if (ev.type === 'nearMiss') { arcadeHud.pop(t('ev.nearMiss', { v: euroWhole(ev.tips) }) + (run.combo > 1 ? ' · ×' + run.combo : ''), '#9fe0ff'); arcadeSound.play('nearmiss', {}, 0.4); passengers(Math.random() < 0.5 ? 'gasp' : 'laugh', 2.5); }
@@ -1099,7 +1100,7 @@ function frame(now, xrFrame) {
     if (run) {
       const g = run.gate;
       arcadeHud.update({ timeLeft: run.timeLeft, pocket: run.pocket, stake: run.stake, combo: run.combo, kmh: phys.forwardSpeed * 3.6, card: run.card, off: run.off.on && run.state === 'running',
-        gateIndex: run.next, gateCount: run.gates.length, gateTitle: g ? (g.finish ? t('hud.finishGate', { v: g.title }) : g.title) : '', gateDist: g ? Math.hypot(g.p[0] - phys.x, g.p[1] - phys.z) : null });
+        gateIndex: run.gates.slice(0, run.next).filter((q) => !q.bonus).length - (g && g.bonus ? 1 : 0), gateCount: run.regular, gateTitle: g ? (g.finish ? t('hud.finishGate', { v: g.title }) : g.bonus ? t('hud.bonusGate', { v: g.title }) : g.title) : '', gateDist: g ? Math.hypot(g.p[0] - phys.x, g.p[1] - phys.z) : null });
     }
     dashMs = performance.now() - dashStart;
     debugEl.style.display = showStats && !inVR ? 'block' : 'none';
@@ -1181,7 +1182,7 @@ function goHome() {
   title.show(true);
 }
 Object.assign(G, {
-  play, levels: () => levels.map((l) => [l.id, levelName(l)]), level: () => levelId, setLevel,
+  play, levels: () => levels.map((l) => [l.id, levelName(l), l.group]), level: () => levelId, setLevel,
   tours: () => (tourSpec ? tourSpec.tours.map((tr) => [tr.id, pick(tourTitleOf(tr))]) : []), tour: () => tourId, setTour,
   best: titleBest, hasTour: () => !!(tourSpec && graph), settingsDefs: () => (touch ? phone.settingsDefs : pcDefs),
   credit: () => t('credit.base') + (soundAttribution() ? '<br>' + soundAttribution() : ''),
@@ -1269,7 +1270,7 @@ if (IS_PHONE || benchOn || params.has('diag')) {
       setPaused: (p) => { paused = p; if (!p) last = performance.now(); },
       resetToRoad: () => { resetToRoad(); flash(t('msg.backOnRoad'), 2); },
       restartTour: () => { if (run) startArcade(); else if (gameMode !== 'tour') setGameMode('tour'); else startTour(); },
-      startArcade: () => setGameMode('arcade'), applyAutoGas, applySound, levels: () => levels.map((l) => [l.id, levelName(l)]), editorEnabled: () => !!levelEditor, soundLabEnabled: () => !!soundLab, openSoundLab: () => { if (soundLab) soundLab.open(); }, openEditor: () => { if (levelEditor) levelEditor.open(); }, level: () => levelId, setLevel,
+      startArcade: () => setGameMode('arcade'), applyAutoGas, applySound, levels: () => levels.map((l) => [l.id, levelName(l), l.group]), editorEnabled: () => !!levelEditor, soundLabEnabled: () => !!soundLab, openSoundLab: () => { if (soundLab) soundLab.open(); }, openEditor: () => { if (levelEditor) levelEditor.open(); }, level: () => levelId, setLevel,
       newTour: () => tourButton(),
       freeRide: () => setGameMode('free'),
       hasTour: () => !!tour || !!run, isArcade: () => !!run, hasTourSpec: () => !!(tourSpec && graph),
